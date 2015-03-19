@@ -741,12 +741,8 @@ Autofire Attack 1 does damage of [r:dam] or [r:dam+raiseDamage] if you hit with 
     [assert(aNum,"You have no " + ammoType + " for " + weaponName)]
   };{}]
   [h:needed=ammo2Fill-ammoDelta)]
-[h:t=Debug("needed",needed)]
   [h:refilled=if(aNum>=needed,needed,aNum)]
-[h:t=Debug("refilled",refilled)]
-[h:t=Debug("aNum before",aNum)]
   [h:aNum=aNum-needed]
-[h:t=Debug("aNum",aNum)]
   [if(aNum<=0), code:{
     [h:g=json.remove(g,ammoType)]
   };{
@@ -754,7 +750,6 @@ Autofire Attack 1 does damage of [r:dam] or [r:dam+raiseDamage] if you hit with 
     [h:g=json.set(g,ammoType,a)]
   }]
   [h:shotsUsed=if(ammo2Fill==1,wUsed-refilled*shots,wUsed-refilled)]
-[h:t=Debug("shotsUsed",shotsUsed)]
   [h:w=json.set(w,"ShotsUsed",shotsUsed)]
   [h:w=json.set(w,"ReloadRnd",0)]
   [h:g=json.set(g,weaponName,w)]
