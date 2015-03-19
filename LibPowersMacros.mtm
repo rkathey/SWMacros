@@ -1,0 +1,1236 @@
+@@ @onCampaignLoad
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Utility ; tooltip= ; minWidth= ; 
+[defineFunction("GetDefaultSettingABs","GetDefaultSettingABs@this")]
+[defineFunction("GetSettingABList","GetSettingABList@this")]
+
+!!
+@@ @EditPowers
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=green ; playerEditable=false ; applyToSelected=false ; group= ; tooltip= ; minWidth= ; 
+[h:tokenId=""]
+[h:returnMacro="argCheck@Lib:GM"]
+[h:refreshMacro="EditPowers@Lib:Powers"]
+[tokenId = getMacroLocation()]
+[h:switchToken(tokenId)]
+
+<!-- take this out later -->
+[h:okMacro="EditPowersOK@Lib:GM"]
+[h:okMacro="argCheck@Lib:GM"]
+
+[h:powersList=listAppend(PowerNames,SettingPowers)]
+[h:powerColumns=json.fields(PowerAttrs)]
+
+[h: class = "oddRow"]
+
+[dialog("PowersUpdate"): {
+  <html>
+    <head>
+      <title>Update Powers</title>
+      <meta name="input" content="true">
+      <link rel="stylesheet" type="text/css" href="CharSheet_css@Lib:GM">     
+    </head>
+    <body>
+      <form name="Power Properties" action="[r:macroLinkText(okMacro,"gm","",tokenId)]">
+        <table id="Powers" bgcolor=#aaaaaa width=200>
+          <tr><th>
+[r,foreach(header,powerColumns,"</th><th>"): header]
+          </th></tr>
+[foreach(power,powersList,""), code:{
+          <tr class="[r:class]">
+          [macro("PowerLine@this"): "powerArg="+power+";edit=No"]
+          </tr>
+[h: class = if(class=="oddRow", "evenRow", "oddRow")]
+}]
+[h:power=""]
+           <tr class="[r:class]">
+[macro("PowerLine@this"): "powerArg="+power+";edit=No;new=Yes"]
+[h: class = if(class=="oddRow", "evenRow", "oddRow")]
+          </tr>
+          <tr><th colspan=10></th></tr>
+        </table>
+        <!-- hidden input with the weapon number -->
+        <input type="hidden" name="returnMacro" value="[r:returnMacro]"> </input>
+        <input type="hidden" name="refreshMacro" value="[r:refreshMacro]"> </input>
+      </form>
+    </body>
+  </html>
+}]
+
+!!
+@@ @ABField
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Edits ; tooltip= ; minWidth= ; 
+[h:tokenId=""]
+[h:key=""]
+[h:powerArg=""]
+[h:value=""]
+[h:tokenId = getMacroLocation()]
+[h:switchToken(tokenId)]
+[h:varsFromStrProp(macro.args)]
+
+[h:attrs=json.get(ABAttrs,key)]
+[h:size=json.get(attrs,"Size")]
+[h:type=json.get(attrs,"Type")]
+
+[if(type=="Text"), code:{
+  <input type="text" size="[r:size]" name="[r:powerArg]_[r:key]" value="[r:value]">
+};{}]
+
+[if(type=="Dropdown"), code:{
+  [h:attrValues=json.get(attrs,"Values")]
+  <select name="[r:powerArg]_[r:key]">
+  [foreach(listValue,attrValues,""),code:{
+    [h:selected=if(listValue==value,"selected","")]  
+    <option [r:selected]>[r:listValue]</option>
+  }]
+  </select>
+};{}]
+
+[if(type=="Checkbox"), code:{
+  [h:value=if(value=="",0,1)]
+  [h:checked=if(value==1,"CHECKED","")]
+  <input type=CHECKBOX NAME="[r:powerArg]_[r:key]" [r:checked] value="X">
+};{}]
+
+!!
+@@ @EditSettingABTypes
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Edits ; tooltip= ; minWidth= ; 
+[h:returnMacro="argCheck@Lib:GM"]
+[h:refreshMacro=getMacroName()+"@this"]
+[tokenId = getMacroLocation()]
+[h:switchToken(tokenId)]
+
+<!-- take this out later -->
+[h:okMacro="argCheck@Lib:GM"]
+[h:okMacro="EditSettingABTypesOK@this"]
+[h:types=getLibProperty("ABTypes")]
+[h:types=json.fields(types)]
+
+[h:pAttrs=getLibProperty("ABAttrs")]
+[h:default=GetDefaultSettingABs()]
+[h:settingBackgrounds=getLibProperty("SettingABTypes")]
+[h:settingBackgrounds=if(json.type(settingBackgrounds)=="UNKNOWN",default,settingBackgrounds)]
+[h:sBacks=json.fields(settingBackgrounds)]
+
+[h: class = "oddRow"]
+[dialog("ArcaneBackgroundUpdate"): {
+  <html>
+    <head>
+      <title>Update Setting Arcane Backgrounds</title>
+      <meta name="input" content="true">
+      <link rel="stylesheet" type="text/css" href="CharSheet_css@Lib:GM">     
+    </head>
+    <body>
+      <form name="EditSettingABTypes" method='json' action="[r:macroLinkText(okMacro,"gm","",tokenId)]">
+        <input type="hidden" name="ABTypes" value="[r:sBacks]"> </input>
+
+        <table id="Backgrounds" bgcolor=#aaaaaa width="100%">
+        <tr><th colspan="2">Name</th><th>Skill Name</th><th>Base Skill</th><th>Points</th>
+                 <th>Powers</th><th>SWEX Prototype</th></tr>
+        [foreach(sb,sBacks,"</tr>"), code:{
+          <tr class="[r:class]">
+            <td><input type=CHECKBOX NAME="[r:sb]_check" value="[r:sb]">[r:decode(sb)] </input> </td>
+            <td>
+               [h:ab=json.get(settingBackgrounds,sb)]
+               [h:name=json.get(ab,"ABName")]
+               [r:decode(name)]
+            </td> 
+            <td><center>
+               [h:skill=json.get(ab,"Skill")]
+               [macro("ABField@this"): "key=Skill;powerArg="+sb+";value="+skill]
+            </center></td> 
+            <td><center>
+               [h:baseSkill=json.get(ab,"BaseSkill")]
+               [macro("ABField@this"): "key=BaseSkill;powerArg="+sb+";value="+baseSkill]
+            </center></td> 
+            <td><center>
+               [h:startingPoints=json.get(ab,"StartingPoints")]
+               [macro("ABField@this"): "key=StartingPoints;powerArg="+sb+";value="+startingPoints]
+            </center></td> 
+            <td><center>
+               [h:startingPowers=json.get(ab,"StartingPowers")]
+               [macro("ABField@this"): "key=StartingPowers;powerArg="+sb+";value="+startingPowers]
+            </center></td> 
+            <td><center>
+               [h:prototypeAB=json.get(ab,"PrototypeAB")]
+               [macro("ABField@this"): "key=PrototypeAB;powerArg="+sb+";value="+prototypeAB]
+               [h: class = if(class=="oddRow", "evenRow", "oddRow")]
+            </center></td>
+        }]
+        </table>
+        <table id="Backgrounds" bgcolor=#aaaaaa width="100%">
+        <th><input type="submit" name="Submit" value="Add"> </input></th>
+        <th><input type="submit" name="Submit" value="Save"> </input></th>
+        <th><input type="submit" name="Submit" value="Delete"> </input></th>
+        <th><input type="submit" name="Submit" value="Default"> </input></th>
+        </table>
+        <!-- hidden input with the weapon number -->
+        <input type="hidden" name="returnMacro" value="[r:refreshMacro]"> </input>
+        <input type="hidden" name="refreshMacro" value="[r:refreshMacro]"> </input>
+      </form>
+    </body>
+  </html>
+}]
+
+!!
+@@ @EditSettingABTypesOK
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Edits ; tooltip= ; minWidth= ; 
+[h:props=macro.args]
+
+[h:abList=json.get(props,"ABTypes")]
+[h:newSAB="{}"]
+[h:skillList="[]"]
+[foreach(ab,abList,""), code:{
+  [h:t=json.get(props,ab+"_Skill")]
+  [h:skillList=json.append(skillList,t)]
+}]
+[h:len1 = json.length(skillList)]
+[h:skillList=json.unique(skillList)]
+[h:len2= json.length(skillList)]
+[h:t=if(len1!=len2,0,1)]
+[assert(t,"You cannot duplicate Arcane Skill names")]
+
+[h:abAttrList=getLibProperty("ABAttrs")]
+[h:abAttrList=json.fields(abAttrList)]
+
+[foreach(ab,abList,""), code:{
+  [h:t="{}"]
+  [foreach(att,abAttrList,""), code:{
+    [h:t=json.set(t,att,json.get(props,ab+"_"+att))]
+  }]
+  [h:newSAB=json.set(newSAB,ab,t)]
+}]
+
+[h:return=json.get(macro.args,"returnMacro")]
+
+[h:settingAB=getLibProperty("SettingABTypes")]
+[h:settingAB=if(json.type(settingAB)=="UNKNOWN","{}",settingAB)]
+
+[h:action=json.get(macro.args,"Submit")]
+[if(action=="Add"), code:{
+  [h:abName=NameBox("NewAB","Enter New Arcane Background Name for Setting")]
+  [h:abName=encode(abName)]
+  [h:abortit=listContains(abList,abName)]
+  [h:abortit=if(abortit==0,1,0)]
+  [assert(abortit,"You cannot duplicate Arcane Backgroud names")]
+  [h:settingAB=json.set(settingAB,encode(abName),"{}")]
+};{}]
+[if(action=="Save"), code:{
+  [h:settingAB=newSAB]
+};{}]
+[if(action=="Default"), code:{
+  [h:settingAB=GetDefaultSettingABs()]
+};{}]
+[if(action=="Delete"), code:{
+  [h:sbs=json.fields(settingAB)]
+  [foreach(sb,sbs,""), code:{
+    [h:there=json.contains(macro.args,sb+"_check")]
+    [h:settingAB=if(there,json.remove(settingAB,sb),settingAB)]
+  }]
+};{}]
+
+[h:setLibProperty("SettingABTypes",settingAB)]
+[macro(return):""]
+
+!!
+@@ @PPvarField
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Edits ; tooltip= ; minWidth= ; 
+[h:tokenId=""]
+[h:key=""]
+[h:ppvArg="{}"]
+
+[h:tokenId = getMacroLocation()]
+[h:switchToken(tokenId)]
+[h:varsFromStrProp(macro.args)]
+
+[h:attrs=json.get(PPVariationAttrs,key)]
+[h:size=json.get(attrs,"Size")]
+[h:type=json.get(attrs,"Type")]
+
+[h:new=if(json.length(decode(ppvArg))==0,1,0)]
+[if(new==1), code:{
+  [h:currValue=""]
+};{
+  [h:pJSON=decode(ppvArg)]
+  [h:currValue=json.get(pJSON,key)]
+}]
+
+[if(type=="Text"), code:{
+  <input type="text" size="[r:size]" name="[r:key]_[r:index]" value="[r:decode(currValue)]">
+};{}]
+
+[if(type=="Dropdown"), code:{
+
+  [h:attrValues=json.get(attrs,"Values")]
+  <select name="[r:key]_[r:index]">
+  [foreach(value,attrValues,""),code:{
+    [h:selected=if(value==currValue,"selected","")]  
+    <option [r:selected]> [r:value]
+  }]
+  </select>
+};{}]
+
+!!
+@@ @PPvarLine
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Edits ; tooltip= ; minWidth= ; 
+[h:ppvArg=""]
+[h:tokenId=""]
+[h:index=0]
+[h:edit="Yes"]
+[h:select="No"]
+
+[h:tokenId = getMacroLocation()]
+[h:switchToken(tokenId)]
+[h:varsFromStrProp(macro.args)]
+
+[h:keys=json.fields(PPVariationAttrs)]
+[h:key=listGet(keys,0)]
+[h:keys=listDelete(keys,0)]
+
+[h:getValues=if(new=="No",1,0)]
+
+<td><center>[r:index+1]</center></td>
+
+[if(getValues==1), code:{
+  [foreach(key,keys,""),code:{
+      <td><center>
+         [macro("PPvarField@this"): "index="+index+";key="+key+";ppvArg="+ppvArg]
+      </center></td>
+  }]
+};{
+  [foreach(key,keys,""),code:{
+    <td><center>[macro("PPvarField@this"): "index="+index+";key="+key]</center>
+    </td>
+  }]
+}]
+
+!!
+@@ @PPvarSelectLine
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Edits ; tooltip= ; minWidth= ; 
+[h:ppvArg=""]
+[h:tokenId=""]
+[h:index=0]
+
+[h:tokenId = getMacroLocation()]
+[h:switchToken(tokenId)]
+[h:varsFromStrProp(macro.args)]
+
+[h:keys=json.fields(PPVariationAttrs)]
+[h:key=listGet(keys,0)]
+[h:keys=listDelete(keys,0)]
+
+[h:getValues=if(new=="No",1,0)]
+
+<td>[r:index+1]</td>
+
+[if(getValues==1), code:{
+  [foreach(key,keys,""),code:{
+      <td>
+         [macro("PPvarField@this"): "index="+index+";key="+key+";ppvArg="+ppvArg]
+      </td>
+  }]
+};{
+  [foreach(key,keys,""),code:{
+    <td>[macro("PPvarField@this"): "index="+index+";key="+key]
+    </td>
+  }]
+}]
+
+!!
+@@ @PowerField
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Edits ; tooltip= ; minWidth= ; 
+[h:tokenId=""]
+[h:key=""]
+[h:powerArg=""]
+[h:value=""]
+[h:tokenId = getMacroLocation()]
+[h:switchToken(tokenId)]
+[h:varsFromStrProp(macro.args)]
+
+[h:attrs=json.get(PowerAttrs,key)]
+[h:size=json.get(attrs,"Size")]
+[h:type=json.get(attrs,"Type")]
+
+[if(type=="Text"), code:{
+  <input type="text" size="[r:size]" name="[r:powerArg]_[r:key]" value="[r:value]">
+};{}]
+
+[if(type=="Dropdown"), code:{
+  [h:attrValues=json.get(attrs,"Values")]
+  <select name="[r:powerArg]_[r:key]">
+  [foreach(listValue,attrValues,""),code:{
+    [h:selected=if(listValue==value,"selected","")]  
+    <option [r:selected]>[r:listValue]</option>
+  }]
+  </select>
+};{}]
+
+[if(type=="Checkbox"), code:{
+  [h:value=if(value=="",0,1)]
+  [h:checked=if(value==1,"CHECKED","")]
+  <input type=CHECKBOX NAME="[r:powerArg]_[r:key]" [r:checked] value="X">
+};{}]
+
+!!
+@@ @PowerLine
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Edits ; tooltip= ; minWidth= ; 
+[h:tokenId=""]
+[h:empty=""]
+[h:new="No"]
+[h:tokenId = getMacroLocation()]
+[h:switchToken(tokenId)]
+[h:varsFromStrProp(macro.args)]
+
+[h:keys=json.fields(PowerAttrs)]
+[h:key=listGet(keys,0)]
+[h:keys=listDelete(keys,0)]
+
+[h:UpdatePowerArgs="returnMacro=EditPowers@this;powerArg="+powerArg]
+[h:AddPowerArgs="returnMacro=EditPowers@this;powerArg="+empty+";edit=Yes;new=Yes"]
+
+[h:powerArgLinkText=if(powerArg=="","ClickToAddNewPower",powerArg)]
+
+[h:branch="edit"]
+[h:branch=if(edit=="No"&&new=="No","display",branch)]
+[h:branch=if(edit=="No"&&new=="Yes","new",branch)]
+[h:branch=if(edit=="Yes"&&new=="Yes","editNew",branch)]
+
+[if(branch=="new"), code:{
+    [h: linkit=macroLinkText("UpdatePower@this", "gm",AddPowerArgs)]
+    <td>
+      <a href="[r:linkit]"><b>[r:powerArgLinkText]</b></a> 
+    </td>
+    [foreach(key,keys,""),code:{
+        <td></td>
+    }]
+  };{}]
+
+[if(branch=="display"), code:{
+    [h: linkit=macroLinkText("UpdatePower@this", "gm",UpdatePowerArgs)]
+    <td>
+      <a href="[r:linkit]"><b>[r:powerArgLinkText]</b></a> 
+    </td>
+    [foreach(key,keys,""),code:{
+        <td><center>[h:pJSON=json.get(Powers,powerArg)]
+         [h:pJSON=if(json.type(pJSON)=="UNKNOWN","{}",pJSON)]
+         [r:json.get(pJSON,key)]
+        </center></td>
+    }]
+  };{}]
+
+[if(branch=="edit"), code:{
+    [foreach(key,keys,""),code:{
+      <td><center>[h:pJSON=json.get(Powers,powerArg)]
+               [h:values= json.get(pJSON,key)]
+               [macro("PowerField@this"): "key="+key+" ;powerArg= "+powerArg+";value="+values]
+      </center></td>
+    }]
+};{}]
+
+[if(branch=="editNew"), code:{
+    [foreach(key,keys,""),code:{
+      <td><center>
+               [macro("PowerField@this"): "key="+key+" ;powerArg= NewPower;value="+empty+";new=Yes"]
+      </center></td>
+    }]
+};{}]
+
+!!
+@@ @UpdatePower
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=true ; applyToSelected=false ; group=Edits ; tooltip= ; minWidth= ; 
+[h:tokenId=""]
+[h:powerArg=""]
+[h:addNewPP=0]
+[h:ppvs="{}"]
+[h:count=0]
+[h:newPower=0]
+[values=""]
+[new="No"]
+
+[h:refreshMacro="UpdatePower@this"]
+[h:returnMacro="EditPowers@this"]
+[h:tokenId = getMacroLocation()]
+[h:switchToken(tokenId)]
+
+[h:varsFromStrProp(macro.args)]
+
+[h:keys=json.fields(PowerAttrs)]
+[h:ppKeys=json.fields(PPVariationAttrs)]
+[h:key=listGet(keys,0)]
+[h:keys=listDelete(keys,0)]
+[h:powerColumns=keys]
+[h:ppattrColumns=ppKeys]
+
+[h:newPower=if(powerArg=="",1,newPower) ]
+
+<!-- take this out later -->
+[h:okMacro="argCheck@Lib:GM"]
+[h:okMacro="UpdatePowerOK@this"]
+
+<!-- check to see if this power currently has any power point variations associated with it, if not make a new dialog box -->
+[h:there=json.contains(PPVariations,powerArg)]
+[h:addNewPP=if(there==0,1,addNewPP)]
+[h,if(there):  ppvs=json.get(PPVariations,powerArg)]
+[h:varCount=json.length(ppvs)]
+[h: class = "oddRow"]
+
+[h:newPower=if(new=="Yes",1,newPower)]
+
+[dialog("Powers Edit"): {
+  <html>
+    <head>
+      <title>Update Powers</title>
+      <meta name="input" content="true">
+      <link rel="stylesheet" type="text/css" href="CharSheet_css@Lib:GM">     
+    </head>
+    <body>
+      <form name="Power Properties" action="[r:macroLinkText(okMacro,"gm","",tokenId)]">
+        <table width="100%">
+          <tr>
+            <th>Power Name</th></tr><tr class="[r:class]"><td><center>
+[if(newPower), code:{
+[macro("PowerField@this"): "key="+key+" ;powerArg=NewPower;value="+values]
+};{
+               [r:powerArg]
+}]
+             </td></center></tr></table>
+        <table id="Powers" bgcolor=#aaaaaa width="100%">
+          <tr><th>
+[r,foreach(header,powerColumns,"</th><th>"): header]
+          </th></tr>
+
+          <tr class="[r:class]">
+[macro("PowerLine@this"): "powerArg="+powerArg+";edit=Yes;new="+new]
+          </tr>
+[h: class = if(class=="oddRow", "evenRow", "oddRow")]
+        </table>
+
+        <table width="100%">
+           <tr><th>
+[r,foreach(header,ppattrColumns,"</th><th>"): header]
+          </th></tr>
+[h: class = if(class=="oddRow", "evenRow", "oddRow")]
+
+[h:count=0]
+[c(varCount,""), code:{
+          <tr class="[r:class]">
+[h:ppv=json.get(ppvs,count)]
+[h:ppvArg=encode(ppv)]
+[macro("PPvarLine@this"): "index="+count+";new=No;ppvArg="+ppvArg]
+          </tr>
+[h: class = if(class=="oddRow", "evenRow", "oddRow")]
+[h:count=count+1]
+}]
+
+[if(addNewPP==1), code:{
+          <tr class="[r:class]">
+[macro("PPvarLine@this"): "index="+count+";new=Yes"]
+[h: class = if(class=="oddRow", "evenRow", "oddRow")]
+[h:count=count+1]
+          </tr>
+};{}]
+       </table>
+       <table width="100%">
+         <tr>
+            <th colspan=1><input type="submit" name="Submit" value="Submit"> </input></th>
+            <th colspan=1><input type="submit" name="Submit" value="Refresh"> </input></th>
+            <th colspan=1><input type="submit" name="Submit" value="Add Variation"> </input></th>
+            <th colspan=1><input type="submit" name="Submit" value="Delete All Variations">
+            <th colspan=1><input type="submit" name="Submit" value="Delete Power"> 
+</input></th>
+          </tr>
+        </table>
+        <!-- hidden input with the weapon number -->
+        <input type="hidden" name="powerArg" value="[r:powerArg]"> </input>
+        <input type="hidden" name="numPPVs" value="[r:count]"> </input>
+        <input type="hidden" name="returnMacro" value="[r:returnMacro]"> </input>
+        <input type="hidden" name="refreshMacro" value="[r:refreshMacro]"> </input>
+      </form>
+    </body>
+  </html>
+}]
+
+[h:abort(0)]
+
+!!
+@@ @UpdatePowerOK
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=true ; applyToSelected=false ; group=Edits ; tooltip= ; minWidth= ; 
+[h:returnMacro="argCheck@Lib:GM"]
+[h:pjson=""]
+[h:ppvarjson=""]
+[h:ppvt="{}"]
+[h:addNewPP=0]
+[h:NewPower_PowerName=""]
+[h:newPower=0]
+
+[h:varsFromStrProp(macro.args)]
+
+<!-- check for new power -->
+[if(NewPower_PowerName!=""), code:{
+  [h:powerArg=NewPower_PowerName]
+  [h:there=listContains(SettingPowers,powerArg)]
+  [if(there==1): assert(0,"Setting power already contains "+powerArg)]
+  [h:SettingPowers=listAppend(SettingPowers,NewPower_PowerName)]
+  [h:Powers=json.set(Powers,powerArg,pjson)]
+  [h:newPower=1]
+};{}]
+
+[h:continue=if(powerArg=="",0,1)]
+[h:assert(continue,"Macro "+getMacroName()+" must be run with the value of powerArg set ")]
+
+[h:keys=json.fields(PowerAttrs)]
+[h:keys=listDelete(keys,0)]
+
+[h:powerName=if(newPower==0,PowerArg,"NewPower")]
+
+[str=""]
+[foreach(key,ABTypes,""), code:{
+  <br> varname [varName=powerName+"_"+key]
+  <br>there [there=getStrProp(macro.args,varName)]
+  [h,if(there==""): str=str+varName+"=; ")]
+}]
+<br>final [str]
+[h:varsFromStrProp(str)]
+
+[foreach(key,keys,""), code:{
+  [h:varName=powerName+"_"+key]
+  [h:var=eval(varName)]
+  [h:pjson=json.set(pjson,key,var)]
+}]
+[h:Powers=json.set(Powers,powerArg,pjson)]
+
+[h:keys=json.fields(PPVariationAttrs)]
+[h:keys=listDelete(keys,0)]
+
+[for(i,0,numPPVs,1,""), code:{
+  [h:ppvt=""]
+  [h:index=i]
+  [foreach(key,keys,""), code:{
+    [h:varName=key+"_"+index]
+    [h:var=eval(varName)]
+    [h:ppvt=json.set(ppvt,key,encode(var))]
+  }]
+  [h:ppvarjson=json.append(ppvarjson, ppvt)]
+}]
+[h:PPVariations=json.set(PPVariations,powerArg,ppvarjson)]
+
+[if(Submit=="Delete All Variations"), code:{
+  [h:addNewPP=1]
+  [h:PPVariations=json.remove(PPVariations,powerArg)]  
+};{}]
+
+[if(Submit=="Delete Power"), code:{
+  [h:settingFound=listContains(SettingPowers,powerArg)]
+  [h:powerFound=listContains(PowerNames,powerArg)]
+  [if(settingFound), code:{
+    [h:idx=listFind(SettingPowers,powerArg)]
+    [h:SettingPowers=listDelete(SettingPowers,idx)]
+  };{}]
+  [if(powerFound), code:{
+    [h:idx=listFind(PowerNames,powerArg)]
+    [h:PowerNames=listDelete(PowerNames,idx)]
+  };{}]
+  [h:Powers=json.remove(Powers,powerArg)]
+  [h:PPVariations=json.remove(PPVariations,powerArg)]  
+};{}]
+
+[h:addNewPP=if(Submit=="Add Variation",1,addNewPP)]
+[h:returnMacro=if(Submit=="Submit"||Submit=="Delete Power",returnMacro,refreshMacro)]
+<br>calling [returnMacro]<br>
+[macro(returnMacro):"powerArg="+powerArg+";addNewPP="+addNewPP]
+
+!!
+@@ @UpdatePowerSave
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=true ; applyToSelected=false ; group=Edits ; tooltip= ; minWidth= ; 
+[h:tokenId=""]
+[h:powerArg=""]
+[h:addNewPP=0]
+[h:ppvs="{}"]
+[h:count=0]
+[h:refreshMacro="UpdatePower@this"]
+[h:returnMacro="EditPowers@this"]
+[tokenId = getMacroLocation()]
+[h:switchToken(tokenId)]
+
+[h:varsFromStrProp(macro.args)]
+
+[h:keys=json.fields(PowerAttrs)]
+[h:ppKeys=json.fields(PPVariationAttrs)]
+[h:powerColumns=keys]
+[h:ppattrColumns=ppKeys]
+
+[if(powerArg==""): assert(0,"no power passed to "+getMacroName())]
+
+<!-- take this out later -->
+[h:okMacro="argCheck@Lib:GM"]
+[h:okMacro="UpdatePowerOK@this"]
+
+<!-- check to see if this power currently has any power point variations associated with it, if not make a new dialog box -->
+[h:there=json.contains(PPVariations,powerArg)]
+[h:addNewPP=if(there==0,1,addNewPP)]
+[h,if(there):  ppvs=json.get(PPVariations,powerArg)]
+[h:varCount=json.length(ppvs)]
+[h: class = "oddRow"]
+<br> Add new = [addNewPP]
+<br>
+<br>
+[ppvs]
+<br>
+
+[dialog("PowersUpdate"): {
+  <html>
+    <head>
+      <title>Update Powers</title>
+      <meta name="input" content="true">
+      <link rel="stylesheet" type="text/css" href="CharSheet_css@Lib:GM">     
+    </head>
+    <body>
+      <form name="Power Properties" action="[r:macroLinkText(okMacro,"gm","",tokenId)]">
+        <table id="Powers" bgcolor=#aaaaaa width=200>
+          <tr><th>
+[r,foreach(header,powerColumns,"</th><th>"): header]
+          </th></tr>
+
+          <tr class="[r:class]">
+[macro("PowerLine@this"): "powerArg="+powerArg+";edit=Yes"]
+          </tr>
+[h: class = if(class=="oddRow", "evenRow", "oddRow")]
+           <tr><th>
+[r,foreach(header,ppattrColumns,"</th><th>"): header]
+          </th></tr>
+[h: class = if(class=="oddRow", "evenRow", "oddRow")]
+
+[h:count=0]
+[foreach(ppv,ppvs,""), code:{
+          <tr class="[r:class]">
+[h:ppvArg=encode(ppv)]
+[macro("PPvarLine@this"): "index="+count+";new=No;ppvArg="+ppvArg]
+          </tr>
+[h: class = if(class=="oddRow", "evenRow", "oddRow")]
+[h:count=count+1]
+}]
+
+[if(addNewPP==1), code:{
+          <tr class="[r:class]">
+[macro("PPvarLine@this"): "index="+count+";new=Yes"]
+[h: class = if(class=="oddRow", "evenRow", "oddRow")]
+[h:count=count+1]
+          </tr>
+};{}]
+            <th colspan=1><input type="submit" name="Submit" value="Submit"> </input></th>
+            <th colspan=1><input type="submit" name="Submit" value="Refresh"> </input></th>
+            <th colspan=2><input type="submit" name="Submit" value="Add Variation"> </input></th>
+            <th colspan=3><input type="submit" name="Submit" value="Delete All Variations"> </input></th>
+          </tr>
+        </table>
+        <!-- hidden input with the weapon number -->
+        <input type="hidden" name="powerArg" value="[r:powerArg]"> </input>
+        <input type="hidden" name="numPPVs" value="[r:count]"> </input>
+        <input type="hidden" name="returnMacro" value="[r:returnMacro]"> </input>
+        <input type="hidden" name="refreshMacro" value="[r:refreshMacro]"> </input>
+      </form>
+    </body>
+  </html>
+}]
+
+!!
+@@ @ActivePowers
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=true ; applyToSelected=false ; group=Character Sheet ; tooltip= ; minWidth= ; 
+<!-- puts out a table of active power-->
+
+[h:pa=json.fields(PowersActive)]
+<table width="100%">
+  <tr><td>Powers Active: </td><td>
+[foreach(power,pa,"</td><td>"), code:{
+  [h:t=json.get(PowersActive,power)]
+  [h:skill=json.get(t,"powerSkill")]
+    <INPUT TYPE=CHECKBOX NAME="maintain_[r:skill]_[r:power]" checked>[r:power]<br>
+}]
+  </td>
+  </tr>
+</table>
+
+!!
+@@ @BurnMorePower
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=true ; applyToSelected=false ; group=Character Sheet ; tooltip= ; minWidth= ; 
+[h:varsFromStrProp(macro.args)]
+[h:switchToken(tokenId)]
+[h:t=json.get(PowersActive,powerSkill)]
+
+[macro("GetPPVariation@Lib:Powers"): "powerName="+powerName+";PPVIndex="+index]
+[h:ppv=macro.return]
+
+[h:pointsNeeded=json.get(ppv,"PP2Maintain")]
+<!-- check points left, if enough deduct them, if not turn off power -->
+<!-- get the power points entry for the power skill in question -->
+
+[macro("GetArcaneSkillList@this"):""]
+[h:skillList=macro.return]
+[h:powerSkill=if(listContains(skillList,powerSkill),powerSkill,"Super")]
+
+[h:pp=json.get(PowerPoints,powerSkill)]
+<!-- if weird science deduct points from gadget.  If not deduct from main power pool -->
+
+[h:usedLable=if(powerSkill=="WeirdScience",powerName,"Used")]
+
+[h:pointsUsed=json.get(pp,usedLable)]
+
+[h:maxPoints=json.get(pp,"Max")]
+
+[h:newPointsUsed=pointsUsed+pointsNeeded]
+[if(newPointsUsed>maxPoints), code:{
+  Not enough points to continue casting [r:powerName]
+  [macro("TurnOffPower@Lib:Powers"):  "powerName="+powerName+";tokenId="+tokenId]
+};{
+  [h:pp=json.set(pp,usedLable,newPointsUsed)]
+  [h:PowerPoints=json.set(PowerPoints,powerSkill,pp)]
+  [r:getName()] Burning more power points for [r:powerName].  [r:maxPoints-newPointsUsed] of [r:maxPoints] points remaining.  
+  [h:setState("PowerActive",1)]
+}]
+
+!!
+@@ @CheckExpiredPowers
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=true ; applyToSelected=false ; group=Character Sheet ; tooltip= ; minWidth= ; 
+[h:varsFromStrProp(macro.args)]
+[h:switchToken(tokenId)]
+[h:psActive=json.fields(PowersActive)]
+[h:firstTime=1]
+[foreach(power,psActive,""), code:{
+  [if(firstTime==1): "<br>Powers Active: "]
+  [r:power]
+  [h:t=json.get(PowersActive,power)]
+  [h:powerSkill=json.get(t,"powerSkill")]
+  [h:index=json.get(t,"index")]
+  [macro("ExpirePower@Lib:Powers"): "powerName="+power+";powerSkill="+powerSkill+";tokenId="+tokenId+";index="+index]
+}]
+
+!!
+@@ @ExpirePower
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=true ; applyToSelected=false ; group=Character Sheet ; tooltip= ; minWidth= ; 
+[h:varsFromStrProp(macro.args)]
+[h:macro.args]
+[h:switchToken(tokenId)]
+[macro("GetPower@Lib:Powers"):"powerName="+powerName]
+[h:p = macro.return]
+[macro("GetPPVariation@Lib:Powers"): "powerName="+powerName+";PPVIndex="+index]
+[h:ppv=macro.return]
+
+[h:duration=json.get(p,"Duration")]
+[h:durUnits=json.get(p,"DurUnits")]
+[h:maintainPPs=json.get(ppv,"PP2Maintain")]
+
+[if(duration>0&&durUnits=="Rounds"), code:{
+  [h:currRound=CurrentRound()]
+  [h:t=json.get(PowersActive,powerName)]
+  [h:started=json.get(t,"startRound")]
+  [h:beenOn=currRound-started]<br>
+  [if(beenOn>duration), code:{
+    [macro("BurnMorePower@Lib:Powers"): "powerName="+powerName+ ";tokenId="+tokenId+ ";index="+index+";powerSkill="+powerSkill]
+  };{ Rounds Active = [r:beenOn] Duration = [r:duration]}]
+  [if(beenOn==duration): "power will begin burning power points next round unless you deactivate it."]
+};{}]
+
+!!
+@@ @PowerUse
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=true ; applyToSelected=false ; group=Character Sheet ; tooltip= ; minWidth= ; 
+[h:tokenId=""]
+[h:powerName=""]
+[h:powerSkill=""]
+[h:activePowerFlag=0]
+
+[h:props=macro.args]
+[h:varsFromStrProp(props)]
+
+[h,if(powerName==""): assert(0,"no power passed to "+getMacroName())]
+
+[h:tokenId=if(tokenId=="",currentToken(),tokenId)]
+[h:abortit=if(tokenId=="",0,1)]
+[h:assert(abortit,"no token id available")]
+[h:switchToken(tokenId)]
+
+<!-- get stuff from lib token to be used later -->
+
+[h:powerJSON=json.get(getLibProperty("Powers"),powerName)]
+[h:powerVarJSON=json.get(getLibProperty("PPVariations"),powerName)]
+
+[h:keys=json.fields(getLibProperty("PowerAttrs"))]
+[h:ppKeys=json.fields(getLibProperty("PPVariationAttrs"))]
+[h:powerColumns=keys]
+[h:ppattrColumns=ppKeys]
+[h:ppattrColumns=listDelete(ppattrColumns,0)]
+
+<!-- take this out later -->
+[h:okMacro="argCheck@Lib:GM"]
+[h:okMacro="PowerUseOk@Lib:Powers"]
+
+<!-- check to see if this power currently has any power point variations associated with it.
+          if not ask GM to add one -->
+[h:there=json.contains(getLibProperty("PPVariations"),powerName)]
+[h:assert(there,"Power must have at least one variation in order to work.  Have GM add variation")]
+
+[h:ppvs=json.get(getLibProperty("PPVariations"),powerName)]
+[h:varCount=json.length(ppvs)]
+[h: class = "oddRow"]
+
+[h:firstTime=1]
+<form name="PC Power Use" action="[r:macroLinkText(okMacro,"all","",tokenId)]">
+  <table id="Powers" bgcolor=#aaaaaa width="100%">
+    <tr><th>Power Name</th><th>Range</th><th>Duration</th></tr>
+    <tr class="[r:class]">
+      <td><center>[r:powerName]</center></td>
+      <td><center>[r: json.get(powerJSON,"Range")]</center></td>
+      <td><center>[r: json.get(powerJSON,"Duration")] [r: json.get(powerJSON,"DurUnits")]</center></td>
+    </tr>
+  </table>
+  <table id="PowersVars" bgcolor=#aaaaaa width="100%">
+    <tr><th colspan=2>
+[r,foreach(header,ppattrColumns,"</th><th>"): header]
+    </th></tr>
+
+[h: class = if(class=="oddRow", "evenRow", "oddRow")]
+
+[h:count=0]
+[foreach(ppv,ppvs,""), code:{
+    <tr class="[r:class]">
+      <td colspan=2>
+        <input TYPE=RADIO NAME="PPVIndex" VALUE="[r:count]" checked="1">
+  [r,foreach(field,json.fields(ppv),"</center></td><td><center>"): decode(json.get(ppv,field))]
+      </center></td>
+    </tr>
+  [h: class = if(class=="oddRow", "evenRow", "oddRow")]
+  [h:count=count+1]
+}]
+[if(activePowerFlag), code:{
+    <tr class="[r:class]">
+      [h: class = if(class=="oddRow", "evenRow", "oddRow")]
+     <input TYPE=RADIO NAME="PPVIndex"  VALUE="Deactivate"> Deactivate [r:powerName] power
+    </tr>
+};{}]
+    <tr>
+    <th colspan=5>
+      <input type="submit" name="Submit" value="Submit"> </input>
+      <input type="hidden" name="powerName" value="[r:powerName]"> </input>
+      <input type="hidden" name="powerSkill" value="[r:powerSkill]"> </input>
+    </th>
+    </tr>
+  </table>
+</form>
+
+!!
+@@ @PowerUseOk
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=true ; applyToSelected=false ; group=Character Sheet ; tooltip= ; minWidth= ; 
+[h:tokenId=""]
+[h:PPVIndex=0]
+[h:powerName=""]
+[h:powerSkill=""]
+[h:weird="WeirdScience"]
+
+[h:varsFromStrProp(macro.args)]
+[h,if(powerName==""): assert(0,"no power passed to "+getMacroName())]
+
+[h:tokenId=if(tokenId=="",currentToken(),tokenId)]
+[h:abortit=if(tokenId=="",0,1)]
+[h:assert(abortit,"no token id available")]
+[h:switchToken(tokenId)]
+[h:returnMacro="CharacterSheet@Lib:GM"]
+
+[if(PPVIndex=="Deactivate"), code:{
+  [macro("TurnOffPower@Lib:Powers"):  "powerName="+powerName+";tokenId="+tokenId]
+};{
+
+[macro("GetPower@Lib:Powers"):"PowerName="+powerName)]
+[h: p = macro.return]
+[h:duration=json.get(p,"Duration")]
+[h:durUnits=json.get(p,"DurUnits")]
+
+[macro("GetPPVariation@Lib:Powers"):"PowerName="+powerName+";PPVIndex="+PPVIndex]
+[h:ppv=macro.return]
+[h:neededPP=json.get(ppv,"PPs2Cast")]
+
+[h:pp=json.get(PowerPoints,powerSkill)]
+<!-- if weird science deduct points from gadget.  If not deduct from main power pool -->
+[h:usedLable=if(powerSkill==weird,powerName,"Used")]
+[h:pointsUsed=json.get(pp,usedLable)]
+[h:pointsUsed=if(pointsUsed=="",0,pointsUsed)]
+[h:maxPoints=json.get(pp,"Max")]
+[h:pointsRemaining=maxPoints-neededPP-pointsUsed]
+[h:abort=if(pointsRemaining<0,0,1)]
+[h:assert(abort,"You do not have enough points to cast "+powerName +".  Max power points ="+maxPoints + " points used = "+pointsUsed )]
+
+[h:pp=json.set(pp,usedLable,neededPP+pointsUsed)]
+[h:PowerPoints=json.set(PowerPoints,powerSkill,pp)]
+
+[h:e=json.get(ppv,"Effect")]
+[h:powerSkill=if(powerSkill=="Super",powerName,powerSkill)]
+[r:getName()] casts [r:powerName]<br>
+[macro("TraitTest@Lib:GM"): powerSkill]<br>
+With the following effect: <br>
+
+[h:evalstr=decode(e)]
+[if(matches(e,".*eval.*")), code:{
+[r:eval(evalstr)]
+};{
+[r:evalstr]
+}]
+
+[h,if(duration>0), code:{
+  [t=json.get(PowerPoints,powerSkill)]
+  [h:t=json.set("","startRound",CurrentRound(), "index",PPVIndex,"powerSkill",powerSkill)]  
+  [h:PowersActive=json.set(PowersActive,powerName,t)]
+  [setState("PowerActive",1)]
+};{}]
+
+}]
+
+[macro("CharacterSheet@Lib:GM"): ""]
+
+!!
+@@ @PowerUseSave
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=true ; applyToSelected=false ; group=Character Sheet ; tooltip= ; minWidth= ; 
+[h:tokenId=""]
+[h:powerName=""]
+[h:powerSkill=""]
+
+[h:props=macro.args]
+[h:varsFromStrProp(props)]
+
+[h,if(powerName==""): assert(0,"no power passed to "+getMacroName())]
+
+[h:tokenId=if(tokenId=="",currentToken(),tokenId)]
+[h:abortit=if(tokenId=="",0,1)]
+[h:assert(abortit,"no token id available")]
+[h:switchToken(tokenId)]
+
+<!-- get stuff from lib token to be used later -->
+[h:libTokenId = getMacroLocation()]
+[h:switchToken(libTokenId)]
+
+[h:powerJSON=json.get(Powers,powerName)]
+[h:powerVarJSON=json.get(PPVariations,powerName)]
+
+[h:keys=json.fields(PowerAttrs)]
+[h:ppKeys=json.fields(PPVariationAttrs)]
+[h:powerColumns=keys]
+[h:ppattrColumns=ppKeys]
+[h:ppattrColumns=listDelete(ppattrColumns,0)]
+
+<!-- take this out later -->
+[h:okMacro="argCheck@Lib:GM"]
+[h:okMacro="PowerUseOk@Lib:Powers"]
+
+<!-- check to see if this power currently has any power point variations associated with it, if not make a new dialog box -->
+[h:there=json.contains(PPVariations,powerName)]
+[h:assert(there,"Power must have at least one variation in order to work.  Have GM add variation")]
+
+[h:ppvs=json.get(PPVariations,powerName)]
+[h:varCount=json.length(ppvs)]
+[h: class = "oddRow"]
+
+<!-- switch back to calling token -->
+
+[h:switchToken(tokenId)]
+[h:firstTime=1]
+<form name="PC Power Use" action="[r:macroLinkText(okMacro,"all","",tokenId)]">
+  <table id="Powers" bgcolor=#aaaaaa width="100%">
+    <tr><th>
+[r,foreach(header,powerColumns,"</th><th>"): header]
+    </th></tr>
+    <tr class="[r:class]"><td><center>[r:powerName]</center></td><td><center>
+[r,foreach(field,json.fields(powerJSON),"</center></td><td><center>"): json.get(powerJSON,field)]
+    </td></tr>
+    <tr><th colspan=2>
+[r,foreach(header,ppattrColumns,"</th><th>"): header]
+    </th></tr>
+
+[h: class = if(class=="oddRow", "evenRow", "oddRow")]
+
+[h:count=0]
+[foreach(ppv,ppvs,""), code:{
+    <tr class="[r:class]">
+      <td colspan=2>
+        <input TYPE=RADIO NAME="PPVIndex" VALUE="[r:count]" checked="1">
+  [r,foreach(field,json.fields(ppv),"</center></td><td><center>"): decode(json.get(ppv,field))]
+      </center></td>
+    </tr>
+  [h: class = if(class=="oddRow", "evenRow", "oddRow")]
+  [h:count=count+1]
+}]
+    <tr>
+    <th colspan=5>
+      <input type="submit" name="Submit" value="Submit"> </input>
+      <input type="hidden" name="powerName" value="[r:powerName]"> </input>
+      <input type="hidden" name="powerSkill" value="[r:powerSkill]"> </input>
+    </th>
+    </tr>
+  </table>
+</form>
+
+!!
+@@ @TurnOffPower
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=true ; applyToSelected=false ; group=Character Sheet ; tooltip= ; minWidth= ; 
+[h:varsFromStrProp(macro.args)]
+[h:switchToken(tokenId)]
+[r:getName()] Turning Off Power [r:powerName]<br>
+[h:PowersActive=json.remove(PowersActive,powerName)]
+[h:PAState=if(json.isEmpty(PowersActive),0,1)]
+[h:setState("PowerActive",PAState)]
+
+!!
+@@ @GetABTypesJSON
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=true ; applyToSelected=false ; group=Gets ; tooltip= ; minWidth= ; 
+[h:macro.return=getLibProperty("ABTypes")]
+
+!!
+@@ @GetABTypesList
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=true ; applyToSelected=false ; group=Gets ; tooltip= ; minWidth= ; 
+[h:macro.return=json.fields(getLibProperty("ABTypes"))]
+
+!!
+@@ @GetArcaneSkillList
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=true ; applyToSelected=false ; group=Gets ; tooltip= ; minWidth= ; 
+[macro("GetABTypesJSON@Lib:Powers"):""]
+[h:powerJSON=macro.return]
+[h:arcaneEdges=json.fields(powerJSON)]
+
+[h:arcaneSkillList=""]
+[foreach(e,arcaneEdges,""), code:{
+  [h:p=json.get(powerJSON,e)]
+  [h:s=json.get(p,"Skill")]
+  [h:arcaneSkillList=listAppend(arcaneSkillList,s)]
+}]
+
+[h:macro.return=arcaneSkillList]
+
+!!
+@@ @GetDefaultSettingABs
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Gets ; tooltip= ; minWidth= ; 
+[h:default=getLibProperty("ABTypes")]
+[h:ABList=json.fields(default)]
+[foreach(ab,ABList,""), code:{
+  [h:t=json.get(default,ab)]
+  [h:t=json.set(t,"PrototypeAB",ab)]
+  [h:default=json.set(default,ab,t)]
+}]
+[r:default]
+
+!!
+@@ @GetPPVariation
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=true ; applyToSelected=false ; group=Gets ; tooltip= ; minWidth= ; 
+[h:varsFromStrProp(macro.args)]
+[h:ppv=json.get(getLibProperty("PPVariations"),powerName)]
+[h:macro.return=json.get(ppv,PPVIndex)]
+
+!!
+@@ @GetPower
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=true ; applyToSelected=false ; group=Gets ; tooltip= ; minWidth= ; 
+[h:varsFromStrProp(macro.args)]
+[h:libPowers=getLibProperty("Powers")]
+[h:macro.return=json.get(libPowers,powerName)]
+
+!!
+@@ @GetPowersList
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=true ; applyToSelected=false ; group=Gets ; tooltip= ; minWidth= ; 
+[h:macro.return=json.fields(getLibProperty("Powers"))]
+
+!!
+@@ @GetSettingABList
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Gets ; tooltip= ; minWidth= ; 
+[h:t=getLibProperty("SettingABTypes")]
+[if(json.type(t)=="UNKNOWN"), code:{
+  [h:t=GetDefaultSettingABs()]
+  [setLibProperty("SettingABTypes",t)]
+};{}]
+[r:json.fields(t)]
+
+!!
+@@ @SetABAttrs
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=true ; applyToSelected=false ; group=RunOnce ; tooltip= ; minWidth= ; 
+<!-- Changes here must also be made in ? -->
+[h:t1=json.set("","Size","20","Type","Text")]
+[h:t2=json.set("","Size","20","Type","Text")]
+[h:types=json.fields(ABTypes)]
+<!-- took out trapping name.  add it later to player version -->
+[h:t3=json.set("","Size","7","Type","Dropdown","Values","Agility,Smarts,Spirit,Strength,Vigor,Power")]
+[h:t4=json.set("","Size","3","Type","Text")]
+[h:t5=json.set("","Size","2","Type","Text")]
+[h:t6=json.set("","Size","8","Type","Dropdown","Values",types)]
+
+[h:ABAttrs=json.set("","ABName",t1,"Skill",t2,"BaseSkill",t3,"StartingPoints",t4,"StartingPowers",t5,"PrototypeAB",t6)]
+
+[ABAttrs]
+
+!!
+@@ @SetPPVariationNames
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=true ; applyToSelected=false ; group=RunOnce ; tooltip= ; minWidth= ; 
+[h:t1=json.set("","Size","2","Type","Text")]
+[h:t2=json.set("","Size","20","Type","Text")]
+[h:t3=json.set("","Size","2","Type","Text")]
+[h:t4=json.set("","Size","20","Type","Text")]
+[PPVariationAttrs=json.set("","Index",t1,"Name",t2,"PPs2Cast",t3,"PP2Maintain",t3,"Effect",t4)]
+
+!!
+@@ @SetPowerAttrs
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=true ; applyToSelected=false ; group=RunOnce ; tooltip= ; minWidth= ; 
+<!-- Changes here must also be made in ? -->
+[h:t1=json.set("","Size","20","Type","Text")]
+[h:types=json.fields(ABTypes)]
+<!-- took out trapping name.  add it later to player version -->
+[h:t2=json.set("","Size","20","Type","Text")]
+[h:t3=json.set("","Size","8","Type","Dropdown","Values","Novice,Seasoned,Veteran,Heroic,Legendary")]
+[h:t4=json.set("","Size","10","Type","Text")]
+[h:t5=json.set("","Size","2","Type","Text")]
+[h:t6=json.set("","Size","8","Type","Dropdown","Values","Rounds,Minutes,Hours,Days")]
+[h:t7=json.set("","Size","8","Type","Dropdown","Values",types)]
+
+[h:PowerAttrs=json.set("","PowerName",t1,"Rank",t3,"Range",t4,"Duration",t5,"DurUnits",t6,"ABType",t7)]
+
+[foreach(type,types,""), code:{
+  [h:tx=json.set("","Type","Checkbox")]
+  [h:PowerAttrs=json.set(PowerAttrs,type,tx)]  
+}]
+
+[PowerAttrs]
+
+!!
+@@ @SetPowerNames
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=true ; applyToSelected=false ; group=RunOnce ; tooltip= ; minWidth= ; 
+[PowerNames="Armor, Barrier, BeastFriend, Blast, Bolt, BoostLowerTrait, Burrow, Burst, Deflection, DetectConcealArcana, Dispel, ElementalManipulation, Entangle, EnvironMentalProtection, Fear, Fly, GreaterHealing, Healing, Invisibility, Light, Obscure, Puppet, Quickness, ShapeChange, Smite, SpeakLanguage, Speed, Stun, Telekinesis, Teleport, Zombie"]
+
+[t=""]
+[foreach(attr,PowerAttrs,""), code:{
+  [h:t=json.set(t,attr,"")]  
+}]
+
+[t]<br>
+
+[foreach(power,PowerNames,"<br>"), code:{
+  [h:there=json.contains(Powers,power)]
+  [if(there==0): Powers=json.set(Powers,power,t)]
+}]
+
+!!
+@@ @SetPowerTypes
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=true ; applyToSelected=false ; group=RunOnce ; tooltip= ; minWidth= ; 
+<!-- Changes here must also be made in ? -->
+[h:t1=json.set("","Skill","Spellcasting","StartingPoints","10","StartingPowers",3)]
+[h:t2=json.set("","Skill","Faith","StartingPoints","10","StartingPowers",2)]
+[h:t3=json.set("","Skill","Psionics","StartingPoints","10","StartingPowers",3)]
+[h:t4=json.set("","Skill","WeirdScience","StartingPoints","10","StartingPowers",1)]
+[h:t5=json.set("","Skill","Self","StartingPoints","20","StartingPowers",1)]
+[h:t6=json.set("","Skill","Vigor","StartingPoints","5","StartingPowers",1)]
+[h:t7=json.set("","Skill","Smarts","StartingPoints","5","StartingPowers",1)]
+
+[ABTypes=json.set("","ABMagic",t1,"ABMiracles",t2,"ABPsionics",t3,"ABWeird",t4,"Power",t5,"RacePowerVigor",t6,"RacePowerSmarts",t7)]
+
+[types=json.fields(ABTypes)]
+<br>
+[at=json.get(PowerAttrs,"ABType")]
+<br>
+[val=json.set(at,"Values",types)]
+<br>
+[PowerAttrs=json.set(PowerAttrs,"ABType",val)]
+
+!!
+@@ @argCheck
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=true ; applyToSelected=false ; group=RunOnce ; tooltip= ; minWidth= ; 
+[macro.args]
+
+!!

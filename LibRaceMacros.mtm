@@ -1,0 +1,796 @@
+@@ @onCampaignLoad
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group= ; tooltip= ; minWidth= ; 
+[h:libName=getMacroLocation()]
+[h:defineFunction("RaceAbilityLine","GetRaceAbilityLine@"+libName)]
+[h:defineFunction("RaceEdgeLine","GetRaceEdgeLine@"+libName)]
+[h:defineFunction("RaceHindranceLine","GetRaceHindranceLine@"+libName)]
+[h:defineFunction("GetRaceMajorHindrances","GetRaceMajorHindrances@"+libName)]
+[h:defineFunction("GetRaceMinorHindrances","GetRaceMinorHindrances@"+libName)]
+[h:defineFunction("GetRaceEdges","GetRaceEdges@"+libName)]
+
+!!
+@@ @Race Detail
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=true ; applyToSelected=false ; group= ; tooltip= ; minWidth= ; 
+[macro.args]
+[h:returnMacro="argCheck@Lib:GM"]
+[h:refreshMacro="Race Detail@Lib:Race"]
+[h:returnMacro=json.get(macro.args, "returnMacro")]
+
+[h:raceList=getLibProperty("SettingRaces")]
+[if(json.contains(macro.args,"race")), code:{
+  [h:race=json.get(macro.args,"race")]
+};{
+  [h:status=input("race|race name|Input New Race Name")]
+  [h:assert(status,"aborting add new race")]
+  [h:encode(race)]
+}]
+[if(json.contains(raceList,race)==0), code:{
+  [h:raceList=json.sort(json.append(raceList,race))]
+  [h:setLibProperty("SettingRaces",raceList)]
+};{}]
+
+<!-- take this out later -->
+[h:okMacro="argCheck@Lib:GM"]
+[h:okMacro="Race DetailOK@this"]
+[h:editAbilityMacro="UpdateRaceAbility@this"]
+[h:editEdgeMacro="UpdateRaceEdges@this"]
+[h:editHindranceMacro="UpdateRaceHindrances@this"]
+
+[h:abilityList=getLibProperty("Abilities")]
+[h:rAbil=getLibProperty("RaceAbilities")]
+[h:rAbilVar=getLibProperty("RaceAbilityVariations")]
+
+[h:EdgeStr=""]
+[h:HindStr=""]
+[h:AbilStr=RaceAbilityLine(race)]
+[h:EdgeStr=RaceEdgeLine(race)]
+[h:HindStr=RaceHindranceLine(race)]
+
+[h: class = "oddRow"]
+
+[dialog("Race Detail"): {
+  <html>
+    <head>
+      <title>[r:race] Detail</title>
+      <meta name="input" content="true">
+      <link rel="stylesheet" type="text/css" href="CharSheet_css@Lib:GM">     
+    </head>
+    <body>
+      <form name="Race Detail" method='json' action="[r:macroLinkText(okMacro,"gm")]">
+        <table id="Races" bgcolor=#aaaaaa width="100%">
+          <tr>
+            <th>Name</th>
+            <th>[r:race][h: class = if(class=="oddRow", "evenRow", "oddRow")]</th>
+          </tr>
+          <tr class="[r:class]">
+            <td>
+  [h:linkArgs=json.set("","returnMacro",refreshMacro,"race",race)]
+  [h: linkit=macroLinkText(editAbilityMacro, "gm",linkArgs)]
+                 <a style="font-weight:bold;color:maroon" href="[r:linkit]">Abilities</a>
+            </td>
+            <td>[r:AbilStr][h: class = if(class=="oddRow", "evenRow", "oddRow")]</td>
+          </tr>
+          <tr class="[r:class]">
+            <td>
+  [h:linkArgs=json.set("","returnMacro",refreshMacro,"race",race)]
+  [h: linkit=macroLinkText(editEdgeMacro, "gm",linkArgs)]
+                 <a style="font-weight:bold;color:maroon" href="[r:linkit]">Edges</a>
+            </td>
+            <td>[r:EdgeStr][h: class = if(class=="oddRow", "evenRow", "oddRow")]</td>
+          </tr>
+          <tr class="[r:class]">
+            <td>
+  [h:linkArgs=json.set("","returnMacro",refreshMacro,"race",race)]
+  [h: linkit=macroLinkText(editHindranceMacro, "gm",linkArgs)]
+                 <a style="font-weight:bold;color:maroon" href="[r:linkit]">Hindrances</a>
+            </td>
+            <td>[r:HindStr][h: class = if(class=="oddRow", "evenRow", "oddRow")]</td>
+          </tr>
+          <tr><th><input type="submit" name="submit"  value="Submit"></input></th>
+          <th><input type="submit" name="submit"  value="Delete"></input></th></tr>
+        </table>
+        <!-- hidden input with the weapon number -->
+        <input type="hidden" name="returnMacro" value="[r:returnMacro]"> </input>
+        <input type="hidden" name="refreshMacro" value="[r:refreshMacro]"> </input>
+        <input type="hidden" name="race" value="[r:race]"> </input>
+      </form>
+    </body>
+  </html>
+}]
+
+!!
+@@ @Race DetailOK
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group= ; tooltip= ; minWidth= ; 
+[macro.args]
+[h:race=json.get(macro.args,"race")]
+[h:returnMacro="Race Editor@this")]
+
+[if(json.get(macro.args,"submit")=="Delete"), code:{
+  [h:raceList=getLibProperty("SettingRaces")]
+  [h:index=json.indexOf(raceList,race)]
+  [h:raceList=json.remove(raceList,index)]
+
+  [h:rAbil=getLibProperty("RaceAbilities")]
+  [h:rAbil=if(json.type(rAbil)=="UNKNOWN","{}",rAbil)]
+  [h:rAbilVar=getLibProperty("RaceAbilityVariations")]
+  [h:rAbilVar=if(json.type(rAbilVar)=="UNKNOWN","{}",rAbilVar)]
+  [h:rAbil=json.remove(rAbil,race)]
+  [h:rAbilVar=json.remove(rAbilVar,race)]
+
+  [h:rEdge=getLibProperty("RacialEdges")]
+  [h:rEdge=if(json.type(rEdge)=="UNKNOWN","{}",rEdge)]
+  [h:rEdge=json.remove(rEdge,race)]
+
+  [h:rMinHind=getLibProperty("RacialMinHind")]
+  [h:rMinHind=if(json.type(rMinHind)=="UNKNOWN","{}",rMinHind)]
+  [h:rMinHind=json.remove(rMinHind,race)]
+
+  [h:rMajHind=getLibProperty("RacialMajHind")]
+  [h:rMajHind=if(json.type(rMajHind)=="UNKNOWN","{}",rMajHind)]
+  [h:rMajHind=json.remove(rMajHind,race)]
+
+  [h:setLibProperty("SettingRaces",raceList)]
+  [h:setLibProperty("RaceAbilities",rAbil)]
+  [h:setLibProperty("RaceAbilityVariations",rAbilVar)]
+  [h:setLibProperty("RacialEdges",rEdge)]
+  [h:setLibProperty("RacialMinHind",rMinHind)]
+  [h:setLibProperty("RacialMajHind",rMajHind)]
+
+};{}]
+
+[macro(returnMacro):""]
+
+!!
+@@ @Race Editor
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=true ; applyToSelected=false ; group= ; tooltip= ; minWidth= ; 
+[h:returnMacro="argCheck@Lib:GM"]
+[h:refreshMacro="Race Editor@Lib:Race"]
+
+[h:junk="take this out later "]
+[h:okMacro="EditRacesOK@this"]
+[h:okMacro="argCheck@Lib:GM"]
+[h:editMacro="Race Detail@this"]
+
+[h:raceList=getLibProperty("SettingRaces")]
+[h:abilityList=getLibProperty("Abilities")]
+[h:rAbil=getLibProperty("RaceAbilities")]
+[h:rAbilVar=getLibProperty("RaceAbilityVariations")]
+
+[h:ableList="{}"]
+[foreach(race,raceList,""), code:{
+  [h:rtnStr=RaceAbilityLine(race)]
+  [h:ableList=json.set(ableList,race,rtnStr)]
+}]  
+[h: class = "oddRow"]
+
+[dialog("Race Editor"): {
+  <html>
+    <head>
+      <title>Update Races</title>
+      <meta name="input" content="true">
+      <link rel="stylesheet" type="text/css" href="CharSheet_css@Lib:GM">     
+    </head>
+    <body>
+      <form name="Race Properties" action="[r:macroLinkText(okMacro,"gm")]">
+        <table id="Races" bgcolor=#aaaaaa width="100%">
+          <tr>
+            <th>Race Name</th>
+            <th>Race Attributes</th>
+            <th>Race Edges</th>
+            <th>Race Hindrances</th>
+          </tr>
+[foreach(race,raceList,""), code:{
+          <tr class="[r:class]">
+            <td>
+  [h:linkArgs=json.set("","returnMacro",refreshMacro,"race",race)]
+  [h: linkit=macroLinkText(editMacro, "gm",linkArgs)]
+                      <a style="font-weight:bold;color:maroon" href="[r:linkit]">[r:decode(race)]</a>:
+          </td>
+          <td>[r:RaceAbilityLine(race))]</td>
+          <td>[r:RaceEdgeLine(race)]</td>
+          <td>[r:RaceHindranceLine(race)]</td>
+[h: class = if(class=="oddRow", "evenRow", "oddRow")]
+          </tr>
+}]
+          <tr class="[r:class]"><td colspan=2>
+[h:linkArgs=json.set("","returnMacro",refreshMacro)]
+[h: linkit=macroLinkText(editMacro, "gm",linkArgs)]
+                  <a style="font-weight:bold;color:maroon" href="[r:linkit]">New Race</a>:
+          </td></tr>
+        </table>
+        <!-- hidden input with the weapon number -->
+        <input type="hidden" name="returnMacro" value="[r:refreshMacro]"> </input>
+      </form>
+    </body>
+  </html>
+}]
+[abort(0)]
+
+!!
+@@ @GetRaceAbilityLine
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Gets ; tooltip= ; minWidth= ; 
+[h:r=arg(0)]
+[h:rAbil=getLibProperty("RaceAbilities")]
+[h:rAbilVar=getLibProperty("RaceAbilityVariations")]
+[h:thisAble=json.get(rAbil,r)]
+[h:thisAble=if(json.type(thisAble)=="UNKNOWN","[]",thisAble)]
+[h:thisVar=json.get(rAbilVar,r)]
+[h:thisVar=if(json.type(thisVar)=="UNKNOWN","[]",thisVar)]
+
+[h:rtnStr=""]
+[h:firstTime=1]
+[foreach(ability,thisAble,""), code:{
+  [h:rtnStr=rtnStr+if(firstTime==0,", ","")]
+  [h:firstTime=0]
+  [h:rtnStr=rtnStr+decode(ability)]
+  [h:rtnStr=if(json.contains(thisVar,ability),rtnStr+"("+json.get(thisVar,ability)+")",rtnStr)]
+}]
+[h:rtnStr=if(r=="Human","",rtnStr)]
+[r:rtnStr]
+
+!!
+@@ @GetRaceEdgeLine
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Gets ; tooltip= ; minWidth= ; 
+[h:r=arg(0)]
+[h:rEdge=getLibProperty("RacialEdges")]
+[h:rEdge=if(json.type(rEdge)=="UNKNOWN","{}",rEdge)]
+[h:thisEdge=json.get(rEdge,r)]
+[h:thisEdge=if(json.type(thisEdge)=="UNKNOWN","[]",thisEdge)]
+
+[h:rtnStr=""]
+[h:firstTime=1]
+[foreach(edge,thisEdge,""), code:{
+  [h:rtnStr=rtnStr+if(firstTime==0,", ","")]
+  [h:firstTime=0]
+  [h:rtnStr=rtnStr+decode(edge)]
+}]
+[h:rtnStr=if(r=="Human","",rtnStr)]
+[r:rtnStr]
+
+!!
+@@ @GetRaceEdges
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Gets ; tooltip= ; minWidth= ; 
+[h:r=arg(0)]
+[h:rEdge=getLibProperty("RacialEdges")]
+[h:rEdge=if(json.type(rEdge)=="UNKNOWN","{}",rEdge)]
+[h:thisEdge=json.get(rEdge,r)]
+[h:thisEdge=if(json.type(thisEdge)=="UNKNOWN","[]",thisEdge)]
+
+[h:rtnStr=json.toList(thisEdge)]
+
+[h:rtnStr=if(r=="Human","",rtnStr)]
+[r:rtnStr]
+
+!!
+@@ @GetRaceHindranceLine
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Gets ; tooltip= ; minWidth= ; 
+[h:r=arg(0)]
+
+[h:rMinHind=getLibProperty("RacialMinHind")]
+[h:rMinHind=if(json.type(rMinHind)=="UNKNOWN","{}",rMinHind)]
+[h:rMajHind=getLibProperty("RacialMajHind")]
+[h:rMajHind=if(json.type(rMajHind)=="UNKNOWN","{}",rMajHind)]
+
+[h:thisMinHind=json.get(rMinHind,r)]
+[h:thisMinHind=if(json.type(thisMinHind)=="UNKNOWN","[]",thisMinHind)]
+[h:thisMajHind=json.get(rMajHind,r)]
+[h:thisMajHind=if(json.type(thisMajHind)=="UNKNOWN","[]",thisMajHind)]
+
+[h:rtnStr=""]
+[h:firstTime=1]
+[foreach(majHind,thisMajHind,""), code:{
+  [h:rtnStr=rtnStr+if(firstTime==0,", ","Major: ")]
+  [h:firstTime=0]
+  [h:rtnStr=rtnStr+decode(majHind)]
+}]
+
+[h:firstTime=1]
+[foreach(minHind,thisMinHind,""), code:{
+  [h:rtnStr=rtnStr+if(firstTime==0,", ","<br>Minor: ")]
+  [h:firstTime=0]
+  [h:rtnStr=rtnStr+decode(minHind)]
+}]
+
+[h:rtnStr=if(r=="Human","",rtnStr)]
+[r:rtnStr]
+
+!!
+@@ @GetRaceLine
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=true ; applyToSelected=false ; group=Gets ; tooltip= ; minWidth= ; 
+[h:raceList=Races()]
+[foreach(race,raceList,""), code:{
+    [h: linkit=macroLinkText("UpdateRace@this", "gm",race)]
+    <td>
+      <a href="[r:linkit]"><b>[r:powerArgLinkText]</b></a> 
+    </td>
+   <td>
+
+  </td>
+}]
+
+!!
+@@ @GetRaceMajorHindrances
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Gets ; tooltip= ; minWidth= ; 
+[h:r=arg(0)]
+
+[h:rMajHind=getLibProperty("RacialMajHind")]
+[h:rMajHind=if(json.type(rMajHind)=="UNKNOWN","{}",rMajHind)]
+
+[h:thisMajHind=json.get(rMajHind,r)]
+[h:thisMajHind=if(json.type(thisMajHind)=="UNKNOWN","[]",thisMajHind)]
+
+[h:rtnStr=json.toList(thisMajHind)]
+
+[h:rtnStr=if(r=="Human","",rtnStr)]
+[r:rtnStr]
+
+!!
+@@ @GetRaceMinorHindrances
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Gets ; tooltip= ; minWidth= ; 
+[h:r=arg(0)]
+
+[h:rMinHind=getLibProperty("RacialMinHind")]
+[h:rMinHind=if(json.type(rMinHind)=="UNKNOWN","{}",rMinHind)]
+
+[h:thisMinHind=json.get(rMinHind,r)]
+[h:thisMinHind=if(json.type(thisMinHind)=="UNKNOWN","[]",thisMinHind)]
+
+[h:rtnStr=json.toList(thisMinHind)]
+
+[h:rtnStr=if(r=="Human","",rtnStr)]
+[r:rtnStr]
+
+!!
+@@ @GetRaces
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Gets ; tooltip= ; minWidth= ; 
+[r:getLibProperty("SettingRaces")]
+
+!!
+@@ @LoadRaces
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Setup ; tooltip= ; minWidth= ; 
+[h:races=json.sort(json.append("","Human","Sharkman","Catman","Librarian","Dwarf","Porcian","Draconian","Robotman","Beast"))]
+[setLibProperty("SettingRaces",races)]
+[h:t="[]"]
+
+[h:t=json.append("",encode("Aquatic"), encode("Armor"), encode("Burrowing"), encode("Construct"), encode("Elemental"), encode("Ethereal"), encode("Fear"), encode("Fearless"), encode("Gargantuan"), encode("Hardy"), encode("Infection"), encode("Infravision"), encode("Immunity"), encode("Invulnerability"), encode("LowLight Vision"), encode("Paralysis"), encode("Poison"), encode("Regeneration"), encode("Size"), encode("Stun"), encode("Undead"), encode("Wall Walker"), encode("Weakness"),encode("Free Novice Edge"),
+encode("Pace"),encode("Run"), encode("Fly"),encode("Semi-Aquatic"),encode("Dehydration"),
+encode("Drought Resistant"),encode("Grasping Feet"),
+encode("Free Seasoned Edge"),encode("Parry"),encode("Toughness"),encode("Reach"))]
+[h:t=json.sort(t)]
+
+[setLibProperty("Abilities",t)]
+
+[h:elements = json.sort(json.append("","Air","Cold","Earth","Electricity","Fire","Light","Water"))]
+
+[t=json.set("",
+ encode("Armor"),json.append("",0,1,2,4,6,8),
+ encode("Elemental"),elements,
+ encode("Fear"),json.append("",0,1,2,3,4),
+ encode("Immunity"),elements,
+ encode("Regeneration"), json.append("","Fast","Slow"),
+ encode("Size"), json.append("",0,-2,-1,1,2,3,4,5,6,7,8,9,10),
+ encode("Weakness"),elements,
+ encode("Pace"),json.append("",6,3,4,5,8,10),
+ encode("Run"),json.append("","d6","d4","d8","d10","d12"),
+ encode("Fly"),json.append("","6","4","8","10","12"),
+ encode("Parry"),json.append("",0,-2,-1,1,2),
+ encode("Toughness"),json.append("",0,-2,-1,1,2),
+ encode("Reach"),json.append("",0,1,2))
+]
+
+[h:setLibProperty("AbilityVariations",t)]
+
+!!
+@@ @UpdateRaceAbility
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=true ; applyToSelected=false ; group=Update ; tooltip= ; minWidth= ; 
+[h:returnMacro="argCheck@Lib:GM"]
+[h:refreshMacro="Race Edit Dialog@Lib:Race"]
+
+<!-- take this out later -->
+[h:returnMacro=if(json.contains(macro.args,"returnMacro"), json.get(macro.args, "returnMacro"), returnMacro))]
+
+[h:raceList=getLibProperty("SettingRaces")]
+
+[if(json.contains(macro.args,"race")), code:{
+  [h:race=json.get(macro.args,"race")]
+};{
+  [h:status=input("race|race name|Input New Race Name")]
+  [h:assert(status,"aborting add new race")]
+  [h:encode(race)]
+}]
+[if(json.contains(raceList,race)==0), code:{
+  [h:raceList=json.sort(json.append(raceList,race))]
+  [h:setLibProperty("SettingRaces",raceList)]
+};{}]
+
+[h:okMacro="argCheck@Lib:GM"]
+[h:okMacro="UpdateRaceAbilityOK@this"]
+
+[h:abilityList=getLibProperty("Abilities")]
+[h:aVar=getLibProperty("AbilityVariations")]
+[h:raceAbilities=getLibProperty("RaceAbilities")]
+[h:rAbil=getLibProperty("RaceAbilities")]
+[h:rAbil=if(json.type(rAbil)=="UNKNOWN","{}",rAbil)]
+
+[h:rAbilVar=getLibProperty("RaceAbilityVariations")]
+[h:rAbilVar=if(json.type(rAbilVar)=="UNKNOWN","{}",rAbilVar)]
+
+[h:thisRAbil=json.get(rAbil,race)]
+[h:thisRAbil=if(json.type(thisRAbil)=="UNKNOWN","[]",thisRAbil)]
+[h:thisRAV=json.get(rAbilVar,race)]
+[h:thisRAV=if(json.type(thisRAV)=="UNKNOWN","{}",thisRAV)]
+
+[h:aInput="{}"]
+[h:vInput="{}"]
+
+[foreach(a,abilityList,""), code:{
+  [h:checked=if(json.contains(thisRAbil,a),"CHECKED","")]
+  [h:selected=if(json.contains(thisRAV,a),json.get(thisRAV,a),"")]
+  [h:str1="<INPUT TYPE=CHECKBOX NAME='race_"+a]
+  [h:str2="' "+checked+">"]
+  [h:str3="</INPUT>"]
+  [h:str=str1+str2+decode(a)+str3]
+  [h:aInput=json.set(aInput,a,encode(str))]
+  [h:thisAVar=json.get(aVar,a)]
+  [h:thisAVar=if(json.type(thisAVar)=="UNKNOWN","[]",thisAVar)]
+  [h:firstTime=1]
+  [h:str=""]
+  [foreach(v,thisAVar,""), code:{
+  <!-- make dropdown and shove into string json -->
+    [h:str1=if(firstTime,"<select name='raceSelect_"+a+"'><option ","<option ")]
+    [h:firstTime=0]
+    [h:str2=if(v==selected,"selected>",">")]
+    [h:str3=v+"</option>"]
+    [h:str=str+str1+str2+str3]
+  }]
+  [h:str=str+if(firstTime==0,"</select>","")]
+  [h:vInput=json.set(vInput,a,encode(str))]
+}]
+
+[h:class="oddRow"]
+[dialog("Race Ability Editor"): {
+  <html>
+    <head>
+      <title>Update [r:race] Abilities</title>
+      <meta name="input" content="true">
+      <link rel="stylesheet" type="text/css" href="CharSheet_css@Lib:GM">     
+    </head>
+    <body>
+<DIV CLASS="centeralign">
+      <form name="Race Properties" method="json" action="[r:macroLinkText(okMacro,"gm")]">
+        <table id="Races" bgcolor=#aaaaaa width="100%">
+          <tr>
+            <th>Ability</th><th>Value</th>
+          </tr>
+[foreach(a,abilityList,""), code:{
+          <tr class="[r:class]">
+          [h:colspan=if(json.get(vInput,a)=="",2,1)]
+          <td colspan=[r:colspan]>[r:decode(json.get(aInput,a))]
+          [r,if(colspan==1): "</td><td>" + decode(json.get(vInput,a))]
+          </td>
+[h: class = if(class=="oddRow", "evenRow", "oddRow")]
+          </tr>
+}]
+          <tr><th colspan=2><input type="submit" name="submit"  value="Submit"></input></th>
+        </table>
+        <!-- hidden input with the weapon number -->
+        <input type="hidden" name="returnMacro" value="[r:returnMacro]"> </input>
+        <input type="hidden" name="refreshMacro" value="[r:refreshMacro]"> </input>
+        <input type="hidden" name="race" value="[r:race]"> </input>
+      </form>
+</DIV>
+
+    </body>
+  </html>
+}]
+
+!!
+@@ @UpdateRaceAbilityOK
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Update ; tooltip= ; minWidth= ; 
+[macro.args]
+[h:race=json.get(macro.args,"race")]
+[h:returnMacro=json.get(macro.args,"returnMacro")]
+
+[h:abilityList=getLibProperty("Abilities")]
+[h:aVar=getLibProperty("AbilityVariations")]
+
+[h:rAbil=getLibProperty("RaceAbilities")]
+[h:rAbil=if(json.type(rAbil)=="UNKNOWN","{}",rAbil)]
+[h:rAbilVar=getLibProperty("RaceAbilityVariations")]
+[h:rAbilVar=if(json.type(rAbilVar)=="UNKNOWN","{}",rAbilVar)]
+
+[h:raceA="[]"]
+[h:raceV="{}"]
+
+[foreach(a,abilityList,""), code:{
+ [if(json.contains(macro.args,"race_"+a)), code:{
+    [h:raceA = json.append(raceA,a)]
+    [h:varName="raceSelect_"+a]
+    [h,if(json.contains(macro.args,varName)): raceV=json.set(raceV,a,json.get(macro.args,varName))]
+  };{}]
+}]
+
+[h:rAbil=json.set(rAbil,race,raceA)]
+[h:rAbilVar=json.set(rAbilVar,race,raceV)]
+[setLibProperty("RaceAbilities",rAbil)]
+[setLibProperty("RaceAbilityVariations",rAbilVar)]
+
+[if(json.get(macro.args,"submit")=="Delete"), code:{
+  [h:raceList=getLibProperty("SettingRaces")]
+  [h:index=json.indexOf(raceList,race)]
+  [h:raceList=json.remove(raceList,index)]
+  [h:rAbil=json.remove(rAbil,race)]
+  [h:rAbilVar=json.remove(rAbilVar,race)]
+  [h:setLibProperty("SettingRaces",raceList)]
+  [h:setLibProperty("RaceAbilities",rAbil)]
+  [h:setLibProperty("RaceAbilityVariations",rAbilVar)]
+};{}]
+
+[h:returnArgs=json.set("","race",race)]
+[macro(returnMacro):returnArgs]
+
+!!
+@@ @UpdateRaceEdges
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Update ; tooltip= ; minWidth= ; 
+[h:returnMacro="argCheck@Lib:GM"]
+[race=json.get(macro.args,"race")]
+[h:returnMacro=if(json.contains(macro.args,"returnMacro"),json.get(macro.args,"returnMacro"),
+                                   returnMacro)]
+
+[h:okMacro="argCheck@Lib:GM"]
+[h:okMacro="UpdateRaceEdgesOK@this"]
+
+[macro("GetEdgeNames@Lib:GM"):""]
+[h:edgeList=macro.return]
+
+[h:rEdges=getLibProperty("RacialEdges")]
+[h:rEdges=if(json.type(rEdges)=="UNKNOWN","{}",rEdges)]
+[h:currEdges=json.get(rEdges,race)]
+[h:currEdges=if(json.type(currEdges)=="UNKNOWN","[]",currEdges)]
+
+[h:numOnLine=4]
+
+[h: class = "oddRow"]
+[dialog("Race Edge Update", "width=650; height=800;temporary=1"): {
+  <html>
+    <head>
+      <title>Select Racial Edges</title>
+      <meta name="input" content="true">
+      <link rel="stylesheet" type="text/css" href="CharSheet_css@Lib:GM">     
+    </head>
+    <body>
+      <form name="Race Edges" method='json' action="[r:macroLinkText(okMacro,"gm")]">
+        <table id="Hindrances" bgcolor=#aaaaaa width="100%">
+          <tr>
+          <th colspan=[r:2*numOnLine]>Edges [h:count=0] </th>
+          </tr>
+          <tr>
+[foreach(edge,edgeList,""), code: {
+             <td class="[r:class]">
+  [h:checked=""]
+  [h:checked=if(json.indexOf(currEdges,edge)>-1," checked  "," ")]
+            <input type="checkbox" name="edge_[r:edge]" value="1" [r:checked]></input>
+  [h:switch=if(count==NumOnLine,1,0)]
+  [h:count=if(count==NumOnLine,0,count)]
+            </td><td class="[r:class]">[r:edge]
+  [h:count=count+1]
+  [h: class = if(class=="oddRow", "evenRow", "oddRow")]
+  [h:p=if(count==NumOnLine,"</td></tr><tr>","</td>")][r:p]
+}]
+[for(count,count,numOnLine,1,""), code: {
+  <td class="[r:class]"></td>
+  <td class="[r:class]">
+  [h:p=if(count==NumOnLine,"</td></tr><tr>","</td>")][r:p]
+  [h: class = if(class=="oddRow", "evenRow", "oddRow")]
+}]
+          <tr>
+            <th colspan=[r:2*numOnLine]> 
+              <input type="submit" name="Submit" value="Submit"> </input> 
+            </th>
+          </tr>
+        </table>
+        <!-- hidden input with the weapon number -->
+        <input type="hidden" name="returnMacro" value="[r:returnMacro]"> </input>
+        <input type="hidden" name="race" value="[r:race]"> </input>
+      </form>
+    </body>
+  </html>
+}]
+
+!!
+@@ @UpdateRaceEdgesOK
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Update ; tooltip= ; minWidth= ; 
+<br>racial edges<br>
+[macro.args]
+<br>
+[h:returnMacro="argCheck@Lib:GM"]
+[race=json.get(macro.args,"race")]
+
+[h:returnMacro=if(json.contains(macro.args,"returnMacro"),json.get(macro.args,"returnMacro"),
+                                   returnMacro)]
+
+[h,macro("GetEdgeNames@Lib:GM"):""]
+[h:edgeList=macro.return]
+
+[h:rEdges=getLibProperty("RacialEdges")]
+[h:rEdges=if(json.type(rEdges)=="UNKNOWN","{}",rEdges)]
+[h:oldEdges=json.get(rEdges,race)]
+[h:oldEdges=if(json.type(oldEdges)=="UNKNOWN","[]",oldEdges)]
+
+[h:newEdges="[]"]
+
+[foreach(edge,edgeList," "), code: {
+  [h:check="edge_"+edge]
+  [h:value=json.contains(macro.args, check)]
+  [if(value==1), code: {
+    [h:newEdges=json.append(newEdges,edge)]
+  };{}]
+}]
+
+[h:rEdges=json.set(rEdges,race,newEdges)]
+[setLibProperty("RacialEdges",rEdges)]
+
+[h:returnArgs=json.set("","race",race)]
+[macro(returnMacro):returnArgs]
+
+!!
+@@ @UpdateRaceHindrances
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Update ; tooltip= ; minWidth= ; 
+[macro.args]
+
+[h:returnMacro="argCheck@Lib:GM"]
+
+[h:okMacro="argCheck@Lib:GM"]
+[h:okMacro="UpdateRaceHindrancesOK@Lib:Race"]
+
+[h:race=json.get(macro.args,"race")]
+[h:returnMacro=if(json.contains(macro.args,"returnMacro"), json.get(macro.args,"returnMacro"),
+                                   returnMacro)]
+
+[h,macro("GetMajorHindranceNames@Lib:GM"):""]
+[h:majorHindranceList=macro.return]
+[h,macro("GetMinorHindranceNames@Lib:GM"):""]
+[h:minorHindranceList=macro.return]
+
+[h:rMaj=getLibProperty("RacialMajHind")]
+[h:rMaj=if(json.type(rMaj)=="UNKNOWN","{}",rMaj)]
+
+[h:rMin=getLibProperty("RacialMinHind")]
+[h:rMin=if(json.type(rMin)=="UNKNOWN","{}",rMin)]
+
+[h:currMajor=json.get(rMaj,race)]
+[h:currMajor=if(json.type(currMajor)=="UNKNOWN","[]",currMajor)]
+[h:currMinor=json.get(rMin,race)]
+[h:currMinor=if(json.type(currMinor)=="UNKNOWN","[]",currMinor)]
+
+[h:numOnLine=4]
+
+[h: class = "oddRow"]
+[h:tdtr="</td></tr><tr>"]
+[h:td="</td>"]
+[dialog("RaceHindranceUpdate", "width=600; height=600"): {
+  <html>
+    <head>
+      <title>Select Racial Hindrances</title>
+      <meta name="input" content="true">
+      <link rel="stylesheet" type="text/css" href="CharSheet_css@Lib:GM">     
+    </head>
+    <body>
+      <form name="PC Hindrances" method='json'  action="[r:macroLinkText(okMacro,"gm")]">
+        <table id="Hindrances" bgcolor=#aaaaaa width=[r:numOnLine*150]>
+          <tr>
+          <th colspan=[r:2*numOnLine]>Major Hindrances [h:count=0] </th>
+          </tr>
+          <tr>
+[foreach(hindrance,majorHindranceList,""), code: {
+             <td class="[r:class]">
+  [h:checked=""]
+  [h:checked=if(json.indexOf(currMajor,hindrance)>-1," checked  "," ")]
+            <input type="checkbox" name="major_[r:hindrance]" value="1" [r:checked]></input>
+  [h:switch=if(count==NumOnLine,1,0)]
+  [h:count=if(count==NumOnLine,0,count)]
+            </td><td class="[r:class]">[r:hindrance]
+  [h:count=count+1]
+  [h: class = if(class=="oddRow", "evenRow", "oddRow")]
+
+  [h:p=if(count==NumOnLine,tdtr,td)][r:p]
+
+}]
+
+[for(count,count,numOnLine,1,""), code: {
+  <td class="[r:class]"></td>
+  <td class="[r:class]">
+  [h:p=if(count==NumOnLine,"</td></tr><tr>","</td>")][r:p]
+  [h: class = if(class=="oddRow", "evenRow", "oddRow")]
+}]
+          <tr>
+          <th colspan=[r:2*numOnLine]>Minor Hindrances [h:count=0]</th>
+          </tr>
+          <tr>
+[foreach(hindrance,minorHindranceList,""), code: {
+             <td class="[r:class]">
+  [h:checked=""]
+  [h:checked=if(json.indexOf(currMinor,hindrance)>-1," checked  "," ")]
+            <input type="checkbox" name="minor_[r:hindrance]" value="1" [r:checked]></input>
+  [h:count=if(count==NumOnLine,0,count)]
+            </td><td class="[r:class]">[r:hindrance]
+  [h:count=count+1]
+  [h: class = if(class=="oddRow", "evenRow", "oddRow")]
+  [h:p=if(count==NumOnLine,"</td></tr><tr>","</td>")][r:p]
+}]
+[for(count,count,numOnLine,1,""), code: {
+  <td class="[r:class]"></td>
+  <td class="[r:class]">
+  [h:p=if(count==NumOnLine,"</td></tr><tr>","</td>")][r:p]
+  [h: class = if(class=="oddRow", "evenRow", "oddRow")]
+}]
+          <tr>
+            <th colspan=[r:2*numOnLine]> 
+              <input type="submit" name="Submit" value="Submit"> </input> 
+            </th>
+          </tr>
+        </table>
+        <!-- hidden input with the weapon number -->
+        <input type="hidden" name="race" value="[r:race]"> </input>
+        <input type="hidden" name="returnMacro" value="[r:returnMacro]"> </input>
+      </form>
+    </body>
+  </html>
+}]
+
+!!
+@@ @UpdateRaceHindrancesOK
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Update ; tooltip= ; minWidth= ; 
+[macro.args]
+
+[h:race=json.get(macro.args,"race")]
+[h:returnMacro=json.get(macro.args,"returnMacro")]
+
+[h,macro("GetMajorHindranceNames@Lib:GM"):""]
+[h:majorHinds=macro.return]<br>
+[h,macro("GetMinorHindranceNames@Lib:GM"):""]
+[h:minorHinds=macro.return]<br>
+
+[h:rMaj=getLibProperty("RacialMajHind")]
+[h:rMaj=if(json.type(rMaj)=="UNKNOWN","{}",rMaj)]
+
+[h:rMin=getLibProperty("RacialMinHind")]
+[h:rMin=if(json.type(rMin)=="UNKNOWN","{}",rMin)]
+
+[h:oldMajorHinds=json.get(rMaj,race)]
+[h:oldMajorHinds=if(json.type(oldMajorHinds)=="UNKNOWN","[]",oldMajorHinds)]
+[h:oldMinorHinds=json.get(rMin,race)]
+[h:oldMinorHinds=if(json.type(oldMinorHinds)=="UNKNOWN","[]",oldMinorHinds)]
+
+[h:MajorHindrances="[]"]
+[h:newMajorHinds=""]
+[h:MinorHindrances="[]"]
+[h:newMinorHinds=""]
+
+[foreach(hindrance,majorHinds," "), code: {
+  [h:check="major_"+hindrance]
+  [h: value=json.contains(macro.args, check)]
+  [if(value==1), code: {
+    [h:newMajorHinds=json.append(newMajorHinds,hindrance)]
+  };{}]
+}]
+
+[foreach(hindrance,minorHinds," "), code: {
+  [h:check="minor_"+hindrance]
+  [h: value=json.contains(macro.args, check)]
+  [if(value==1), code: {
+    [h:newMinorHinds=json.append(newMinorHinds,hindrance)]
+  };{}]
+}]
+
+[h:rMaj=json.set(rMaj,race,newMajorHinds)]
+[h:rMin=json.set(rMin,race,newMinorHinds)]
+
+[setLibProperty("RacialMajHind",rMaj)]
+[setLibProperty("RacialMinHind",rMin)]
+
+[returnMacro]
+[h:returnArgs=json.set("","race",race)]
+[macro(returnMacro):returnArgs]
+
+!!

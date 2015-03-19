@@ -1,0 +1,859 @@
+@@ @onCampaignLoad
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Utility ; tooltip= ; minWidth= ; 
+[defineFunction("GetVehicleStats","GetVehicleStats@Lib:Vehicles")]
+[defineFunction("GetVehicleStatus","GetVehicleStatus@Lib:Vehicles")]
+[defineFunction("GetVehicleTraits","GetVehicleTraits@Lib:Vehicles")]
+[defineFunction("GetVehicleGear","GetVehicleGear@Lib:Vehicles")]
+[defineFunction("GetVehicleCrew","GetVehicleCrew@Lib:Vehicles")]
+[defineFunction("GetField","GetField@Lib:Vehicles")]
+
+!!
+@@ @VehicleSheet
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group= ; tooltip= ; minWidth= ; 
+[h:refreshMacro=getMacroName()+"@"+getMacroLocation()]
+[h:tokenId=""]
+[h:newInit=0]
+[h:lowerWindowFill=""]
+[h:gearName=""]
+[h:gearType=""]
+[h:toggleHold=0)]
+[h:whisperers="[]"]
+
+[h:varsFromStrProp(macro.args)]
+
+[h:tokenId=if(tokenId=="",currentToken(),"")]
+[h:abortit=if(tokenId=="",0,1)]
+[h:assert(abortit,"no token id available")]
+[h:switchToken(tokenId)]
+
+[if(newInit==1), code: {
+  [macro("DrawInitCard@Lib:Init"): tokenId]
+};{}]
+
+[if(toggleHold==1), code: {
+  [macro("ToggleHold@Lib:Init"): tokenId]
+  [h:toggleHold=0]
+};{}]
+
+[h:crewList=GetVehicleCrew()]
+[h:crewLine=""]
+[foreach(name,crewList,""), code:{
+  [h: linkit=macroLinkText("CharacterSheet@Lib:GM", "gm","returnMacro=CharacterSheet@Lib:GM", findToken(name))]
+  [h:crewLine=crewLine + "<a href='"+linkit+"'>" +name+"</a>, "]
+}]
+
+[h:g=GetVehicleGear(refreshMacro)]
+[h:t=GetVehicleTraits()]
+[h:traitList=json.fields(t)]
+[h:traitLine=""]
+[foreach(tl,traitList,""), code:{
+  [h:value=json.get(t,tl)]
+  [if(value=="d4e-2"||value==""), code:{
+  };{
+    [h: linkit=macroLinkText("TraitTest@Lib:GM", "all",tl,tokenId)]
+    [h:traitLine=traitLine + tl + + " (<a href='"+linkit+"'>"+ value + "</a>), "]
+  }]
+}]
+
+[h:s=GetVehicleStats()]
+
+[h:statList=getLibProperty("Stats")]
+[h:settingStats=getLibProperty("SettingStats")]
+[h,if(settingStats!=""): statList=listAppend(statList,settingStats)]
+
+[h:statList=json.fromList(statList)]
+[h:statLine=""]
+[foreach(sl,statList,""), code:{
+  [h:statLine=listAppend(statLine,sl+" "+json.get(s,sl))]
+}]
+
+[h:s=GetVehicleStatus()]
+
+[h:statusList=getLibProperty("Status")]
+
+[h:statusList=json.fromList(statusList)]
+[h:statusLine=""]
+[foreach(sl,statusList,""), code:{
+  [h:statusLine=listAppend(statusLine,sl+" "+json.get(s,sl))]
+}]
+
+[h:states=GetStatesList()]
+
+[h:lowerWindowFillMacro="DisplayNotes@Lib:GM"]
+[h:lowerWindowFillMacroArgs=""]
+
+[if(lowerWindowFill=="gear"), code: {
+  [h:lowerWindowFillMacro="GearUse@Lib:Gear"]
+  [h:lowerWindowFillMacroArgs="returnMacro=" + refreshMacro + ";name=" + gearName + ";type=" + gearType]
+};{}]
+
+[h:picSize=150]
+[h:picTdSize=picSize+10]
+[h:charPic = getTokenPortrait(picSize)]
+[h: charPic= if(charPic=="",getTokenImage(picSize),charPic)]
+
+[h:sendTo=if(isPC(),"all","gm")]
+
+[frame(getName(), "width=650; height=500"): {
+  <html>
+    <head>
+      
+      <link rel="stylesheet" type="text/css" href="CharSheet_css@Lib:GM">
+      <title>[r:getName()]</title>
+    </head>
+    <body style="font-size:12pt">
+      <table width="100%">
+         <tr>
+            <td colspan="2" valign="bottom" style="background-color:#3A1E1A;text-align:center;color:white;font-weight:bold;font-size:14pt">
+               [r:getName()]
+            </td>
+         </tr>
+         <tr>
+             <td valign="top"  width="100" style="text-align:center;">
+                <table style="padding-top:5px">
+         <tr>
+            <td valign="top" width="100" style="text-align:center;">
+                 [h: linkit=macroLinkText(refreshMacro, sendTo,macro.args,tokenId))]
+                 <a href='[r:linkit]'><img src="[r:charPic]" alt='Click to Refesh Display'/></a>
+
+            </td>
+         </tr>
+                   <tr>
+                      <td width="60" valign="bottom" style="text-align:center; font-weight:bold">
+                         Current Initiative<br />
+                         [h:args="toggleHold=1"]
+                         [h: linkit=macroLinkText(refreshMacro, sendTo,args,tokenId))]
+                         <a href='[r:linkit]'><img src='[R:tblimage("Cards", CurrentInit())]' border='0' width='33'  height='50' alt='Click to Toggle Hold'/></a>
+                      </td>
+                   </tr>
+                   <tr>
+                     [h:args="lowerWindowFill=whisper"]
+                     [h: linkit=macroLinkText(refreshMacro, sendTo,args,tokenId))]
+                     <a style="font-weight:bold;color:maroon" href='[r:linkit]'>Whisper</a>
+                   </tr>
+                   <tr>
+                     [h:args="lowerWindowFill=tokenNotes"]
+                     [h: linkit=macroLinkText(refreshMacro, sendTo,args,tokenId))]
+                     <a style="font-weight:bold;color:maroon" href='[r:linkit]'>Notes</a>
+                   </tr>
+                   <tr>
+                     [h: linkit=macroLinkText("CombatSurvivalGuide@Lib:GM"))]
+                     <a style="font-weight:bold;color:maroon" href='[r:linkit]'>CSG</a>
+                  </tr>
+                   <tr>
+                     [h:args=json.set("","tName",getName())]
+                     [h: linkit=macroLinkText("ShowEvents@Lib:Init", sendTo,args))]
+                     <a style="font-weight:bold;color:maroon" href='[r:linkit]'>Events</a>
+                  </tr>
+                </table>
+             </td>
+             <td valign="top">
+                <table width=100%>
+                   [h: class = "oddRow"]
+  
+                 <tr class="[r:class]">
+                      <td width="75">
+                         [h: linkit=macroLinkText("UpdateVehicleStatus@Lib:Vehicles", "gm", "returnMacro=" + refreshMacro, tokenId)]
+                         <a style="font-weight:bold;color:maroon" href="[r:linkit]"> Status:</a>
+                      </td>
+                      <td width="100%">
+                         [r:statusLine] 
+                      </td>
+                   </tr>
+                   [h: class = if(class=="oddRow", "evenRow", "oddRow")]
+
+                 <tr class="[r:class]">
+                      <td width="75">
+                         [h: linkit=macroLinkText("UpdateVehicleStats@Lib:Vehicles", "gm", "returnMacro=" + refreshMacro, tokenId)]
+                         <a style="font-weight:bold;color:maroon" href="[r:linkit]"> Stats:</a>
+                      </td>
+                      <td>
+                         [r:statLine] 
+                      </td>
+                   </tr>
+                   [h: class = if(class=="oddRow", "evenRow", "oddRow")]
+
+             <tr class="[r:class]">
+             [h: linkit=macroLinkText("UpdateGearDialog@Lib:Gear", "gm","returnMacro="+refreshMacro, tokenId)]
+                <td valign="top">
+                   <a style="font-weight:bold;color:maroon" href="[r:linkit]">Gear</a>:
+                </td>
+                <td>
+                   [r:g]
+                </td>
+             </tr>
+
+                   [h: class = if(class=="oddRow", "evenRow", "oddRow")]
+                 <tr class="[r:class]">
+                      <td width="75">
+                         [h: linkit=macroLinkText("UpdateVehicleTraits@Lib:Vehicles", "gm", "returnMacro=" + refreshMacro, tokenId)]
+                         <a style="font-weight:bold;color:maroon" href="[r:linkit]">Traits:</a>
+                      </td>
+                      <td>
+                         [r:traitLine] 
+                      </td>
+                   </tr>
+                   [h: class = if(class=="oddRow", "evenRow", "oddRow")]
+
+                 <tr class="[r:class]">
+                      <td width="75">
+                         [h: linkit=macroLinkText("UpdateVehicleCrew@Lib:Vehicles", "gm", "returnMacro=" + refreshMacro, tokenId)]
+                         <a style="font-weight:bold;color:maroon" href="[r:linkit]">Crew:</a>
+                      </td>
+                      <td>
+                         [r:crewLine] 
+                      </td>
+                   </tr>
+
+                 [h: class = if(class=="oddRow", "evenRow", "oddRow")]
+                <tr class="[r:class]">
+                   <td valign="top">
+                      [h: linkit=macroLinkText("UpdateStatesDialog@Lib:GM", "gm","returnMacro=VehicleSheet@Lib:Vehicles",tokenId)]
+                      <a style="font-weight:bold;color:maroon" href="[r:linkit]">States</a>:
+                   </td>
+                   <td>
+                      [foreach(state,states,""), code: {
+                         <img src='[r:getStateImage(state)]' width="20" height="20" alt="[r:state]" />
+                      }]
+                   </td>
+                </tr>
+
+                   [h: class = if(class=="oddRow", "evenRow", "oddRow")]
+                  <tr class="[r:class]">
+                   <td colspan="2">
+                      [macro(lowerWindowFillMacro):lowerWindowFillMacroArgs]
+                   </td>
+                </tr>
+             </table>
+          </td>
+       </tr>
+    </table>
+ </body>
+</html>
+}]
+[if(macro.args=="Activate"): abort(0)]
+
+!!
+@@ @VehicleSheetSave
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group= ; tooltip= ; minWidth= ; 
+[macro.args]
+[h:refreshMacro=getMacroName()+"@"+getMacroLocation()]
+[h:tokenId=""]
+[h:newInit=0]
+[h:lowerWindowFill=""]
+[h:gearName=""]
+[h:gearType=""]
+[h:toggleHold=0)]
+[h:whisperers="[]"]
+
+[h:varsFromStrProp(macro.args)]
+
+[h:tokenId=if(tokenId=="",currentToken(),"")]
+[h:abortit=if(tokenId=="",0,1)]
+[h:assert(abortit,"no token id available")]
+[h:switchToken(tokenId)]
+
+[if(newInit==1), code: {
+  [macro("DrawInitCard@Lib:Init"): tokenId]
+};{}]
+
+[if(toggleHold==1), code: {
+  [macro("ToggleHold@Lib:Init"): tokenId]
+  [h:toggleHold=0]
+};{}]
+
+[h:crewList=GetVehicleCrew()]
+[h:crewLine=""]
+[foreach(name,crewList,""), code:{
+  [h: linkit=macroLinkText("CharacterSheet@Lib:GM", "gm","returnMacro=CharacterSheet@Lib:GM", findToken(name))]
+  [h:crewLine=crewLine + "<a href='"+linkit+"'>" +name+"</a>, "]
+}]
+
+[h:g=GetVehicleGear(refreshMacro)]
+[h:t=GetVehicleTraits()]
+[h:traitList=json.fields(t)]
+[h:traitLine=""]
+[foreach(tl,traitList,""), code:{
+  [h:value=json.get(t,tl)]
+  [if(value=="d4e-2"||value==""), code:{
+  };{
+    [h: linkit=macroLinkText("TraitTest@Lib:GM", "all",tl,tokenId)]
+    [h:traitLine=traitLine + tl + + " (<a href='"+linkit+"'>"+ value + "</a>), "]
+  }]
+}]
+
+[h:s=GetVehicleStats()]
+
+[h:statList=getLibProperty("Stats")]
+[h:settingStats=getLibProperty("SettingStats")]
+[h,if(settingStats!=""): statList=listAppend(statList,settingStats)]
+
+[h:statList=json.fromList(statList)]
+[h:statLine=""]
+[foreach(sl,statList,""), code:{
+  [h:statLine=listAppend(statLine,sl+" "+json.get(s,sl))]
+}]
+
+[h:s=GetVehicleStatus()]
+
+[h:statusList=getLibProperty("Status")]
+
+[h:statusList=json.fromList(statusList)]
+[h:statusLine=""]
+[foreach(sl,statusList,""), code:{
+  [h:statusLine=listAppend(statusLine,sl+" "+json.get(s,sl))]
+}]
+
+[h:lowerWindowFillMacro="DisplayNotes@Lib:GM"]
+[h:lowerWindowFillMacroArgs=""]
+
+[if(lowerWindowFill=="gear"), code: {
+  [h:lowerWindowFillMacro="GearUse@Lib:Gear"]
+  [h:lowerWindowFillMacroArgs="returnMacro=" + refreshMacro + ";name=" + gearName + ";type=" + gearType]
+};{}]
+
+[h:picSize=150]
+[h:picTdSize=picSize+10]
+[h:charPic = getTokenPortrait(picSize)]
+[h: charPic= if(charPic=="",getTokenImage(picSize),charPic)]
+
+[h:sendTo=if(isPC(),"all","gm")]
+
+[frame(getName(), "width=650; height=500"): {
+  <html>
+    <head>
+      
+      <link rel="stylesheet" type="text/css" href="CharSheet_css@Lib:GM">
+      <title>[r:getName()]</title>
+    </head>
+    <body style="font-size:12pt">
+      <table width="100%">
+         <tr>
+            <td colspan="2" valign="bottom" style="background-color:#3A1E1A;text-align:center;color:white;font-weight:bold;font-size:14pt">
+               [r:getName()]
+            </td>
+         </tr>
+         <tr>
+             <td valign="top"  width="100" style="text-align:center;">
+                <table style="padding-top:5px">
+         <tr>
+            <td valign="top" width="100" style="text-align:center;">
+                 [h: linkit=macroLinkText(refreshMacro, sendTo,macro.args,tokenId))]
+                 <a href='[r:linkit]'><img src="[r:charPic]" alt='Click to Refesh Display'/></a>
+
+            </td>
+         </tr>
+                   <tr>
+                      <td width="60" valign="bottom" style="text-align:center; font-weight:bold">
+                         Current Initiative<br />
+                         [h:args="toggleHold=1"]
+                         [h: linkit=macroLinkText(refreshMacro, sendTo,args,tokenId))]
+                         <a href='[r:linkit]'><img src='[R:tblimage("Cards", CurrentInit())]' border='0' width='67' height='95' alt='Click to Toggle Hold'/></a>
+                      </td>
+                   </tr>
+                   <tr>
+                     [h:args="lowerWindowFill=whisper"]
+                     [h: linkit=macroLinkText(refreshMacro, sendTo,args,tokenId))]
+                     <a style="font-weight:bold;color:maroon" href='[r:linkit]'>Whisper</a>
+                   </tr>
+                   <tr>
+                     [h:args="lowerWindowFill=tokenNotes"]
+                     [h: linkit=macroLinkText(refreshMacro, sendTo,args,tokenId))]
+                     <a style="font-weight:bold;color:maroon" href='[r:linkit]'>Notes</a>
+                   </tr>
+                   <tr>
+                     [h: linkit=macroLinkText("CombatSurvivalGuide@Lib:GM"))]
+                     <a style="font-weight:bold;color:maroon" href='[r:linkit]'>CSG</a>
+                  </tr>
+                   <tr>
+                     [h:args=json.set("","tName",getName())]
+                     [h: linkit=macroLinkText("ShowEvents@Lib:Init", sendTo,args))]
+                     <a style="font-weight:bold;color:maroon" href='[r:linkit]'>Events</a>
+                  </tr>
+                </table>
+             </td>
+             <td valign="top">
+                <table>
+                   [h: class = "oddRow"]
+  
+                 <tr class="[r:class]">
+                      <td width="75">
+                         [h: linkit=macroLinkText("UpdateVehicleStatus@Lib:Vehicles", "gm", "returnMacro=" + refreshMacro, tokenId)]
+                         <a style="font-weight:bold;color:maroon" href="[r:linkit]"> Status:</a>
+                      </td>
+                      <td>
+                         [r:statusLine] 
+                      </td>
+                   </tr>
+                   [h: class = if(class=="oddRow", "evenRow", "oddRow")]
+
+                 <tr class="[r:class]">
+                      <td width="75">
+                         [h: linkit=macroLinkText("UpdateVehicleStats@Lib:Vehicles", "gm", "returnMacro=" + refreshMacro, tokenId)]
+                         <a style="font-weight:bold;color:maroon" href="[r:linkit]"> Stats:</a>
+                      </td>
+                      <td>
+                         [r:statLine] 
+                      </td>
+                   </tr>
+                   [h: class = if(class=="oddRow", "evenRow", "oddRow")]
+
+             <tr class="[r:class]">
+             [h: linkit=macroLinkText("UpdateGearDialog@Lib:Gear", "gm","returnMacro="+refreshMacro, tokenId)]
+                <td valign="top">
+                   <a style="font-weight:bold;color:maroon" href="[r:linkit]">Gear</a>:
+                </td>
+                <td>
+                   [r:g]
+                </td>
+             </tr>
+
+                   [h: class = if(class=="oddRow", "evenRow", "oddRow")]
+                 <tr class="[r:class]">
+                      <td width="75">
+                         [h: linkit=macroLinkText("UpdateVehicleTraits@Lib:Vehicles", "gm", "returnMacro=" + refreshMacro, tokenId)]
+                         <a style="font-weight:bold;color:maroon" href="[r:linkit]">Traits:</a>
+                      </td>
+                      <td>
+                         [r:traitLine] 
+                      </td>
+                   </tr>
+                   [h: class = if(class=="oddRow", "evenRow", "oddRow")]
+
+                 <tr class="[r:class]">
+                      <td width="75">
+                         [h: linkit=macroLinkText("UpdateVehicleCrew@Lib:Vehicles", "gm", "returnMacro=" + refreshMacro, tokenId)]
+                         <a style="font-weight:bold;color:maroon" href="[r:linkit]">Crew:</a>
+                      </td>
+                      <td>
+                         [r:crewLine] 
+                      </td>
+                   </tr>
+                   [h: class = if(class=="oddRow", "evenRow", "oddRow")]
+                  <tr class="[r:class]">
+                   <td colspan="2">
+                      [macro(lowerWindowFillMacro):lowerWindowFillMacroArgs]
+                   </td>
+                </tr>
+             </table>
+          </td>
+       </tr>
+    </table>
+ </body>
+</html>
+}]
+[if(macro.args=="Activate"): abort(0)]
+
+!!
+@@ @GetField
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Gets ; tooltip= ; minWidth= ; 
+[h:fieldName=arg(0)]
+[h:equipName=arg(1)]
+[h:value=arg(2)]
+[h:index=arg(3)]
+
+[h:formats=getLibProperty("EquipElemTypes")]
+[h:format=json.get(formats,fieldName)]
+[h:size=json.get(format,"Size")]
+[h:type=json.get(format,"Type")]
+[h:values=json.get(format,"Values")]
+
+[if(type=="Text"), code:{
+  <input type="text" size="[r:size]" name="[r:equipName]_[r:equipName][r:index]" value="[r:value]"></input>
+};{}]
+
+[if(type=="Dropdown"), code:{
+  <select name="[r:equipName]_[r:equipName][r:index]">
+  [foreach(listValue,values,""),code:{
+    [h:selected=if(listValue==value,"selected","")]  
+    <option [r:selected] value="[r:listValue]">[r:decode(listValue)]</option>
+  }]
+  </select>
+};{}]
+
+[if(type=="Checkbox"), code:{
+  [h:value=if(value=="",0,1)]
+  [h:checked=if(value==1,"CHECKED","")]
+  <input type=CHECKBOX NAME="[r:equipName]_[r:equipName][r:index]" [r:checked] value="X">
+};{}]
+
+!!
+@@ @GetVehicleCrew
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Gets ; tooltip= ; minWidth= ; 
+[r:getProperty("Crew")]
+
+!!
+@@ @GetVehicleGear
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Gets ; tooltip= ; minWidth= ; 
+[macro("Get Gear@Lib:Gear"):arg(0)]
+[r:g=macro.return]
+
+!!
+@@ @GetVehicleStats
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Gets ; tooltip= ; minWidth= ; 
+[h:statList=getLibProperty("Stats")]
+[if(statList==""), code:{
+Setting Up Lib Vehicle Token
+  [macro("SetLibVehicleProperties@this"):""]
+  [h:statList=getLibProperty("Stats")]
+};{}]
+
+[h:statList=listAppend(statList,getLibProperty("SettingStats"))]
+
+[h:vStats="{}"]
+[h,foreach(sl,statList):vStats=json.set(vStats,sl,if(getProperty(sl)=="",0,getProperty(sl)))]
+
+[r:vStats]
+
+!!
+@@ @GetVehicleStatus
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Gets ; tooltip= ; minWidth= ; 
+[h:statusList=getLibProperty("Status")]
+[if(statusList==""), code:{
+Calling Lib Vehicle Setup Macro
+  [macro("SetLibVehicleProperties@this"):""]
+  [h:statList=getLibProperty("Status")]
+};{}]
+
+[h:vStatus="{}"]
+[h,foreach(sl,statusList):vStatus=json.set(vStatus,sl,if(getProperty(sl)=="",0,getProperty(sl)))]
+
+[r:vStatus]
+
+!!
+@@ @GetVehicleTraits
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Gets ; tooltip= ; minWidth= ; 
+[h:statList=getLibProperty("VehicleTraits")]
+[if(statList==""), code:{
+Setting Base Vehicle Info on Lib Token
+  [macro("SetLibVehicleProperties@this"):""]
+  [h:statList=getLibProperty("VehicleTraits")]
+};{}]
+
+[h:statList=listAppend(statList,getLibProperty("SettingTraits"))]
+
+[h:vStats="{}"]
+[h,foreach(sl,statList):vStats=json.set(vStats,sl,getProperty(sl))]
+
+[r:vStats]
+
+!!
+@@ @SetLibVehicleProperties
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=RunOnce ; tooltip= ; minWidth= ; 
+Setting Base Vehicle Status<br>
+[h:setLibProperty("Status","Speed, Altitude")]
+[getLibProperty("Status")]<br>
+Setting Base Vehicle Statistics<br>
+[h:setLibProperty("Stats","TopSpeed, Acc, Climb, Toughness, Armor, Handling, Cargo")]
+[getLibProperty("Stats")]<br>
+Setting Base Vehicle Traits<br>
+[h:setLibProperty("VehicleTraits","Boating,Piloting,Driving,Shooting,Fighting,Throwing,Repair,Notice")]
+[getLibProperty("VehicleTraits")]<br>
+Setting Equipment Types<br>
+[h:setLibProperty("EquipmentTypes","Weapons,Armor,Ammo,Other")]
+[getLibProperty("EquipmentTypes")]
+
+!!
+@@ @UpdateVehicleCrew
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Dialogs ; tooltip= ; minWidth= ; 
+[h:okMacro=getMacroName()+"OK@"+getMacroLocation()]
+[h:refreshMacro=getMacroName()+"@"+getMacroLocation()]
+[returnMacro=getStrProp(macro.args,"returnMacro")]
+[h:tokenId=currentToken()]
+
+[H:crewList=GetVehicleCrew()]
+[h:crewList=json.fromList(crewList)]
+[h:tokens=getExposedTokens("json")]
+[h:tokenList="[]"]
+[foreach(t,tokens,""), code:{
+  [h:add=0]
+<br>
+  [basic=if(getPropertyType(t)!="Basic",0,1)]
+  [name=getName(t)]
+  [notInCurrent=json.contains(crewList,name)]
+<br>
+  [h:add=if(basic&&notInCurrent==0,1,0)]
+  [h:tokenList=if(add==1,json.append(tokenList,getName(t)),tokenList)]
+}]
+
+[h: class = "oddRow"]
+[dialog("CrewUpdate", "width=250; height=300"): {
+  <html>
+    <head>
+      <title>Modify Vehicle Crew</title>
+      <meta name="input" content="true">
+      <link rel="stylesheet" type="text/css" href="CharSheet_css@Lib:GM">     
+    </head>
+    <body>
+      <form name="Vehicle Crew"  method='json' action="[r:macroLinkText(okMacro,"gm","",tokenId)]">
+        <table id="Attributes" bgcolor=#aaaaaa width="100%">
+          <tr>
+            <th>Crew Name</th>
+            <th>Selected</th>
+          </tr>
+[foreach(c,crewList,""), code: {
+          <tr class="[r:class]">
+[h: class = if(class=="oddRow", "evenRow", "oddRow")]
+            <td>[r:c]</td>
+            <td> <center>   
+              <input type="checkbox" name="crew_[r:c]" value="1" 'checked'></input> </center>
+            </td> 
+          </tr>
+}]
+[foreach(c,tokenList,""), code: {
+          <tr class="[r:class]">
+[h: class = if(class=="oddRow", "evenRow", "oddRow")]
+            <td>[r:c]</td>
+            <td>    <center>
+              <input type="checkbox" name="crew_[r:c]" value="1"></input> </center>
+            </td> 
+          </tr>
+}]
+
+        <tr><th colspan=2>
+        <input type="submit" name="Submit" value="Submit"> </input>
+        <input type="hidden" name="returnMacro" value="[r:returnMacro]"> </input>
+        </th></tr>
+        </table>
+      </form>
+    </body>
+  </html>
+}]
+
+!!
+@@ @UpdateVehicleCrewOK
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Dialogs ; tooltip= ; minWidth= ; 
+[h:tokens=getExposedTokens("json")]
+[h:crewList=""]
+[foreach(t,tokens,"<br>"), code:{
+  [h:name=getName(t)]
+  [h:there=json.contains(macro.args,"crew_"+name)]
+  [h:crewList=if(there,listAppend(crewList,name),crewList)]
+}]
+New Crew for [r:getName()] is [r:crewList]
+[setProperty("Crew",crewList)]
+
+[h:rtnMacroName=json.get(macro.args,"returnMacro")]
+[h:rtnMacroName=if(rtnMacroName=="","argCheck@Lib:GM",rtnMacroName)]
+[macro(rtnMacroName):""]
+
+!!
+@@ @UpdateVehicleStats
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Dialogs ; tooltip= ; minWidth= ; 
+[h:okMacro=getMacroName()+"OK@"+getMacroLocation()]
+[h:refreshMacro=getMacroName()+"@"+getMacroLocation()]
+[returnMacro=getStrProp(macro.args,"returnMacro")]
+[h:tokenId=currentToken()]
+
+[H:s=GetVehicleStats()]
+[h:s=if(json.type(s)=="UNKNOWN","{}",s)]
+
+[h:statList=getLibProperty("Stats")]
+[h:settingStats=getLibProperty("SettingStats")]
+[h,if(settingStats!=""): statList=listAppend(statList,settingStats)]
+
+[h:statList=json.fromList(statList)]
+
+[foreach(sl,statList,""), code:{
+  [r:sl]<br>
+  [h:there=json.contains(s,sl)]
+  [h:s=if(there==0,json.set(s,sl,0),s)]
+}]
+
+[h: class = "oddRow"]
+[dialog("StatsUpdate", "width=250; height=300"): {
+  <html>
+    <head>
+      <title>Modify Vehicle Stats</title>
+      <meta name="input" content="true">
+      <link rel="stylesheet" type="text/css" href="CharSheet_css@Lib:GM">     
+    </head>
+    <body>
+      <form name="Vehicle Stats"  method='json' action="[r:macroLinkText(okMacro,"gm","",tokenId)]">
+        <table id="Attributes" bgcolor=#aaaaaa width="100%">
+          <tr>
+            <th>Stat</th>
+            <th>Value</th>
+          </tr>
+[foreach(sl,statList,""), code: {
+          <tr class="[r:class]">
+[h: class = if(class=="oddRow", "evenRow", "oddRow")]
+            <td>[r:sl][h:value=json.get(s,sl)]</td>
+            <td><center><input type="text" name="update_[r:sl]" value="[r:value]" size=2> </center></td> 
+          </tr>
+}]
+        <tr><th colspan=2>
+        <input type="submit" name="Submit" value="Submit"> </input>
+        <input type="hidden" name="returnMacro" value="[r:returnMacro]"> </input>
+        </th></tr>
+        </table>
+      </form>
+    </body>
+  </html>
+}]
+
+!!
+@@ @UpdateVehicleStatsOK
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Dialogs ; tooltip= ; minWidth= ; 
+passed [macro.args]<br>
+return [returnMacro=json.get(macro.args,"returnMacro")]
+
+[h:statList=getLibProperty("Stats")]
+[h:settingStats=getLibProperty("SettingStats")]
+[h,if(settingStats!=""): statList=listAppend(statList,settingStats)]
+
+[h:statList=json.fromList(statList)]
+
+[foreach(sl,statList,""), code:{
+  [setProperty(sl,json.get(macro.args,"update_"+sl))]
+}]
+calling [returnMacro]
+[macro(returnMacro):""]
+
+!!
+@@ @UpdateVehicleStatus
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Dialogs ; tooltip= ; minWidth= ; 
+[h:okMacro=getMacroName()+"OK@"+getMacroLocation()]
+[h:refreshMacro=getMacroName()+"@"+getMacroLocation()]
+[returnMacro=getStrProp(macro.args,"returnMacro")]
+[h:tokenId=currentToken()]
+
+[H:s=GetVehicleStatus()]
+[h:s=if(json.type(s)=="UNKNOWN","{}",s)]
+
+[h:statusList=getLibProperty("Status")]
+
+[h:statusList=json.fromList(statusList)]
+
+[foreach(sl,statusList,""), code:{
+  [h:there=json.contains(s,sl)]
+  [h:s=if(there==0,json.set(s,sl,0),s)]
+}]
+
+[h: class = "oddRow"]
+[dialog("StatusUpdate", "width=250; height=300"): {
+  <html>
+    <head>
+      <title>Modify Vehicle Status</title>
+      <meta name="input" content="true">
+      <link rel="stylesheet" type="text/css" href="CharSheet_css@Lib:GM">     
+    </head>
+    <body>
+      <form name="Vehicle Status"  method='json' action="[r:macroLinkText(okMacro,"gm","",tokenId)]">
+        <table id="Attributes" bgcolor=#aaaaaa width="100%">
+          <tr>
+            <th>Status</th>
+            <th>Value</th>
+          </tr>
+[foreach(sl,statusList,""), code: {
+          <tr class="[r:class]">
+[h: class = if(class=="oddRow", "evenRow", "oddRow")]
+            <td>[r:sl][h:value=json.get(s,sl)]</td>
+            <td><center><input type="text" name="update_[r:sl]" value="[r:value]" size=2></center></td> 
+          </tr>
+}]
+        <tr><th colspan=2>
+        <input type="submit" name="Submit" value="Submit"> </input>
+        <input type="hidden" name="returnMacro" value="[r:returnMacro]"> </input>
+        </th></tr>
+        </table>
+      </form>
+    </body>
+  </html>
+}]
+
+!!
+@@ @UpdateVehicleStatusOK
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Dialogs ; tooltip= ; minWidth= ; 
+[h:returnMacro=json.get(macro.args,"returnMacro")]
+
+[h:statusList=getLibProperty("Status")]
+
+[h:statusList=json.fromList(statusList)]
+
+[foreach(sl,statusList,""), code:{
+  [setProperty(sl,json.get(macro.args,"update_"+sl))]
+}]
+
+[macro(returnMacro):""]
+[abort(0)]
+
+!!
+@@ @UpdateVehicleTraits
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Dialogs ; tooltip= ; minWidth= ; 
+[h:okMacro=getMacroName()+"OK@"+getMacroLocation()]
+[h:refreshMacro=getMacroName()+"@"+getMacroLocation()]
+[returnMacro=getStrProp(macro.args,"returnMacro")]
+[h:tokenId=currentToken()]
+
+[H:s=GetVehicleTraits()]
+[h:s=if(json.type(s)=="UNKNOWN","{}",s)]
+
+[h:statList=getLibProperty("VehicleTraits")]
+[h:settingStats=getLibProperty("SettingTraits")]
+[h,if(settingStats!=""): statList=listAppend(statList,settingStats)]
+
+[h:statList=json.fromList(statList)]
+
+[foreach(sl,statList,""), code:{
+  [r:sl]<br>
+  [h:there=json.contains(s,sl)]
+  [h:s=if(there==0,json.set(s,sl,0),s)]
+}]
+
+[h: class = "oddRow"]
+[dialog("StatsUpdate", "width=250; height=300"): {
+  <html>
+    <head>
+      <title>Modify Vehicle Traits</title>
+      <meta name="input" content="true">
+      <link rel="stylesheet" type="text/css" href="CharSheet_css@Lib:GM">     
+    </head>
+    <body>
+      <form name="Vehicle Traits"  method='json' action="[r:macroLinkText(okMacro,"gm","",tokenId)]">
+        <table id="Attributes" bgcolor=#aaaaaa width="100%">
+          <tr>
+            <th>Stat</th>
+            <th>Value</th>
+          </tr>
+[foreach(sl,statList,""), code: {
+          <tr class="[r:class]">
+[h: class = if(class=="oddRow", "evenRow", "oddRow")]
+            <td>[r:sl][h:value=json.get(s,sl)][h:value=if(value=="","d4e-2",value)]</td>
+            <td>
+              <select name="trait_update_[r:sl]">
+[macro("DieDropdown@Lib:GM"): value]
+               </select>
+            </td> 
+          </tr>
+}]
+        <tr><th colspan=2>
+        <input type="submit" name="Submit" value="Submit"> </input>
+        <input type="hidden" name="returnMacro" value="[r:returnMacro]"> </input>
+        </th></tr>
+        </table>
+      </form>
+    </body>
+  </html>
+}]
+
+!!
+@@ @UpdateVehicleTraitsOK
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Dialogs ; tooltip= ; minWidth= ; 
+[macro.args]
+
+[h:statList=getLibProperty("VehicleTraits")]
+[h:settingStats=getLibProperty("SettingTraits")]
+[h,if(settingStats!=""): statList=listAppend(statList,settingStats)]
+
+[h:statList=json.fromList(statList)]
+
+[foreach(sl,statList,""), code:{
+  [setProperty(sl,json.get(macro.args,"trait_update_"+sl))]
+}]
+
+[rtnMacroName=json.get(macro.args,"returnMacro")]
+[rtnMacroName=if(rtnMacroName=="","argCheck@Lib:GM",rtnMacroName)]
+[macro(rtnMacroName):""]
+
+!!

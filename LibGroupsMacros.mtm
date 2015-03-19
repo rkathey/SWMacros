@@ -1,0 +1,383 @@
+@@ @onCampaignLoad
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=X ; tooltip= ; minWidth= ; 
+[r:libName=getMacroLocation()]
+[defineFunction("FindTokensOnVehicle","FindTokensOnVehicle@Lib:Groups")]
+[defineFunction("SelectTokenGroups","SelectTokens@Lib:Groups")]
+[defineFunction("CheckLeader","CheckLeader@Lib:Groups")]
+[defineFunction("CheckGroupMembers","CheckGroupMembers@Lib:Groups")]
+[defineFunction("CreateGroup","CreateGroup@Lib:Groups")]
+[defineFunction("GetGroupMembers","GetGroupMembers@Lib:Groups")]
+[defineFunction("GetGroupLeader","GetGroupLeader@Lib:Groups")]
+[defineFunction("GetLeaders","GetLeaders@Lib:Groups")]
+[defineFunction("GetMembers","GetMembers@Lib:Groups")]
+[defineFunction("DisbandGroup","DisbandGroup@Lib:Groups")]
+[defineFunction("SaveGroup","SaveGroup@Lib:Groups")]
+[defineFunction("isLeader","isLeader@Lib:Groups")]
+[defineFunction("RemoveTokenFromGroup","RemoveTokenFromGroup@Lib:Groups")]
+[defineFunction("AddToExistingGroup","AddToExistingGroup@Lib:Groups")]
+[defineFunction("GroupTraitRoll","GroupTraitRoll@Lib:Groups")]
+[defineFunction("GroupAttack","GroupAttack@Lib:Groups")]
+
+!!
+@@ @AddToExistingGroup
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=1 - Groups ; tooltip= ; minWidth= ; 
+[h:ids=arg(0)]
+[h:length=json.length(ids)]
+[h,if(length<2): assert(0,"You must have at least 2 tokens selected one of which must be a leader")]
+[h:leaderFound=0]
+[h:leader=""]
+[h:members=""]
+[h,foreach(id,ids,""), code:{
+  [h,if(isLeader(id) && leaderFound): assert(0, "Two Leaders are selected:"+getName(id)+" and " + getName(leader)]
+  [h,if(isLeader(id)), code:{
+    [h:leaderFound=1]
+    [h:leader=id]
+  };{
+    [h,if(getState("Group Member", id)): assert(0,"Token "+getName(id)+" is already part of a group")]
+    [h:members=json.append(members,id)]
+  }]
+}]
+[if(!leaderFound): assert(0,"No leader found in selected tokens")]
+[h:group=GetGroupMembers(leader)]
+[h:members=json.union(group,members)]
+[SaveGroup(leader,members)]
+
+!!
+@@ @CreateGroup
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=1 - Groups ; tooltip= ; minWidth= ; 
+[h:groupLeader=arg(0)]
+[h:groupMembers=arg(1)]
+
+[h:CheckLeader(groupLeader)]
+[h:CheckGroupMembers(groupMembers)]
+
+[h:SaveGroup(groupLeader,groupMembers)]
+
+!!
+@@ @DisbandGroup
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=1 - Groups ; tooltip= ; minWidth= ; 
+[h:groupLeader=arg(0)]
+
+[h:groupMembers=GetMembers()]
+[h:groupLeader=GetGroupLeader(groupLeader)]
+
+[h:members=GetGroupMembers(groupLeader)]
+
+[h:setState("Group Leader", 0,groupLeader)]
+[h,foreach(member,members,""): setState("Group Member", 0,member)]
+
+[h:groupMembers=json.remove(groupMembers, groupLeader)]
+[h:groupLeaders=json.fields(groupMembers,"json")]
+[h:setLibProperty("GroupLeaders",groupLeaders)]
+[h:setLibProperty("Groups",groupMembers)]
+
+!!
+@@ @GroupTraitRoll
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=1 - Groups ; tooltip= ; minWidth= ; 
+[h:leader=arg(0)]
+[h:assert(isLeader(leader),"Group rolls must pass a leader id")]
+[h:members=GetGroupMembers(leader)]
+[h:ids=json.append(members,leader)]
+
+[h:switchToken(leader)]
+[h:traitNames=""]
+[h,if(getPropertyType()=="Basic"): traitNames=GetTokenTraitNames()]
+[h,if(getPropertyType()=="Vehicle"): traitNames=listAppend(getLibProperty("VehicleTraits","Lib:Vehicles"),getLibProperty("SettingTraits","Lib:Vehicles"))]
+
+[h,if(traitNames==""): assert(0,"Tokens must be of type vehicle or basic in order to use the macro")]
+
+[h:status=input("trait|"+traitNames+"|"+getName()+" Trait Roll|LIST")]
+[h:abort(status)]
+[h:traitNames=json.fromList(traitNames)]
+[h:trait=json.get(traitNames,trait)]
+
+<b>Group [r:trait] Roll</b><br>
+[r,foreach(id,ids,"<br>"), code:{
+  [h:switchToken(id)]
+  [r: getName()]
+  [macro("TraitTest@Lib:GM"):trait]
+}]
+
+!!
+@@ @RemoveTokenFromGroup
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=1 - Groups ; tooltip= ; minWidth= ; 
+[h:id=arg(0)]
+[h,if(isLeader(id)): assert(0,"Cannot removed "+getName(id)+" from group because it is the leader. Use Disband Group macro")]
+[h:leaders=GetLeaders()]
+[h,foreach(l,leaders,""), code:{
+  [h:members=GetGroupMembers(l)]
+  [h:num=json.count(members,id)]
+  [h,if(num>0), code:{ 
+    [h:index=json.indexOf(members,id)]
+    [h:members=json.remove(members,index)]
+    [h:setState("Group Member", 0,id)]
+    [SaveGroup(l,members)]
+  };{}]
+}]
+
+!!
+@@ @SaveGroup
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=1 - Groups ; tooltip= ; minWidth= ; 
+[h:leader=arg(0)]
+
+[h:members=arg(1)]
+
+[h:setState("Group Leader", 1,leader)]
+[h,foreach(member,members,""): setState("Group Member", 1,member)]
+
+[h:groupLeaders=GetLeaders()]
+
+[h:groupLeaders=json.append(groupLeaders,leader)]
+
+[h:groupMembers=GetMembers()]
+
+[h:groupMembers=json.set(groupMembers,leader,members)]
+
+[h:setLibProperty("Groups",groupMembers)]
+[h:setLibProperty("GroupLeaders",groupLeaders)]
+
+!!
+@@ @CheckGroupMembers
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=1.1 - Group Checks ; tooltip= ; minWidth= ; 
+[h:members=arg(0)]
+
+!!
+@@ @CheckLeader
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=1.1 - Group Checks ; tooltip= ; minWidth= ; 
+[h:leaderId=arg(0)]
+[h:groupLeaders=getLibProperty("GroupLeaders")]
+[h:groupLeaders=if(json.type(groupLeaders)=="UNKNOWN","[]",groupLeaders)]
+[h:existing=json.contains(groupLeaders, leaderId)]
+[h,if(existing): assert(0,getName(leaderid)+" already exists as a group leader")]
+
+!!
+@@ @isLeader
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=1.1 - Group Checks ; tooltip= ; minWidth= ; 
+[h:id=arg(0)]
+[h:leaders=GetLeaders()]
+[r,if(json.contains(leaders,id)): 1;0]
+
+!!
+@@ @FindTokensOnVehicle
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=true ; applyToSelected=false ; group=2 - Selects ; tooltip= ; minWidth= ; 
+[h:tokenId=arg(0)]
+
+[r:height=floor(getTokenHeight()/2)]
+[r:width=floor(getTokenWidth()/2)]
+[r:range=json.set("","upto",max(height,width),"distancePerCell",0,"metric","NO_DIAGONALS")]
+[r: cond = json.set("","range",range,"npc",1, "unsetStates",json.append("","Dead","Incapacitated"))]
+[h: ids = getTokens("json", cond)]
+[r,foreach(id,ids,"<br>"), code:{
+  [r:getName(id)]
+}]
+
+[h:junk="seems to be working. Now use the selected ids above to add to a group with the vehicle as the leader"]
+
+!!
+@@ @GetGroupLeader
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=2 - Selects ; tooltip= ; minWidth= ; 
+[h:groupLeader=arg(0)]
+[h:rtn=""]
+[h:groupLeaders=getLibProperty("GroupLeaders")]
+[h:groupLeaders=if(json.type(groupLeaders)=="UNKNOWN","[]",groupLeaders)]
+[h:there=json.contains(groupLeaders, groupLeader)]
+[h:assert(there,getName(groupLeader)+" does not exist as a group leader:"+getMacroName())]
+[r:rtn=groupLeader]
+
+!!
+@@ @GetGroupMembers
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=2 - Selects ; tooltip= ; minWidth= ; 
+[h:groupLeader=arg(0)]
+
+[h:groupMembers=GetMembers()]
+
+[r:members=json.get(groupMembers,groupLeader)]
+
+!!
+@@ @GetLeaders
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=2 - Selects ; tooltip= ; minWidth= ; 
+[h:groupLeaders=getLibProperty("GroupLeaders")]
+[h:type=json.type(groupLeaders)]
+[h:groupLeaders=if(type=="UNKNOWN","[]",groupLeaders)]
+[r:rtn=groupLeaders]
+
+!!
+@@ @GetMembers
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=2 - Selects ; tooltip= ; minWidth= ; 
+[h:groupMembers=getLibProperty("Groups")]
+[r:groupMembers=if(json.type(groupMembers)=="UNKNOWN","{}",groupMembers)]
+
+!!
+@@ @SelectMooks
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=true ; applyToSelected=false ; group=2 - Selects ; tooltip= ; minWidth= ; 
+[h:cond = json.set("{}","npc",1)]
+[h:ids = getTokens("json", cond)]
+[h:deselectTokens()]
+[h:selected=""]
+[h,foreach(id,ids,""), code:{
+  [h:id] 
+  [r:add=getProperty("WildDie",id)]
+  [h:add=if(add=="",0,add)]
+  [h:add=if(add!=0,1,0)]
+  [h,if(!add):selected=json.append(selected,id)]
+}]
+
+[r:selected]
+[h:selectTokens(selected, 0, "json")]
+
+!!
+@@ @SelectNPCWildcards
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=true ; applyToSelected=false ; group=2 - Selects ; tooltip= ; minWidth= ; 
+[h:cond = json.set("{}","npc",1)]
+[h:ids = getTokens("json", cond)]
+[h:deselectTokens()]
+[h:selected=""]
+[h,foreach(id,ids,""), code:{
+  [h:id] 
+  [r:add=getProperty("WildDie",id)]
+  [h:add=if(add=="",0,add)]
+  [h:add=if(add!=0,1,0)]
+  [h,if(add):selected=json.append(selected,id)]
+}]
+
+[r:selected]
+[h:selectTokens(selected, 0, "json")]
+
+!!
+@@ @SelectPCs
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=true ; applyToSelected=false ; group=2 - Selects ; tooltip= ; minWidth= ; 
+[r: ids = getPC("json")]
+[h:selectTokens(ids, 0, "json")]
+
+!!
+@@ @SelectTokens
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=2 - Selects ; tooltip= ; minWidth= ; 
+[h:junk="This macro is used to select a group of tokens based on passed args. This will likely grow as time goes on. The result of the different case statement sections will be a group to token ids that are selected"]
+
+[h:junk="
+tokenId - tokenId used is distance calculations.
+distance - select tokens with this distance of tokenId
+addTo - whether to add it to the current selection or start a new selection. 1 = adds to current select, 0 = start new selection. defaults to 0
+pcOrNpc values are pc, npc, or both. If empty assumes both
+Wildcards(Wildcard implied by PC) values are wildcard, nonwildcard, or both. Empty assumes both
+tokentypes (default is basic) json array
+"]
+
+[h:tokenId="000000008832782C8C22000000000000"]
+[h:tokenId=""]
+[h:distance=""]
+[h:addTo=0]
+[h:pcOrNpc = ""]
+[h:wildcards=""]
+[h:tokentypes=""]
+
+[h:tokenId=arg(0)]
+[h:distance=arg(1)]
+[h:addTo=arg(2)]
+[h:pcOrNpc = arg(3)]
+[h:wildcards=arg(4)]
+[h:tokentypes=arg(5)]
+
+[h:cond=""]
+[h:layer=json.append("[]","TOKEN","HIDDEN")]
+[h:cond=json.set("","layer",layer)]
+
+[h,if(json.type(tokentypes)!="ARRAY"), code:{
+  [h:tokentypes=json.append("","Basic","Vehicles")]
+};{}]
+
+[h,if(tokenId!=""), code:{
+  [h:cond=json.set(cond,"token",tokenId)]
+  [h:distance=if(isNumber(distance),distance,0)]
+  [h:tokenSize=getSize(tokenId)]
+  [if(tokenSize==""), code:{
+    [h:width=getTokenWidth(tokenId)/2]
+    [h:height=getTokenWidth(tokenId)/2]
+    [h:mapGridInfo=json.get(getInfo("map"),"grid")]
+    [h:unitsPerCell=json.get(mapGridInfo,"units per cell")]
+    [h:gridSize=json.get(mapGridInfo,"size")] 
+    [h:distance=distance+floor(max(width,height)/gridSize)*unitsPerCell]
+  };{}]
+  [h:range=json.set("","upto",distance, "distancePerCell",0, "metric","NO_DIAGONALS")]
+  [h:cond=json.set(cond,"range",range)]
+};{}]
+  
+
+[h,switch(pcOrNpc),code:
+  case "pc": {
+    [cond=json.set(cond,"pc",1)]
+  };
+  case "npc": {
+    [cond=json.set(cond,"npc",1)]
+  };
+  default: {
+}]
+
+[h:ids=getTokens("json",cond)]
+
+[h,switch(Wildcards),code:
+  case "wildcard": {
+    [h:selected=""]
+    [h,foreach(id,ids,""), code:{
+      [h:id] 
+      [r:add=getProperty("WildDie",id)]
+      [h:add=if(add=="",0,add)]
+      [h:add=if(add!=0,1,0)]
+      [h,if(add):selected=json.append(selected,id)]
+    }]  
+  };
+  case "nonwildcard": {
+    [h:selected=""]
+    [h,foreach(id,ids,""), code:{
+      [h:id] 
+      [r:add=getProperty("WildDie",id)]
+      [h:add=if(add=="",0,add)]
+      [h:add=if(add==0,1,0)]
+      [h,if(add):selected=json.append(selected,id)]
+    }]  
+  };
+  default: {
+    [selected=ids]
+}]
+
+[h:ids=selected]
+
+[h,if(json.type(tokentypes)=="ARRAY"), code:{
+  [h:selected=""]
+  [foreach(id,ids,""), code:{
+    [type=getPropertyType(id)]
+    [if(json.contains(tokentypes,type)): selected = json.append(selected,id)]
+  }]
+  [h:ids=selected]
+};{
+  [h:selected=ids]
+}]
+
+[h:tokens=selectTokens(ids, addTo, "json")]
+
+!!
+@@ @onTokenMove
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=true ; applyToSelected=false ; group=X ; tooltip= ; minWidth= ; 
+[h:id=currentToken()]
+[h:name=getName(id)]
+[h:lastPath = getLastPath(1)]
+[h:usedMov = getMoveCount()]
+[h:leader=isLeader(id)]
+[h,if(isLeader(id)), code:{
+  [h:path=getLastPath(1)]
+  [h:length=json.length(path)]
+  [h:start=json.get(path,0)]
+  [h:end=json.get(path,length-1)]
+  [h:deltax=json.get(start,"x")-json.get(end,"x")]
+  [h:deltay=json.get(start,"y")-json.get(end,"y")]
+  [h:members=GetGroupMembers(id)]
+  [h,foreach(m,members,""), code:{
+    [h: CurrentX = getTokenX(1,m)]
+    [h: CurrentY = getTokenY(1,m)]
+    [h: NewX = CurrentX - deltax]
+    [h: NewY = CurrentY - deltay]
+    [h: moveToken(NewX, NewY,1,m)]
+  }]
+};{}]
+
+!!

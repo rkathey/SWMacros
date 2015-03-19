@@ -1,0 +1,4136 @@
+@@ @onCampaignLoad
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Utility ; tooltip= ; minWidth= ; 
+<!-- define Lib:GM functions -->
+
+[h:defineFunction("GetTraitNum","GetTraitNumber@Lib:GM")]
+[h:defineFunction("GetDieType","GetDieType@Lib:GM")]
+[h:defineFunction("remainder","Remainder@Lib:GM")]
+[h:defineFunction("FlipClass","FlipClass@Lib:GM")]
+[h:defineFunction("CheckTokenId","CheckTokenId@Lib:GM")]
+[h:defineFunction("ShowRoll","GetShowRolls@Lib:GM")]
+[h:defineFunction('outputTo', 'outputTo@Lib:GM')]
+[h:defineFunction("GetStatesList","Get States@Lib:GM")]
+[h:defineFunction("GetTokenTraitNames","GetTokenTraitNames@Lib:GM")]
+[h:defineFunction("TraitTestWithMod","TraitTestWithMod@Lib:GM")]
+[defineFunction("EdgeToolTip","EdgesToolTip@Lib:GM")]
+[defineFunction("HindrancesToolTip","HindrancesToolTip@Lib:GM")]
+[defineFunction("DieList","DieList@Lib:GM")]
+[defineFunction("Remainder","Remainder@Lib:GM")]
+[defineFunction("Debug2","Debug@Lib:GM")]
+[defineFunction("Split","Split@Lib:GM")]
+[defineFunction("GetSettingLists","GetSettingLists@Lib:GM")]
+[defineFunction("RollTokenTrait","RollTokenTrait@Lib:GM")]
+
+!!
+@@ @CharacterSheet
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group= ; tooltip= ; minWidth= ; 
+[h:tokenId=""]
+[h:newInit=0]
+[h:lowerWindowFill=""]
+[h:gearName=""]
+[h:gearType=""]
+[h:toggleHold=0)]
+[h:whisperers="[]"]
+[h:thisMacro=getMacroName()+"@"+getMacroLocation()]
+[h:varsFromStrProp(macro.args)]
+
+[h:tokenId=if(tokenId=="",currentToken(),"")]
+[h:abortit=if(tokenId=="",0,1)]
+[h:assert(abortit,"no token id available")]
+[h:switchToken(tokenId)]
+
+[if(newInit==1), code: {
+  [macro("DrawInitCard@Lib:Init"): tokenId]
+};{}]
+
+[if(toggleHold==1), code: {
+  [macro("ToggleHold@Lib:Init"): tokenId]
+  [h:toggleHold=0]
+};{}]
+
+[h:r=""]
+[macro("Get Rank@Lib:GM"):""][h:r=macro.return]
+[h:a=""]
+
+[macro("Get Languages@Lib:GM"):""][h:l=macro.return]
+[macro("Get Derived@Lib:GM"):""][h:d=macro.return]
+[macro("Get Hindrances@Lib:GM"):""][h:hind=macro.return]
+
+[macro("Get Edges@Lib:GM"):""][h:e=macro.return]
+[macro("Get Powers@Lib:GM"):""][h:p=macro.return]
+[h:g=""]
+[macro("Get Gear@Lib:Gear"):thisMacro][h:g=macro.return]
+
+[macro("GetAttributeNames@Lib:GM"):""]
+[h:attList=macro.return]
+[h:attLinkList=""]
+[foreach(att,AttList,""), code: {
+  [h:die=getProperty(att)]
+  [h: linkit=macroLinkText("TraitTest@Lib:GM", "all",att,tokenId)]
+  [h:attLinkList = attLinkList + att  + " (<a href='"+linkit+"'>"+ die + "</a>), "]
+}]
+
+[macro("GetTrainedSkills@Lib:GM"):tokenId]
+[h:skillList=macro.return]
+[h:skillLinkList=""]
+[foreach(skill,skillList,""), code: {
+  [h:die=getProperty(skill)]
+  [h: linkit=macroLinkText("TraitTest@Lib:GM", "all",skill,tokenId)]
+  [h:skillLinkList = skillLinkList + skill + " (<a href='" + linkit + "'>" + die +"</a>), "]
+}]
+
+[h:knowledgeSkills=json.fields(Knowledge)]
+[foreach(skill,knowledgeSkills," "), code: {
+  [h:die=json.get(Knowledge,skill)]
+  [h: linkit=macroLinkText("TraitTest@Lib:GM", "all",skill,tokenId)]
+  [h:skillLinkList = skillLinkList + skill + " (<a href='" + linkit + "'>" + die +"</a>), "]
+}]
+
+[h:arcaneSkillsList=json.fields(ArcaneSkills)]
+[foreach(skill,arcaneSkillsList," "), code: {
+  [h:die=json.get(ArcaneSkills,skill)]
+  [h: linkit=macroLinkText("TraitTest@Lib:GM", "all",skill,tokenId)]
+  [h:skillLinkList = skillLinkList + skill + " (<a href='" + linkit + "'>" + die +"</a>), "]
+}]
+
+[h: linkit=macroLinkText("TraitTest@Lib:GM", "all","Untrained",tokenId)]
+[h:skillLinkList = skillLinkList + "Untrained Skill (<a href='"+linkit+"'>d4e-2</a>)"]
+
+[h:states=GetStatesList()]
+
+[h:tempVar=""]
+[h:tempVar=getLibProperty("SettingLists")]
+[h,if(tempVar!=""), code:{
+  [h:settingListsTable=GetSettingLists()]
+};{
+  [h:settingListsTable=""]
+}]
+
+<!-- Powers -->
+[h:ed=getProperty("Edges")]
+[h:hasPowers=0]
+[macro("GetABTypesList@Lib:Powers"):""]
+[h:abTypes=macro.return]
+[foreach(type,abTypes,""), code:{
+  [h:there=listContains(ed, type)]
+  [h:hasPowers=if(there>0,1,hasPowers)]
+}]
+
+[h:rtnStr=""]
+[h:type=json.type(Powers)]
+[h:Powers=if(type=="UNKNOWN","{}",Powers)]
+
+[h:powerSkillList=json.fields(Powers)]
+<!-- Powers contains skill used and type -->
+[foreach(skill,powerSkillList,"; "), code: {
+  [h:pwrs=json.get(Powers,skill)]
+  [h:powerCount=json.length(pwrs)]
+  [c(powerCount,""), code:{
+    [h:name=json.get(pwrs,roll.count)]
+    [h:activePwrs=json.fields(PowersActive)]
+
+    [h:active=listContains(activePwrs,name)]
+    [h:activeText=if(active==0,"","<span title='Active Power' style='color:maroon;vertical-align:super;font-weight:bold'>A</span>")]
+    [h: linkit=macroLinkText("CharacterSheet@Lib:GM","gm","lowerWindowFill=power;powerName="+name+";powerSkill="+skill+ ";activePowerFlag="+ active,tokenId)]
+    [h: name =  "<span title='Click to use power'><a href='"+linkit+"'> " + name +"</a></span>" + activeText +" "]
+    [h:rtnStr=listAppend(rtnStr,""+name)]
+  }]
+}]
+
+[h:powerLinkList = rtnStr]
+
+[h:lowerWindowFillMacro="SimpleActions@Lib:GM"]
+[h:lowerWindowFillMacroArgs=whisperers]
+
+[if(lowerWindowFill=="gear"), code: {
+  [h:lowerWindowFillMacro="GearUse@Lib:Gear"]
+  [h:lowerWindowFillMacroArgs="name="+gearName+";type="+gearType]
+};{}]
+
+[if(lowerWindowFill=="tokenNotes"), code: {
+  [h:lowerWindowFillMacro="DisplayNotes@this"]
+};{}]
+
+[if(lowerWindowFill=="power"), code: {
+  [h:lowerWindowFillMacro="PowerUse@Lib:Powers"]
+  [h:lowerWindowFillMacroArgs="powerName="+powerName+";powerSkill="+powerSkill+";activePowerFlag="+activePowerFlag]
+};{}]
+
+[if(lowerWindowFill=="adventureDeck"), code: {
+  [h:lowerWindowFillMacro="adventureDeck@Lib:AdventureDeck"]
+};{}]
+
+[h:picSize=75]
+[h:picTdSize=picSize+10]
+[h:charPic = getTokenPortrait(picSize)]
+[h: charPic= if(charPic=="",getTokenImage(picSize),charPic)]
+
+[h:sendTo=if(isPC(),"all","gm")]
+
+[frame(getName(), "width=850; height=500"): {
+  <html>
+    <head>
+      
+      <link rel="stylesheet" type="text/css" href="CharSheet_css@Lib:GM">
+      <title>[r:getName()]</title>
+    </head>
+    <body style="font-size:12pt">
+      <table width="100%">
+         <tr>
+            <td colspan="2" valign="bottom" style="background-color:#3A1E1A;text-align:center;color:white;font-weight:bold;font-size:14pt">
+               [r:getName()]
+            </td>
+         </tr>
+         <tr>
+             <td valign="top"  width="100" style="text-align:center;">
+                <table style="padding-top:5px">
+         <tr>
+            <td valign="top" width="100" style="text-align:center;">
+                 [h: linkit=macroLinkText("CharacterSheet@Lib:GM", sendTo,macro.args,tokenId))]
+                 <a href='[r:linkit]'><img src="[r:charPic]" alt='Click to Refesh Display'/></a>
+
+            </td>
+         </tr>
+                   <tr>
+                      <td width="50" valign="bottom" style="text-align:center; font-weight:bold">
+                         Current Initiative<br />
+                         [h:args="toggleHold=1"]
+                         [h: linkit=macroLinkText("CharacterSheet@Lib:GM", sendTo,args,tokenId))]
+                         <a href='[r:linkit]'><img src='[R:tblimage("Cards", CurrentInit())]' border='0' width='57' height='95' alt='Click to Toggle Hold'/></a>
+                      </td>
+                   </tr>
+                   <tr>
+                     [h:args="lowerWindowFill=whisper"]
+                     [h: linkit=macroLinkText("CharacterSheet@Lib:GM", sendTo,args,tokenId))]
+                     <a style="font-weight:bold;color:maroon" href='[r:linkit]'>Whisper</a>
+                   </tr>
+                   <tr>
+                     [h:args="lowerWindowFill=tokenNotes"]
+                     [h: linkit=macroLinkText("CharacterSheet@Lib:GM", sendTo,args,tokenId))]
+                     <a style="font-weight:bold;color:maroon" href='[r:linkit]'>Notes</a>
+                   </tr>
+                   <tr>
+                     [h: linkit=macroLinkText("CombatSurvivalGuide@Lib:GM"))]
+                     <a style="font-weight:bold;color:maroon" href='[r:linkit]'>CSG</a>
+                  </tr>
+                   <tr>
+                     [h: linkit=macroLinkText("BurnBennieDialog@Lib:GM", sendTo,args,tokenId))]
+                     <a style="font-weight:bold;color:maroon" href='[r:linkit]'>Burn Bennie</a>
+                  </tr>
+                   <tr>
+                     [h:args=json.set("","tName",getName())]
+                     [h: linkit=macroLinkText("ShowEvents@Lib:Init", sendTo,args))]
+                     <a style="font-weight:bold;color:maroon" href='[r:linkit]'>Events</a>
+                  </tr>
+                   <tr>
+                     [h:args="lowerWindowFill=adventureDeck"]
+                     [h: linkit=macroLinkText("CharacterSheet@Lib:GM", sendTo,args,tokenId))]
+                     <a style="font-weight:bold;color:maroon" href='[r:linkit]'>Adventure Deck Cards</a>
+                   </tr>
+                </table>
+             </td>
+             <td valign="top">
+                <table width="100%">
+                   [h: class = "oddRow"]
+                   <tr class="[r:class]">
+                      <td width="75">
+                         [h: linkit=macroLinkText("UpdateRankAndRace@Lib:GM", "gm", "returnMacro=CharacterSheet@Lib:GM", tokenId)]
+                         <a style="font-weight:bold;color:maroon" href="[r:linkit]"> Rank/Race:</a>
+                      </td>
+                      <td>
+                         [r:r] ([r:XPs] xps)/[r:getProperty("Race")]
+                      </td>
+                   </tr>
+                   [h: class = if(class=="oddRow", "evenRow", "oddRow")]
+                   <tr class="[r:class]">
+                      [h: linkit=macroLinkText("UpdateAttrDialog@Lib:GM", "gm","returnMacro=CharacterSheet@Lib:GM",tokenId)]
+                      <td valign="top">
+                         <a style="font-weight:bold;color:maroon" href="[r:linkit]">Attributes</a>:
+                      </td>
+                      <td>
+                         [r:attLinkList]
+                      </td>
+                   </tr>
+                   [h: class = if(class=="oddRow", "evenRow", "oddRow")]
+                   <tr class="[r:class]">
+                      [h: linkit=macroLinkText("argCheck@Lib:GM", "gm",tokenId)]
+                      [h: linkit=macroLinkText("UpdateSkillsDialog@Lib:GM", "gm","returnMacro=CharacterSheet@Lib:GM",tokenId)]
+                      <td valign="top">
+                         <a style="font-weight:bold;color:maroon" href="[r:linkit]">Skills</a>:
+                      </td>
+                      <td>
+                         [r:skillLinkList]
+                      </td>
+                   </tr>
+                [h: class = if(class=="oddRow", "evenRow", "oddRow")]
+                <tr class="[r:class]">
+                   [h: linkit=macroLinkText("UpdateLanguagesDialog@Lib:GM", "gm","returnMacro=CharacterSheet@Lib:GM",tokenId)]
+                   <td valign="top">
+                      <a style="font-weight:bold;color:maroon" href="[r:linkit]">Languages</a>:
+                   </td>
+                   <td>
+                      [r:l]
+                   </td>
+                </tr>
+                [h: class = if(class=="oddRow", "evenRow", "oddRow")]
+                <tr class="[r:class]">
+                   [h: linkit=macroLinkText("UpdateDerivedDialog@Lib:GM", "gm","returnMacro=CharacterSheet@Lib:GM",tokenId)]
+                   <td valign="top">
+                      <a style="font-weight:bold;color:maroon" href="[r:linkit]">Derived</a>:
+                   </td>
+                   <td>
+                      [r:d]
+                   </td>
+                </tr>
+                [h: class = if(class=="oddRow", "evenRow", "oddRow")]
+                <tr class="[r:class]">
+                [h: linkit=macroLinkText("UpdateHindranceDialog@Lib:GM", "gm","returnMacro=CharacterSheet@Lib:GM",tokenId)]
+                <td valign="top">
+                   <a style="font-weight:bold;color:maroon" href="[r:linkit]">Hindrances</a>:
+                </td>
+                <td>
+                   [r:hind]
+                </td>
+             </tr>
+             [h: class = if(class=="oddRow", "evenRow", "oddRow")]
+             <tr class="[r:class]">
+                [h: linkit=macroLinkText("UpdateEdgeDialog@Lib:GM", "gm","returnMacro=CharacterSheet@Lib:GM",tokenId)]
+                <td valign="top">
+                   <a style="font-weight:bold;color:maroon" href="[r:linkit]">Edges</a>:
+                </td>
+                <td>
+                   [r:e]
+                </td>
+             </tr>
+             [h: class = if(class=="oddRow", "evenRow", "oddRow")]
+             <tr class="[r:class]">
+             [h: linkit=macroLinkText("UpdateGearDialog@Lib:Gear", "gm","returnMacro=CharacterSheet@Lib:GM",tokenId)]
+                <td valign="top">
+                   <a style="font-weight:bold;color:maroon" href="[r:linkit]">Gear</a>:
+                </td>
+                <td>
+                   [r:g]
+                </td>
+             </tr>
+             [if(hasPowers>0), code:{
+                [h: class = if(class=="oddRow", "evenRow", "oddRow")]
+                <tr class="[r:class]">
+                   [h: linkit=macroLinkText("UpdatePowersDialog@Lib:GM", "gm","returnMacro=CharacterSheet@Lib:GM",tokenId)]
+                   <td valign="top">
+                      <a style="font-weight:bold;color:maroon" href="[r:linkit]">Powers</a>:
+                   </td>
+                   <td>
+                      [r: powerLinkList]
+                   </td>
+                </tr>
+                };{}
+             ]
+                [h: class = if(class=="oddRow", "evenRow", "oddRow")]
+                <tr class="[r:class]">
+                   <td valign="top">
+                      [h: linkit=macroLinkText("UpdateStatesDialog@Lib:GM", "gm","returnMacro=CharacterSheet@Lib:GM",tokenId)]
+                      <a style="font-weight:bold;color:maroon" href="[r:linkit]">States</a>:
+                   </td>
+                   <td>
+                      [foreach(state,states,""), code: {
+                         <img src='[r:getStateImage(state)]' width="20" height="20" alt="[r:state]" />
+                      }]
+                   </td>
+                </tr>
+
+             [if(settingListsTable!=""), code:{
+                [h: class = if(class=="oddRow", "evenRow", "oddRow")]
+                <tr class="[r:class]">
+                   <td valign="top">
+                      [h:linkit=macroLinkText("UpdateSettingLists@Lib:GM", "gm","returnMacro=CharacterSheet@Lib:GM",tokenId)]
+                      <a style="font-weight:bold;color:maroon" href="[r:linkit]">Other</a>:
+                   </td>
+                   <td>
+                      [r:settingListsTable]
+                   </td>
+                </tr>
+              };{}]
+
+                [h: class = if(class=="oddRow", "evenRow", "oddRow")]
+                <tr class="[r:class]">
+                   <td colspan="2">
+                      [macro(lowerWindowFillMacro):lowerWindowFillMacroArgs]
+                   </td>
+                </tr>
+             </table>
+          </td>
+       </tr>
+    </table>
+ </body>
+</html>
+}]
+[if(macro.args=="Activate"): abort(0)]
+[r:macro.args]
+[h:lowerWindowFlag=getStrProp(macro.args,"lowerWindowFill")]
+[if(lowerWindowFlag!=""): abort(0)]
+[r:lowerWindowFlag]
+
+!!
+@@ @Movement
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group= ; tooltip= ; minWidth= ; 
+[moveType=macro.args]
+[switch(moveType):
+  case "Crawl": code: { [h:state.prone=1] [getName() + "may move up to 2 squares and counts as prone"]};
+  case "Crouch": code: { [h:state.prone=1] [getName() + "moves at half movement(including run) and incoming ranged attacks suffer a -1 penalty "]};
+  case "Prone": code: { [h:state.prone=1] [getName() +"drops to the ground"] };
+  case "Jump": code: {[getName() + "Jumps 1 square from dead stop or 2 squares if running + 1 extra square on a successfull Strength roll"]};
+  default: getName() + " moves " + Pace
+
+]
+
+!!
+@@ @AddBennieToList
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Bennies ; tooltip= ; minWidth= ; 
+[h:in=macro.args]
+[h:varsFromStrProp(in)]
+
+[h:a=json.fromStrProp(in)]
+
+[h:pcs2update=""]
+
+[FOR(i,1,PCCount), code: {
+  [h:var="PC"+I]
+  [h:there=json.contains(a,var)]
+  [h:tokenId=if(there==1,getStrProp(in, var),0)]
+  [h:pcs2update=if(there==1,listappend(pcs2update,tokenId),pcs2update)]
+}]
+
+[foreach(tokenId,pcs2update,""), code: {
+  [switchToken(tokenId)]
+  [getName()] Recieves a Bennie from the GM
+  [h:prop="BenniesUsed"]
+  [h:used = eval(prop)-1]
+  [h:setProperty(prop,used)]
+}]
+
+!!
+@@ @BurnBennie
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Bennies ; tooltip= ; minWidth= ; 
+[h:tokenId=CheckTokenId()]
+[h:tName=getName()]
+
+[h:starting=Bennies]
+[h:left=BenniesLeft]
+[h:left=left-1]
+[h:condition=if(left<0,0,1)]
+[h:assert(condition,"You don't have any bennies left to spend")]
+[h:BenniesLeft=left]
+<b>burns a bennie
+[for(i,0,left,1,""), code:{
+<span style="color:green; font-weight:bold"> &#9830;</span>
+}]
+
+!!
+@@ @BurnBennieDialog
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Bennies ; tooltip= ; minWidth= ; 
+[h:tokenId=CheckTokenId()]
+[h:tName=getName()]
+
+[h:varsFromStrProp(macro.args)]
+
+<!-- take this out later -->
+[h:okMacro="argCheck@Lib:GM"]
+[h:okMacro="BurnBennieOK@Lib:GM"]
+[h:myEvents=MyEvents()]
+
+[h:traitsText=""]
+
+[h:class=FlipClass("oddrow")]
+
+<!--- #################################### --->
+[h,foreach(event,myEvents,""), code:{
+
+[h,if(json.contains(event,"Roll")), code:{
+      [h:traitsText=traitsText+"<tr class=' " + class + " '>"]
+      [h:trait=json.get(event,"Trait")]
+      [h:roll=json.get(event,"Roll")]
+      [h:traitsText=traitsText+"<input TYPE=RADIO NAME='BennieUse' VALUE=' " + trait + " '> Reroll " + trait + " roll " + roll]
+      [h:class=FlipClass(class)]
+      [h:traitsText=traitsText+"</tr>"]
+
+};{}]
+
+}]
+<!--- #################################### --->
+
+[dialog("BurnBennie", "width=400; height=400"): {
+  <html>
+    <head>
+      <title>Burn Bennie</title>
+      <meta name="input" content="true">
+      <link rel="stylesheet" type="text/css" href="CharSheet_css@Lib:GM">     
+    </head>
+    <body>
+      <form name="BurnBennie" action="[r:macroLinkText(okMacro,"all","",tokenId)]">
+      <table width="100%">
+      <tr><th>Bennie Use</td></tr>
+
+<!--- #################################### --->
+{traitsText}
+<!--- #################################### --->
+
+      <tr class="[r:class]">
+         <input TYPE=RADIO NAME="BennieUse" VALUE="Soak"> Soak
+      </tr>
+
+<!--- ##################################### --->
+      <tr class="[r:class]">
+         <input TYPE=RADIO NAME="BennieUse" VALUE="JustBurn"> Just Burn
+      </tr>
+<!--- #################################### --->
+
+[if(isPC()==0), code:{
+      <tr><th>Select Bennie Pool to Use</th></tr>
+  [h:class=FlipClass(class)]
+      <tr class="[r:class]">
+         <input TYPE=RADIO NAME="BenniePool" VALUE="Token"> Token Bennie
+  [count(BenniesLeft,""): "<span style='color:green; font-weight:bold'> &#9733;</span>"]
+  [h:class=FlipClass(class)]
+      </tr>
+      <tr class="[r:class]">
+         <input TYPE=RADIO NAME="BenniePool" VALUE="GM"> GM Bennie
+  [count(getLibProperty("GMBenniesLeft"),""): "<span style='color:red; font-weight:bold'> &#9733;</span>"]
+      </tr>
+};{
+  [h:class=FlipClass(class)]
+      <tr class="[r:class]"> Bennies Left: 
+  [count(BenniesLeft,""): "<span style='color:green; font-weight:bold'> &#9830;</span>"]
+      </tr>
+}]
+
+          </tr><tr><th><input type="submit" name="Submit" value="Submit"> </input></th></tr>
+      </form>
+    </body>
+  </html>
+}]
+[abort(0)]
+
+!!
+@@ @BurnBennieOK
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Bennies ; tooltip= ; minWidth= ; 
+[h:BenniePool="Player"]
+[h:tokenId=CheckTokenId()]
+[h:tName=getName()]
+[h:props=macro.args]
+[h:varsFromStrProp(macro.args)]
+
+[if(BenniePool=="GM"), code:{
+  [macro("BurnGMBennie@this"):""]
+};{
+  [macro("BurnBennie@this"):""]
+}]
+
+[if(BennieUse=="Soak"), code:{
+  [h:trait="Vigor"]
+  [h:setState("Shaken",0)]
+};{
+  [h:trait=BennieUse]
+}]
+
+<!--- ######################### --->
+[if(BennieUse!="JustBurn"), code:{
+  [macro("TraitTest@Lib:GM"):trait]
+};{
+}]
+
+<!--- ######################## --->
+
+!!
+@@ @BurnGMBennie
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Bennies ; tooltip= ; minWidth= ; 
+[h:starting=getLibProperty("GMBennies")]
+[h:left=getLibProperty("GMBenniesLeft")]
+[h:left=left-1]
+[h:condition=if(left<0,0,1)]
+[h:assert(condition,"You don't have any bennies left to spend")]
+[h:setLibProperty("GMBenniesLeft",left)]
+<b>GM burns a bennie
+[for(i,0,left,1,""), code:{
+  <span style="color:red; font-weight:bold"> &#9830;</span>
+}]
+
+!!
+@@ @GiveBennie2PCs
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Bennies ; tooltip= ; minWidth= ; 
+[macro("SelectPCDialog@Lib:GM"): "AddBennieToList@Lib:GM"]
+
+!!
+@@ @Soak
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Bennies ; tooltip= ; minWidth= ; 
+attempts to SOAK an attack<br>
+[h:starting=Bennies]
+[h:left=BenniesLeft]
+[h:left=left-1]
+[h:condition=if(left<0,0,1)]
+[h:assert(condition,"You don't have any bennies left to spend")]
+[h:BenniesLeft=left]
+<b>burns a bennie
+[for(i,0,left,1,""), code:{
+<span style="color:green; font-weight:bold"> &#9733;</span>
+}][macro("TraitTest@Lib:GM"): "Vigor"]
+
+!!
+@@ @CharSheet2_css
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Character Sheet ; tooltip= ; minWidth= ; 
+.oddRow { background-color: #FFFFFF }
+.evenRow { background-color: #EEEEAA }
+#stats th { background-color: #113311; color: #FFFFFF }
+
+!!
+@@ @CharSheet_css
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Character Sheet ; tooltip= ; minWidth= ; 
+.oddRow { background-color: #c4d9ea }
+.evenRow { background-color: #e7eced }
+body {background-color: b0c7cf}
+th { background-color: #5c8b9f; color: #23325f }
+h1 { text-align: center } 
+input.radio { background : #b0c7cf; color: #000000; }
+
+!!
+@@ @DieDropdown
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Character Sheet ; tooltip= ; minWidth= ; 
+[h:selected=macro.args]
+[h:dieList=DieList()]
+
+[foreach(die,dieList,"</option>"), code: {
+  [if(selected==die), code: {
+    <option selected>[r:die]
+  };{
+    <option>[r:die]
+  }]
+}]
+
+!!
+@@ @DieList
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Character Sheet ; tooltip= ; minWidth= ; 
+[r:dieList=json.append("",
+"d4e-4",
+"d4e-3",
+"d4e-2",
+"d4e-1",
+"d4e",
+"d4e+1",
+"d4e+2",
+"d6e-1",
+"d6e",
+"d6e+1",
+"d6e+2",
+"d6e+3",
+"d6e+4",
+"d8e-1",
+"d8e",
+"d8e+1",
+"d8e+2",
+"d8e+3",
+"d8e+4",
+"d10e-1",
+"d10e",
+"d10e+1",
+"d10e+2",
+"d10e+3",
+"d10e+4",
+"d12e-1",
+"d12e",
+"d12e+1",
+ "d12e+2",
+"d12e+3",
+"d12e+4",
+"d12e+5",
+"d12e+6",
+"d12e+7",
+"d12e+8",
+"d12e+9",
+"d12e+10")]
+
+!!
+@@ @Get Attributes
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=true ; group=Character Sheet ; tooltip= ; minWidth= ; 
+[macro("GetAttributeNames@Lib:GM"):""]
+[h:firstTime=1]
+[h:atts=macro.return]
+[h:rtnStr=""]
+[foreach(att, atts,""), code: {
+  [macro("GetTrait@Lib:GM"): att]
+  [if(firstTime==1), code: { 
+    [h:rtnStr=rtnStr + att + " " + macro.return ] 
+    [h:firstTime=0]
+  }; {
+    [h:rtnStr= rtnStr + ", " + att + " " + macro.return]
+  };
+]
+}]
+[h:macro.return=rtnStr]
+
+!!
+@@ @Get Derived
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=true ; group=Character Sheet ; tooltip= ; minWidth= ; 
+[macro("GetDerivedNames@Lib:GM"):""]
+[h:firstTime=1]
+[h:atts=macro.return]
+[h:rtnStr=""]
+[foreach(att, atts,""), code: {
+  [macro("GetTrait@Lib:GM"): att]
+  [if(firstTime==1), code: { 
+    [h:rtnStr=rtnStr + att + " " + macro.return ] 
+    [h:firstTime=0]
+  }; {
+    [h:rtnStr= rtnStr + ", " + att + " " + macro.return]
+  };
+]
+}]
+
+[h:abList=json.fields(PowerPoints)]
+[foreach(skill,abList,""), code:{
+  [h:rtnStr=rtnStr+", <b>"+ skill + " Power Points: </b>"]
+  [h:ps=json.get(PowerPoints,skill)]
+  [h:descs=json.fields(ps)]
+  [foreach(desc,descs,""), code:{
+    [h:val=json.get(ps,desc)]
+    [h:desc=if(desc=="Used" || desc=="Max",desc,desc+" Used")]
+    [h:rtnStr=rtnStr+ desc + "=" + val + " "]
+  }]
+}]
+
+[h:macro.return=rtnStr]
+
+!!
+@@ @Get Edges
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=true ; group=Character Sheet ; tooltip= ; minWidth= ; 
+[h:rtn=""]
+[h:ed=getProperty("Edges")]
+[foreach(e,ed,""), code:{
+  [h:rtn=listAppend(rtn,EdgeToolTip(e))]
+}]
+[h:ed=rtn]
+[h:raceAbility=RaceAbilityLine(getProperty("Race"))]
+[h:ed=listAppend(ed,raceAbility)]
+[h:macro.return=ed]
+
+!!
+@@ @Get Gear
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=true ; group=Character Sheet ; tooltip= ; minWidth= ; 
+[h:gear1=getProperty("Gear")]
+[h:num = countStrProp(gear1)]
+[h:rtnStr=""]
+[for(i,0,num,1,""), code: {
+  [h:numStr=""]
+  [h:name=indexKeyStrProp(gear1, i)]
+  [h:value=indexValueStrProp(gear1, i)]
+  [h:value=if(value=="",1,value)]
+  [h:numStr=if(value>1,"x"+value,"")]
+  [if(name!=""), code:{
+    [h:rtnStr=listAppend(rtnStr,""+name+numStr)]
+  };{}]
+}]
+[h:macro.return=rtnStr]
+
+!!
+@@ @Get Hindrances
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Character Sheet ; tooltip= ; minWidth= ; 
+[h:rtnStr=""]
+[h:maj=getProperty("MajorHindrances")]
+[foreach(m,maj,""), code:{
+  [h:rtnStr=json.append(rtnStr,HindrancesToolTip(m,"Major"))]
+}]
+[h:rtnStr=json.toList(rtnStr)]
+[h:rtnStr="Major: "+rtnStr+"<br>Minor: "]
+
+[h:rtnStr2=""]
+[h:min=getProperty("MinorHindrances")]
+[foreach(m,min,""), code:{
+  [h:rtnStr2=json.append(rtnStr2,HindrancesToolTip(m,"Minor"))]
+}]
+
+[h:rtnStr=rtnStr+json.toList(rtnStr2)]
+
+[h:macro.return=rtnStr]
+
+!!
+@@ @Get Languages
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=true ; group=Character Sheet ; tooltip= ; minWidth= ; 
+[macro("GetTrait@Lib:GM"): "Languages"]
+[h:macro.return=macro.return]
+
+!!
+@@ @Get Powers
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=true ; group=Character Sheet ; tooltip= ; minWidth= ; 
+[macro("GetPowersList@Lib:Powers"):""]
+[h:macro.return=macro.return]
+
+!!
+@@ @Get Rank
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Character Sheet ; tooltip= ; minWidth= ; 
+[macro("GetTrait@Lib:GM"): "XPs"]
+[h:xp=macro.return]
+[h:rank="Novice"]
+[h:rank=if(xp>19,"Seasoned",rank)]
+[h:rank=if(xp>39,"Veteran",rank)]
+[h:rank=if(xp>59,"Heroic",rank)]
+[h:rank=if(xp>79,"Legendary",rank)]
+[h:macro.return=rank]
+
+!!
+@@ @Get Skills
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=true ; group=Character Sheet ; tooltip= ; minWidth= ; 
+[h:tokenId=macro.args]
+[macro("GetSkillNames@Lib:GM"):""]
+[h:atts=macro.return]
+[h:firstTime=1]
+[h:newAtts = ""]
+[h:rtnStr=""]
+[Debug("attributes",atts)]
+[foreach(att, atts,""), code: {
+  [macro("GetTrait@Lib:GM"): att]
+  [h:trait=macro.return]
+  [h:defTrait=getPropertyDefault(att)]
+  [if(defTrait!=trait), code: { [h:newAtts=listAppend(newAtts,att)] };{}]
+}]    
+
+[foreach(att, newAtts,""), code: {
+  [macro("GetTrait@Lib:GM"): att]
+  [if(firstTime==1), code: { 
+    [h:rtnStr=rtnStr + att + " " + macro.return ] 
+    [h:firstTime=0]
+  }; {
+    [h:rtnStr= rtnStr + ", " + att + " " + macro.return]
+  };
+]
+}]
+[h:macro.return=rtnStr]
+
+!!
+@@ @Get States
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Character Sheet ; tooltip= ; minWidth= ; 
+[h:states=""]
+[h:stateList=getTokenStates()]
+[h:removeList="Bennie1,Bennie2,Bennie3,Bennie4,Bennie5,Bennie6"]
+[foreach(rml,removeList,""), code: {
+  [h:idx=listFind(stateList, rml)]
+  [if(idx!=-1), code: {
+    [h:stateList = listDelete(stateList, idx)]
+  };{}]
+}]
+
+[foreach(state,stateList,""), code: {
+  [h:states=if(getState(state),listAppend(states,state),states)]
+}]
+[r:states]
+
+!!
+@@ @GetTrainedSkills
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Character Sheet ; tooltip= ; minWidth= ; 
+[h:tokenId=macro.args]
+[h:switchToken(tokenId)]
+[macro("GetSkillNames@Lib:GM"):""]
+[h:SkillList = macro.return]
+[h:trainedSkills=""]
+[h:unskilled=""]
+[h:names = getPropertyNames()]
+[foreach(skill,SkillList,""), code : {
+    [h:value=getProperty(skill)]
+    [h:value=if(value=="","d4e-2",value)]
+    [h:default="d4e-2"]
+    [if(value==default), code:{
+      [h:unskilled=listAppend(unskilled,skill)]
+    };{
+      [h:trainedSkills=listAppend(trainedSkills,skill)]
+    }]
+}]
+
+[h:macro.return=trainedSkills]
+
+!!
+@@ @GetVisibleTokens
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=true ; applyToSelected=false ; group=Character Sheet ; tooltip= ; minWidth= ; 
+[h:tokenId=""]
+[h:PCs=""]
+[h:NPCs=""]
+[h:targets=""]
+[h:returnMacro="argCheck@Lib:GM"]
+[h:props=macro.args]
+[h:varsFromStrProp(macro.args)]
+
+[h:abortit=if(tokenId=="",0,1)]
+[h:assert(abortit,"no token id available")]
+
+[h:tokens = getVisibleTokens("json")]
+
+[h:ctok = listCount(tokens)]
+
+[h:count=0]
+[foreach(token,tokens,""), code: {
+  [switchToken(token)]
+  [if(getPropertyType()=="Basic"), code: {
+  [h:tokenDetails=json.set("","Name",getName(),"TokenType",getPropertyType(),"PC",isPC(),"Wounds",Wounds,"Shaken",getState("Shaken"))]
+  [h:targets=json.set(targets,token,tokenDetails)]
+  };{}]
+}]
+[h:switchToken(tokenId)]
+[h:macro.return=targets]
+
+!!
+@@ @OKDialog
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Character Sheet ; tooltip= ; minWidth= ; 
+<!-- args include title, message,link,output,tokenId -->
+[h:props=macro.args]
+[h:varsFromStrProp(props)]
+
+  <html>
+    <head>
+      <title>[r:title]</title>
+      <link rel="stylesheet" type="text/css" href="CharSheet_css@Lib:GM">     
+    </head>
+    <body>
+        <h1> [r:message] </h1>
+    </body>
+  </html>
+
+!!
+@@ @UpdateAttrDialog
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=true ; group=Character Sheet ; tooltip= ; minWidth= ; 
+[h:tokenId=""]
+[h:returnMacro="argCheck@Lib:GM"]
+[h:varsFromStrProp(macro.args)]
+[tokenId=if(tokenId=="",currentToken(),"")]
+[h:abortit=if(tokenId=="",0,1)]
+[h:assert(abortit,"no token id available")]
+
+[macro("GetAttributeNames@Lib:GM"): ""]
+[h:AttrList=macro.return]
+
+[h:switchToken(tokenId)]
+
+[getName()] updating attributes
+
+[h: class = "oddRow"]
+
+[dialog("AttrUpdate", "width=250; height=250"): {
+  <html>
+    <head>
+      <title>Edit Attributes</title>
+      <meta name="input" content="true">
+      <meta name=”closebutton” content=”true”> 
+      <link rel="stylesheet" type="text/css" href="CharSheet_css@Lib:GM">     
+    </head>
+    <body>
+      <form name="PC Properties" action="[r:macroLinkText("UpdateAttrOK@Lib:GM","gm","",tokenId)]">
+        <table id="Attributes" bgcolor=#aaaaaa width="100%">
+          <tr>
+            <th>
+              <label for="Check all PCs to act upon">Skill</label>
+            </th>
+            <th>
+              Value
+            </th>
+            <th>
+              Update To
+            </th>
+          </tr>
+[foreach(attr,AttrList,""), code: {
+  [h: args="property = " + attr + "; tokenId = " + tokenId + "; "]
+  [macro("GetTokenTrait@Lib:GM"): args]
+  [h:value = macro.return]
+        <tr class="[r:class]">
+          <td>[r:attr] </td>
+          <td><center>[r:value]</center></td>
+<td><center><select name="update_[r:attr]">
+[macro("DieDropdown@this"): value]
+</select></center></td>
+
+        </tr>
+  [h: class = if(class=="oddRow", "evenRow", "oddRow")]
+}]
+        <tr class="[r:class]"><th colspan=3><input type="submit" name="Submit" value="Submit"> </input></th></tr>
+        </table>
+        <input type="hidden" name="returnMacro" value="[r:returnMacro]"> </input>
+      </form>
+    </body>
+  </html>
+}]
+[h:abort(0)]
+
+!!
+@@ @UpdateAttrOK
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Character Sheet ; tooltip= ; minWidth= ; 
+[h:tokenId=""]
+[h:returnMacro="argCheck@Lib:GM"]
+
+[h:varsFromStrProp(macro.args)]
+[h:tokenId=if(tokenId=="",currentToken(),"")]
+[h:abortit=if(tokenId=="",0,1)]
+[h:assert(abortit,"no token id available")]
+
+[h:switchToken(tokenId)]
+[if(Agility!=update_Agility), code: {
+  [getName()] Updating Agilty from [Agility] to [Agility=update_Agility]<br>
+};{}]
+[if(Smarts!=update_Smarts), code: {
+  [getName()] Updating Smarts from [Smarts] to [Smarts=update_Smarts]<br>
+};{}]
+[if(Spirit!=update_Spirit), code: {
+  [getName()] Updating Spirit from [Spirit] to [Spirit=update_Spirit]<br>
+};{}]
+[if(Strength!=update_Strength), code: {
+  [getName()] Updating Strength from [Strength] to [Strength=update_Strength]<br>
+};{}]
+[if(Vigor!=update_Vigor), code: {
+  [getName()] Updating Vigor from [Vigor] to [Vigor=update_Vigor]<br>
+};{}]
+
+[macro(returnMacro):""]
+
+!!
+@@ @UpdateDerivedDialog
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Character Sheet ; tooltip= ; minWidth= ; 
+<!-- args are tokenId -->
+[h:tokenId=""]
+[h:returnMacro="argCheck@Lib:GM"]
+
+[h:varsFromStrProp(macro.args)]
+[h:tokenId=if(tokenId=="",currentToken(),"")]
+[h:abortit=if(tokenId=="",0,1)]
+[h:assert(abortit,"no token id available")]
+
+[macro("GetDerivedNames@Lib:GM"):""]
+[h:derivedList=macro.return]
+
+[h: class = "oddRow"]
+[dialog("DerivedUpdate", "width=250; height=300"): {
+  <html>
+    <head>
+      <title>Modify Derived Stats</title>
+      <meta name="input" content="true">
+      <link rel="stylesheet" type="text/css" href="CharSheet_css@Lib:GM">     
+    </head>
+    <body>
+      <form name="PC Derived Stats" action="[r:macroLinkText("UpdateDerivedOK@Lib:GM","gm","",tokenId)]">
+        <table id="Attributes" bgcolor=#aaaaaa width="100%">
+          <tr>
+            <th>Derived Stat</th>
+            <th>Value</th>
+          </tr>
+[foreach(derived,derivedList,""), code: {
+  [macro("GetTraitById@Lib:GM"):"property="+derived+";tokenId="+tokenId]
+  [h:value=macro.return]
+          <tr class="[r:class]">
+[h: class = if(class=="oddRow", "evenRow", "oddRow")]
+            <td>[r:derived]</td>
+            <td><center><input type="text" name="update_[r:derived]" value="[r:value]" size=2> </center></td> 
+          </tr>
+}]
+[macro("UpdateDerivedPPForm@this"):""]
+        <tr><th colspan=2>
+        <input type="submit" name="Submit" value="Submit"> </input>
+        </th></tr>
+        </table>
+        <!-- hidden input with the weapon number -->
+        <input type="hidden" name="returnMacro" value="[r:returnMacro]"> </input>
+      </form>
+    </body>
+  </html>
+}]
+[h:abort(0)]
+
+!!
+@@ @UpdateDerivedOK
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Character Sheet ; tooltip= ; minWidth= ; 
+[h:tokenId=""]
+[h:returnMacro="argCheck@Lib:GM"]
+
+[h:varsFromStrProp(macro.args)]
+[h:tokenId=if(tokenId=="",currentToken(),"")]
+[h:abortit=if(tokenId=="",0,1)]
+[h:assert(abortit,"no token id available")]
+
+[macro("GetDerivedNames@Lib:GM"): ""]
+[h:derivedList=macro.return]<br>
+[switchToken(tokenId)]
+
+[foreach(derived,derivedList,""), code: {
+  [h:old=eval(derived)]
+  [h:new=eval("update_"+derived)]
+  [if(old!=new), code: {
+    [h:cmd=derived+"="+new]
+    [h:eval(cmd)]
+    [getName()] updated [derived] <b>from</b> [old] <b>to</b> [new] <br>
+  };{}]
+}]
+
+[h:abList=json.fields(PowerPoints)]
+[foreach(skill,abList,""), code:{
+  [h:ps=json.get(PowerPoints,skill)]
+  [h:oldPs=ps]
+  [h:descs=json.fields(ps)]
+  [foreach(desc,descs,""), code:{
+    [h:oldVal=json.get(ps,desc)]
+    [h:var="ppupdate_"+skill+"_"+desc]
+    [h:newVal=eval(var)]
+    [h:ps=json.set(ps,desc,newVal)]
+  }]
+  [h:PowerPoints=json.set(PowerPoints,skill,ps)]
+  <br> [getName()] updating power points for [r:skill] from [r:oldPs] to [r:ps]
+}]
+
+[macro(returnMacro):""]
+
+!!
+@@ @UpdateDerivedPPForm
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Character Sheet ; tooltip= ; minWidth= ; 
+[h:abList=json.fields(PowerPoints)]
+[h: class = "oddRow"]
+[foreach(skill,abList,""), code:{
+<tr>
+  <th colspan=2>
+    [r:skill] Power Points
+  [h:ps=json.get(PowerPoints,skill)]
+  [h:descs=json.fields(ps)]
+  [foreach(desc,descs,""), code:{
+  </th>
+</tr>
+    <tr class="[r:class]">
+      <td>[r:lable=if(desc=="Max" || desc == "Used",desc+" Power Points",desc+" Power Points Used")]</td>
+      <td>
+        <center>
+        <input type="text" name="ppupdate_[r:skill]_[r:desc]" value="[r:json.get(ps,desc)]" size=2> 
+        </center>
+[h: class = if(class=="oddRow", "evenRow", "oddRow")]
+      </td> 
+    </tr>
+  }]
+</tr>
+}]
+
+!!
+@@ @UpdateEdgeDialog
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Character Sheet ; tooltip= ; minWidth= ; 
+<!-- args are tokenId -->
+[h:props=macro.args]
+
+[h:tokenId=""]
+[h:returnMacro="argCheck@Lib:GM"]
+[h:varsFromStrProp(macro.args)]
+[h:tokenId=if(tokenId=="",currentToken(),"")]
+[h:abortit=if(tokenId=="",0,1)]
+[h:assert(abortit,"no token id available")]
+
+[macro("GetEdgeNames@Lib:GM"):""]
+[h:edgeList=macro.return]
+[h:switchToken(tokenId)]
+[h:currEdges=Edges]
+[h:numOnLine=4]
+
+[h: class = "oddRow"]
+[dialog("EdgeUpdate", "width=650; height=800;temporary=1"): {
+  <html>
+    <head>
+      <title>Select Edges</title>
+      <meta name="input" content="true">
+      <link rel="stylesheet" type="text/css" href="CharSheet_css@Lib:GM">     
+    </head>
+    <body>
+      <form name="PC Edges" action="[r:macroLinkText("UpdateEdgeOK@Lib:GM","gm","",tokenId)]">
+        <table id="Hindrances" bgcolor=#aaaaaa width="100%">
+          <tr>
+          <th colspan=[r:2*numOnLine]>Edges [h:count=0] </th>
+          </tr>
+          <tr>
+[foreach(edge,edgeList,""), code: {
+             <td class="[r:class]">
+  [h:checked=""]
+  [h:checked=if(listContains(currEdges,edge)," checked  "," ")]
+            <input type="checkbox" name="edge_[r:edge]" value="1" [r:checked]></input>
+  [h:switch=if(count==NumOnLine,1,0)]
+  [h:count=if(count==NumOnLine,0,count)]
+            </td><td class="[r:class]">[r:edge]
+  [h:count=count+1]
+  [h: class = if(class=="oddRow", "evenRow", "oddRow")]
+  [h:p=if(count==NumOnLine,"</td></tr><tr>","</td>")][r:p]
+}]
+[for(count,count,numOnLine,1,""), code: {
+  <td class="[r:class]"></td>
+  <td class="[r:class]">
+  [h:p=if(count==NumOnLine,"</td></tr><tr>","</td>")][r:p]
+  [h: class = if(class=="oddRow", "evenRow", "oddRow")]
+}]
+          <tr>
+            <th colspan=[r:2*numOnLine]> 
+              <input type="submit" name="Submit" value="Submit"> </input> 
+            </th>
+          </tr>
+        </table>
+        <!-- hidden input with the weapon number -->
+        <input type="hidden" name="returnMacro" value="[r:returnMacro]"> </input>
+      </form>
+    </body>
+  </html>
+}]
+[h:abort(0)]
+
+!!
+@@ @UpdateEdgeDialog
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Character Sheet ; tooltip= ; minWidth= ; 
+<!-- args are tokenId -->
+[h:props=macro.args]
+
+[h:tokenId=""]
+[h:returnMacro="argCheck@Lib:GM"]
+[h:varsFromStrProp(macro.args)]
+[h:tokenId=if(tokenId=="",currentToken(),"")]
+[h:abortit=if(tokenId=="",0,1)]
+[h:assert(abortit,"no token id available")]
+
+[macro("GetEdgeNames@Lib:GM"):""]
+[h:edgeList=macro.return]
+[h:switchToken(tokenId)]
+[h:currEdges=Edges]
+[h:numOnLine=4]
+
+[h: class = "oddRow"]
+[dialog("EdgeUpdate", "width=650; height=800;temporary=1"): {
+  <html>
+    <head>
+      <title>Select Edges</title>
+      <meta name="input" content="true">
+      <link rel="stylesheet" type="text/css" href="CharSheet_css@Lib:GM">     
+    </head>
+    <body>
+      <form name="PC Edges" action="[r:macroLinkText("UpdateEdgeOK@Lib:GM","gm","",tokenId)]">
+        <table id="Hindrances" bgcolor=#aaaaaa width="100%">
+          <tr>
+          <th colspan=[r:2*numOnLine]>Edges [h:count=0] </th>
+          </tr>
+          <tr>
+[foreach(edge,edgeList,""), code: {
+             <td class="[r:class]">
+  [h:checked=""]
+  [h:checked=if(listContains(currEdges,edge)," checked  "," ")]
+            <input type="checkbox" name="edge_[r:edge]" value="1" [r:checked]></input>
+  [h:switch=if(count==NumOnLine,1,0)]
+  [h:count=if(count==NumOnLine,0,count)]
+            </td><td class="[r:class]">[r:edge]
+  [h:count=count+1]
+  [h: class = if(class=="oddRow", "evenRow", "oddRow")]
+  [h:p=if(count==NumOnLine,"</td></tr><tr>","</td>")][r:p]
+}]
+[for(count,count,numOnLine,1,""), code: {
+  <td class="[r:class]"></td>
+  <td class="[r:class]">
+  [h:p=if(count==NumOnLine,"</td></tr><tr>","</td>")][r:p]
+  [h: class = if(class=="oddRow", "evenRow", "oddRow")]
+}]
+          <tr>
+            <th colspan=[r:2*numOnLine]> 
+              <input type="submit" name="Submit" value="Submit"> </input> 
+            </th>
+          </tr>
+        </table>
+        <!-- hidden input with the weapon number -->
+        <input type="hidden" name="returnMacro" value="[r:returnMacro]"> </input>
+      </form>
+    </body>
+  </html>
+}]
+[h:abort(0)]
+
+!!
+@@ @UpdateEdgeOK
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Character Sheet ; tooltip= ; minWidth= ; 
+[h:tokenId=""]
+[h:returnMacro="argCheck@Lib:GM"]
+[h:props=macro.args]
+[h:varsFromStrProp(macro.args)]
+[h:tokenId=if(tokenId=="",currentToken(),"")]
+[h:abortit=if(tokenId=="",0,1)]
+[h:assert(abortit,"no token id available")]
+
+[macro("GetEdgeNames@Lib:GM"):""]
+[h:edgeList=macro.return]
+[h:switchToken(tokenId)]
+[h:oldEdges=Edges]
+[h:newEdges=""]
+
+[foreach(edge,edgeList," "), code: {
+  [h:check="edge_"+edge]
+  [h: value=getStrProp(props, check)]
+  [if(value==1), code: {
+    [h:newEdges=listAppend(newEdges,edge)]
+  };{}]
+}]
+[h:Edges=newEdges]
+
+[getName()] updated Edges <b>from </b> [oldEdges] <b> to 
+</b> [Edges] <br>
+
+<!-- look for power change -->
+[macro("GetABTypesJSON@Lib:Powers"):""]
+[h:abTypesJSON=macro.return]
+[h:abList=json.fields(abTypesJSON)]
+[h:shouldHaves=""]
+[h:shouldNotHaves=""]
+[foreach(ab,abList,""),code:{
+  [h:p=json.get(abTypesJSON,ab)]
+  [h:var="Skill"]
+  [h:skill=json.get(p,var)]
+  [h:there=listContains(Edges,ab)]
+  [if(there), code:{
+    [h:shouldHaves=listAppend(shouldHaves,skill)]
+  };{
+    [h:shouldNotHaves=listAppend(shouldNotHaves,skill)]
+  }]
+}]
+
+<!-- add power skills -->
+[h:powerSkills=json.fields(Powers)]
+[foreach(skill,shouldHaves,""), code:{
+  [if(listContains(powerSkills,skill)<1), code:{
+    [Powers=json.set(Powers,skill,"[]")]
+  };{}]
+}]
+
+[foreach(skill,shouldNotHaves,""), code:{
+  [if(listContains(powerSkills,skill)>0), code:{
+    [Powers=json.remove(Powers,skill)]
+  };{}]
+}]
+
+<!-- add power points -->
+[h:ppSkills=json.fields(PowerPoints)]
+[foreach(skill,shouldHaves,""), code:{
+  [h:there=listContains(ppSkills,skill)]
+  [h:t=json.set("","Max",0)]
+  [h,if(there==0): PowerPoints=json.set(PowerPoints,skill,t)]
+}]
+[foreach(skill,shouldNotHaves,""), code:{
+  [h:there=listContains(ppSkills,skill)]
+  [h,if(there==1): PowerPoints=json.remove(PowerPoints,skill)]
+}]
+
+[macro(returnMacro):""]
+
+!!
+@@ @UpdateEdgeOK
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Character Sheet ; tooltip= ; minWidth= ; 
+[h:tokenId=""]
+[h:returnMacro="argCheck@Lib:GM"]
+[h:props=macro.args]
+[h:varsFromStrProp(macro.args)]
+[h:tokenId=if(tokenId=="",currentToken(),"")]
+[h:abortit=if(tokenId=="",0,1)]
+[h:assert(abortit,"no token id available")]
+
+[macro("GetEdgeNames@Lib:GM"):""]
+[h:edgeList=macro.return]
+[h:switchToken(tokenId)]
+[h:oldEdges=Edges]
+[h:newEdges=""]
+
+[foreach(edge,edgeList," "), code: {
+  [h:check="edge_"+edge]
+  [h: value=getStrProp(props, check)]
+  [if(value==1), code: {
+    [h:newEdges=listAppend(newEdges,edge)]
+  };{}]
+}]
+[h:Edges=newEdges]
+
+[getName()] updated Edges <b>from </b> [oldEdges] <b> to 
+</b> [Edges] <br>
+
+<!-- look for power change -->
+[macro("GetABTypesJSON@Lib:Powers"):""]
+[h:abTypesJSON=macro.return]
+[h:abList=json.fields(abTypesJSON)]
+[h:shouldHaves=""]
+[h:shouldNotHaves=""]
+[foreach(ab,abList,""),code:{
+  [h:p=json.get(abTypesJSON,ab)]
+  [h:var="Skill"]
+  [h:skill=json.get(p,var)]
+  [h:there=listContains(Edges,ab)]
+  [if(there), code:{
+    [h:shouldHaves=listAppend(shouldHaves,skill)]
+  };{
+    [h:shouldNotHaves=listAppend(shouldNotHaves,skill)]
+  }]
+}]
+
+<!-- add power skills -->
+[h:powerSkills=json.fields(Powers)]
+[foreach(skill,shouldHaves,""), code:{
+  [if(listContains(powerSkills,skill)<1), code:{
+    [Powers=json.set(Powers,skill,"[]")]
+  };{}]
+}]
+
+[foreach(skill,shouldNotHaves,""), code:{
+  [if(listContains(powerSkills,skill)>0), code:{
+    [Powers=json.remove(Powers,skill)]
+  };{}]
+}]
+
+<!-- add power points -->
+[h:ppSkills=json.fields(PowerPoints)]
+[foreach(skill,shouldHaves,""), code:{
+  [h:there=listContains(ppSkills,skill)]
+  [h:t=json.set("","Max",0)]
+  [h,if(there==0): PowerPoints=json.set(PowerPoints,skill,t)]
+}]
+[foreach(skill,shouldNotHaves,""), code:{
+  [h:there=listContains(ppSkills,skill)]
+  [h,if(there==1): PowerPoints=json.remove(PowerPoints,skill)]
+}]
+
+[macro(returnMacro):""]
+
+!!
+@@ @UpdateHindranceDialog
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Character Sheet ; tooltip= ; minWidth= ; 
+[h:junk="<!-- args are tokenId -->"]
+[h:tokenId=""]
+[h:returnMacro="argCheck@Lib:GM"]
+[h:varsFromStrProp(macro.args)]
+[h:tokenId=if(tokenId=="",currentToken(),"")]
+[h:abortit=if(tokenId=="",0,1)]
+[h:assert(abortit,"no token id available")]
+
+[macro("GetMajorHindranceNames@Lib:GM"):""]
+[h:majorHindranceList=macro.return]
+[macro("GetMinorHindranceNames@Lib:GM"):""]
+[h:minorHindranceList=macro.return]
+[h:switchToken(tokenId)]
+[h:currMajor=MajorHindrances]
+[h:currMinor=MinorHindrances]
+[h:numOnLine=4]
+
+[h: class = "oddRow"]
+[h:tdtr="</td></tr><tr>"]
+[h:td="</td>"]
+[dialog("HindranceUpdate", "width=600; height=600"): {
+  <html>
+    <head>
+      <title>Select Hindrances</title>
+      <meta name="input" content="true">
+      <link rel="stylesheet" type="text/css" href="CharSheet_css@Lib:GM">     
+    </head>
+    <body>
+      <form name="PC Hindrances" action="[r:macroLinkText("UpdateHindranceOK@Lib:GM","gm","",tokenId)]">
+        <table id="Hindrances" bgcolor=#aaaaaa width=[r:numOnLine*150]>
+          <tr>
+          <th colspan=[r:2*numOnLine]>Major Hindrances [h:count=0] </th>
+          </tr>
+          <tr>
+[foreach(hindrance,majorHindranceList,""), code: {
+             <td class="[r:class]">
+  [h:checked=""]
+  [h:checked=if(listContains(currMajor,hindrance)," checked  "," ")]
+            <input type="checkbox" name="major_[r:hindrance]" value="1" [r:checked]></input>
+  [h:switch=if(count==NumOnLine,1,0)]
+  [h:count=if(count==NumOnLine,0,count)]
+            </td><td class="[r:class]">[r:hindrance]
+  [h:count=count+1]
+  [h: class = if(class=="oddRow", "evenRow", "oddRow")]
+
+  [h:p=if(count==NumOnLine,tdtr,td)][r:p]
+
+}]
+
+[for(count,count,numOnLine,1,""), code: {
+  <td class="[r:class]"></td>
+  <td class="[r:class]">
+  [h:p=if(count==NumOnLine,"</td></tr><tr>","</td>")][r:p]
+  [h: class = if(class=="oddRow", "evenRow", "oddRow")]
+}]
+          <tr>
+          <th colspan=[r:2*numOnLine]>Minor Hindrances [h:count=0]</th>
+          </tr>
+          <tr>
+[foreach(hindrance,minorHindranceList,""), code: {
+             <td class="[r:class]">
+  [h:checked=""]
+  [h:checked=if(listContains(currMinor,hindrance)," checked  "," ")]
+            <input type="checkbox" name="minor_[r:hindrance]" value="1" [r:checked]></input>
+  [h:count=if(count==NumOnLine,0,count)]
+            </td><td class="[r:class]">[r:hindrance]
+  [h:count=count+1]
+  [h: class = if(class=="oddRow", "evenRow", "oddRow")]
+  [h:p=if(count==NumOnLine,"</td></tr><tr>","</td>")][r:p]
+}]
+[for(count,count,numOnLine,1,""), code: {
+  <td class="[r:class]"></td>
+  <td class="[r:class]">
+  [h:p=if(count==NumOnLine,"</td></tr><tr>","</td>")][r:p]
+  [h: class = if(class=="oddRow", "evenRow", "oddRow")]
+}]
+          <tr>
+            <th colspan=[r:2*numOnLine]> 
+              <input type="submit" name="Submit" value="Submit"> </input> 
+            </th>
+          </tr>
+        </table>
+        <!-- hidden input with the weapon number -->
+        <input type="hidden" name="returnMacro" value="[r:returnMacro]"> </input>
+      </form>
+    </body>
+  </html>
+}]
+
+[h:abort(0)]
+
+!!
+@@ @UpdateHindranceOK
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Character Sheet ; tooltip= ; minWidth= ; 
+[h:tokenId=""]
+[h:returnMacro="argCheck@Lib:GM"]
+[h:varsFromStrProp(macro.args)]
+[h:props=macro.args]
+[h:tokenId=if(tokenId=="",currentToken(),"")]
+[h:abortit=if(tokenId=="",0,1)]
+[h:assert(abortit,"no token id available")]
+
+[macro("GetMajorHindranceNames@Lib:GM"):""]
+[h:majorHinds=macro.return]<br>
+[macro("GetMinorHindranceNames@Lib:GM"):""]
+[h:minorHinds=macro.return]<br>
+[h:switchToken(tokenId)]
+[h:oldMajorHinds=MajorHindrances]
+[h:oldMinorHinds=MinorHindrances]
+[h:MajorHindrances=""]
+[h:newMajorHinds=""]
+[h:MinorHindrances=""]
+[h:newMinorHinds=""]
+
+[foreach(hindrance,majorHinds," "), code: {
+  [h:check="major_"+hindrance]
+  [h: value=getStrProp(props, check)]
+  [if(value==1), code: {
+    [h:newMajorHinds=listAppend(newMajorHinds,hindrance)]
+  };{}]
+}]
+[h:MajorHindrances=newMajorHinds]
+[foreach(hindrance,minorHinds," "), code: {
+  [h:check="minor_"+hindrance]
+  [h: value=getStrProp(props, check)]
+  [if(value==1), code: {
+    [h:newMinorHinds=listAppend(newMinorHinds,hindrance)]
+  };{}]
+}]
+[h:MinorHindrances=newMinorHinds]
+
+[getName()] updated Hindraces <b>from Major: </b> [oldMajorHinds] <b>Minor: </b>[oldMinorHinds]<b> to 
+Major: </b> [MajorHindrances] <b>Minor:</b> [MinorHindrances]<br>
+
+  
+[macro(returnMacro):""]
+
+!!
+@@ @UpdateLanguagesDialog
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=true ; applyToSelected=false ; group=Character Sheet ; tooltip= ; minWidth= ; 
+[h:tokenId=""]
+[h:returnMacro="argCheck@Lib:GM"]
+
+[h:varsFromStrProp(macro.args)]
+[tokenId=if(tokenId=="",currentToken(),"")]
+[h:abortit=if(tokenId=="",0,1)]
+[h:assert(abortit,"no token id available")]
+
+[macro("GetLanguageNames@Lib:GM"):""]
+[h:languageList=macro.return]
+[h:switchToken(tokenId)]
+
+[currLangs=Languages]
+[h: class = "oddRow"]
+
+[h: class = "oddRow"]
+[dialog("LanguagesUpdate", "width=250; height=450"): {
+  <html>
+    <head>
+      <title>Select Languages</title>
+      <meta name="input" content="true">
+      <link rel="stylesheet" type="text/css" href="CharSheet_css@Lib:GM">     
+    </head>
+    <body>
+      <form name="PC Languages" action="[r:macroLinkText("UpdateLanguagesOK@Lib:GM","gm","",tokenId)]">
+        <table id="Attributes" bgcolor=#aaaaaa width="100%">
+          <tr>
+            <th>Language</th>
+            <th>Acquired</th>
+          </tr>
+[foreach(language,languageList,""), code: {
+  [h:checked=""]
+  [h:checked=if(listContains(currLangs,language)," checked  "," ")]
+  [h: class = if(class=="oddRow", "evenRow", "oddRow")]
+          <tr class="[r:class]">
+            <td>[r:language]</td>
+            <td><center><input type="checkbox" name="[r:language]" value="1" [r:checked]></input> </center></td> 
+          </tr>
+}]
+        <tr><th colspan=2><input type="submit" name="Submit" value="Submit"> </input></th></tr>
+        </table>
+        <!-- hidden input with the weapon number -->
+        <input type="hidden" name="returnMacro" value="[r:returnMacro]"> </input>
+      </form>
+    </body>
+  </html>
+}]
+
+[h:abort(0)]
+
+!!
+@@ @UpdateLanguagesOK
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Character Sheet ; tooltip= ; minWidth= ; 
+[h:tokenId=""]
+[h:returnMacro="argCheck@Lib:GM"]
+
+[h:varsFromStrProp(macro.args)]
+[h:tokenId=if(tokenId=="",currentToken(),"")]
+[h:abortit=if(tokenId=="",0,1)]
+[h:assert(abortit,"no token id available")]
+[props=macro.args]
+
+[macro("GetLanguageNames@Lib:GM"):""]
+[h:langList=macro.return]
+[h:switchToken(tokenId)]
+[h:oldLangs=Languages]
+[h:Languages=""]
+[h:newLangs=""]
+[foreach(language,langList," "), code: {
+  [h:value=getStrProp(props, language)]
+  [if(value==1), code: {
+    [h:newLangs=listAppend(newLangs,language)]
+  };{}]
+}]
+[h:Languages=newLangs]
+[getName()] updated languages <b>from</b> [oldLangs] <b>to</b> [Languages]<br>
+
+  
+[macro(returnMacro):""]
+
+!!
+@@ @UpdateRankAndRace
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Character Sheet ; tooltip= ; minWidth= ; 
+[h:tokenId=""]
+[h:returnMacro="CharacterSheet@Lib:GM"]
+[h:refreshMacro="UpdateRankAndRace@Lib:GM"]
+
+[h:varsFromStrProp(macro.args)]
+[h:tokenId=if(tokenId=="",currentToken(),"")]
+[h:abortit=if(tokenId=="",0,1)]
+[h:assert(abortit,"no token id available")]
+
+<!-- take this out later -->
+[h:okMacro="argCheck@Lib:GM"]
+[h:okMacro="UpdateRankAndRaceOK@Lib:GM"]
+
+[h:xps=getProperty("XPs")]
+[h:race=getProperty("Race")]
+
+[h:raceList=getLibProperty("SettingRaces","Lib:Race")]
+<!-- Make Dropdown -->
+[h:ddl=""]
+[h:ddl="<select name='race'>"]
+[foreach(rl,raceList,""), code:{
+  [h:ddl=ddl+if(rl==race,"<option selected>"+decode(rl)+"</option>",
+      "<option>"+decode(rl)+"</option>")]
+}]
+[h:ddl=ddl+"</select>"]
+
+[h: class = "oddRow"]
+
+[dialog("RaceAndRankUpdate", "width=280; height=800"): {
+  <html>
+    <head>
+      <title>Update Race and Rank</title>
+      <meta name="input" content="true">
+      <link rel="stylesheet" type="text/css" href="CharSheet_css@Lib:GM">     
+    </head>
+    <body>
+      <form name="PC Properties" method='json' action="[r:macroLinkText(okMacro,"gm","",tokenId)]">
+        <table id="Rank" bgcolor=#aaaaaa width="100%">
+          <tr>
+            <th>Attribute</th>
+            <th>Value</th>
+          </tr>
+          <tr class="[r:class]">
+            <td>XPs</td>
+            <td><input name="xps" type="text" value="[r:xps]" size="3"></input></td>
+          </tr>
+[h: class = if(class=="oddRow", "evenRow", "oddRow")]
+          <tr class="[r:class]">
+            <td>Race</td>
+            <td>[r:ddl]</td>
+          </tr>
+          <tr>
+            <th colspan=2><input type="submit" name="Submit" value="Submit"> </input></th>
+          </tr>
+        </table>
+        <!-- hidden input with the weapon number -->
+        <input type="hidden" name="returnMacro" value="[r:returnMacro]"> </input>
+        <input type="hidden" name="refreshMacro" value="[r:refreshMacro]"> </input>
+      </form>
+    </body>
+  </html>
+}]
+
+!!
+@@ @UpdateRankAndRaceOK
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Character Sheet ; tooltip= ; minWidth= ; 
+[h:macro.args]
+[setProperty("XPs",json.get(macro.args,"xps"))]
+[h:nr=json.get(macro.args,"race")]
+
+[h:or=getProperty("Race")]
+[h:oe=json.fromList(getProperty("Edges"))]
+[h:oj=json.fromList(getProperty("MajorHindrances"))]
+[h:on=json.fromList(getProperty("MinorHindrances"))]
+
+[h:ore=GetRaceEdges(or)]
+[h:orj=GetRaceMajorHindrances(or)]
+[h:orn=GetRaceMinorHindrances(or)]
+
+[h:ore=json.fromList(ore)]
+[h:orj=json.fromList(orj)]
+[h:orn=json.fromList(orn)]
+
+[foreach(e,ore,""), code:{
+  [h:idx=json.indexOf(oe,e)]
+  [h,if(idx>-1): oe=json.remove(oe,idx)]
+}]
+
+[foreach(e,orj,""), code:{
+  [h:idx=json.indexOf(oj,e)]
+  [h,if(idx>-1): oj=json.remove(oj,idx)]
+}]
+
+[foreach(e,orn,""), code:{
+  [h:idx=json.indexOf(on,e)]
+  [h,if(idx>-1): on=json.remove(on,idx)]
+}]
+
+[setProperty("Race",nr)]
+
+[h:nre=json.fromList(GetRaceEdges(nr))]
+[h:nrj=json.fromList(GetRaceMajorHindrances(nr))]
+[h:nrn=json.fromList(GetRaceMinorHindrances(nr))]
+
+[h:oe=json.union(oe,nre)]
+[h:oj=json.union(oj,nrj)]
+[h:on=json.union(on,nrn)]
+
+[setProperty("Edges",json.toList(oe))]
+[setProperty("MajorHindrances",json.toList(oj))]
+[setProperty("MinorHindrances",json.toList(on))]
+
+[macro(json.get(macro.args,"returnMacro")):""]
+[abort(0)]
+
+!!
+@@ @UpdateSkillsDialog
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Character Sheet ; tooltip= ; minWidth= ; 
+[h:tokenId=""]
+[h:returnMacro="CharacterSheet@Lib:GM"]
+[h:refreshMacro="UpdateSkillsDialog@Lib:GM"]
+
+[h:varsFromStrProp(macro.args)]
+[h:tokenId=if(tokenId=="",currentToken(),"")]
+[h:abortit=if(tokenId=="",0,1)]
+[h:assert(abortit,"no token id available")]
+
+<!-- take this out later -->
+[h:okMacro="argCheck@Lib:GM"]
+[h:okMacro="UpdateSkillsOK@Lib:GM"]
+
+[macro("GetSkillNames@Lib:GM"):""]
+[h:SkillList = macro.return]
+[h:trainedSkills=""]
+[h:unskilled=""]
+[h:names = getPropertyNames()]
+[foreach(skill,SkillList,""), code : {
+    [h:value=getProperty(skill)]
+    [h:default="d4e-2"]
+    [h:value=if(value==0,"d4e-2",value)]
+    [h,if(value==""), code:{
+      [h:setProperty(skill,default)]
+      [h:value=default]
+    };{}]
+    [if(value==default), code:{
+      [h:unskilled=listAppend(unskilled,skill)]
+    };{
+      [h:trainedSkills=listAppend(trainedSkills,skill)]
+    }]
+}]
+
+[h:oldStyle = matches(getProperty("Knowledge"),"^d[0-9]e")]
+[if(oldStyle==1), code:{
+  [h:setProperty("Knowledge","{}")]
+};{}]
+
+[h:knowledge=getProperty("Knowledge")]
+[h:knowledgeSkills=json.fields(getProperty("Knowledge"))]
+
+[macro("GetKnowledgeSkillNames@Lib:GM"):""]
+[h:allKnowledgeSkillList=macro.return]
+
+<!-- get character knowledge skills -->
+[h:trainedKnowledgeSkills=""]
+
+[h:untrainedKnowledgeSkills=""]
+
+[foreach(skill,allKnowledgeSkillList,""), code:{
+  [h:there=listContains(knowledgeSkills,skill)]
+  [if(there==0), code:{
+    [h:untrainedKnowledgeSkills=listAppend(untrainedKnowledgeSkills,skill)]
+  };{}]
+}]
+
+[h:dropdownStr=""]
+[foreach(skill,untrainedKnowledgeSkills,""), code: {
+  [h:dropdownStr=dropdownStr + "<OPTION='" + skill +"'>" + skill + "</option>"]
+}]
+
+<!-- Powers -->
+<!-- Add Any Power Skills to Skills List -->
+[macro("GetABTypesJSON@Lib:Powers"):""]
+[h:powerJSON=macro.return]
+[h:arcaneEdges=json.fields(powerJSON)]
+
+[h:trainedABSkillsJSON=getProperty("ArcaneSkills")]
+
+[h:trainedABList=json.fields(trainedABSkillsJSON)]
+
+[h:tokenArcaneEdges=""]
+[h:tokenEdges=getProperty("Edges")]
+[foreach(e,arcaneEdges,""), code:{
+  [h:tokenArcaneEdges=if(listContains(tokenEdges,e), listAppend(tokenArcaneEdges,e), tokenArcaneEdges)]
+}]
+
+[h:untrainedABList=""]
+[foreach(e,tokenArcaneEdges,""), code:{
+   [h:p=json.get(powerJSON,e)]
+   [h:s=json.get(p,"Skill")]
+   [h:there=if(listContains(trainedABList,s),1,0)]
+   [h:there=if(s=="Super",1,there)]
+   [h:untrainedABList=if(there==0,listAppend(untrainedABList,s),untrainedABList)]
+}]
+
+[h:untrainedABList]
+
+[h: class = "oddRow"]
+[dialog("SkillsUpdate", "width=280; height=800"): {
+  <html>
+    <head>
+      <title>Update Skills</title>
+      <meta name="input" content="true">
+      <link rel="stylesheet" type="text/css" href="CharSheet_css@Lib:GM">     
+    </head>
+    <body>
+      <form name="PC Properties" action="[r:macroLinkText(okMacro,"gm","",tokenId)]">
+        <table id="Attributes" bgcolor=#aaaaaa width="100%">
+          <tr>
+            <th>Skill</th>
+            <th>Value</th>
+             <th>Remove</th>
+             <th>Add</th>
+          </tr>
+[foreach(skill,trainedSkills,""), code: {
+[h: args="property = " + skill + "; tokenId = " + tokenId + "; "]
+[macro("GetTokenTrait@Lib:GM"): args]
+[h:value = macro.return]
+
+[h: class = if(class=="oddRow", "evenRow", "oddRow")]
+          <tr class="[r:class]">
+            <td>[r:skill]</td>
+            <td>
+              <select name="update_[r:skill]">
+[macro("DieDropdown@this"): value]
+               </select>
+            </td>
+            <td><center><input type="checkbox" name="remove_[r:skill]" value="1"></input> </center></td> 
+            <td> </td>
+          </tr>
+}]
+
+[foreach(skill,knowledgeSkills,""), code: {
+[h:value=json.get(getProperty("Knowledge"),skill)]
+
+[h: class = if(class=="oddRow", "evenRow", "oddRow")]
+          <tr class="[r:class]">
+            <td>[r:skill]</td>
+            <td>
+              <select name="knowledge_update_[r:skill]">
+[macro("DieDropdown@this"): value]
+               </select>
+            </td>
+            <td><center><input type="checkbox" name="knowledge_remove_[r:skill]" value="1"></input> </center></td> 
+            <td> </td>
+          </tr>
+}]
+
+[foreach(skill,trainedABList,""), code: {
+[h:value=json.get(getProperty("ArcaneSkills"),skill)]
+
+[h: class = if(class=="oddRow", "evenRow", "oddRow")]
+          <tr class="[r:class]">
+            <td>[r:skill]</td>
+            <td>
+              <select name="power_update_[r:skill]">
+[macro("DieDropdown@this"): value]
+               </select>
+            </td>
+            <td><center><input type="checkbox" name="power_remove_[r:skill]" value="1"></input> </center></td> 
+            <td> </td>
+          </tr>
+}]
+
+          <tr><th colspan=4>Untrained Skills</input></th></tr>
+[foreach(skill,unskilled,""), code: {
+[h: class = if(class=="oddRow", "evenRow", "oddRow")]
+          <tr class="[r:class]">
+            <td>[r:skill]</td>
+            <td>Unskilled </td>
+            <td></td>
+            <td><input type="checkbox" name="add_[r:skill]" value="1"></input> </td> 
+          </tr>
+}]
+
+<!-- powers -->
+[foreach(skill,untrainedABList,""), code: {
+[h: class = if(class=="oddRow", "evenRow", "oddRow")]
+          <tr class="[r:class]">
+            <td>[r:skill]</td>
+            <td>Unskilled </td>
+            <td></td>
+            <td><input type="checkbox" name="power_add_[r:skill]" value="1"></input> </td> 
+          </tr>
+}]
+
+[h: class = if(class=="oddRow", "evenRow", "oddRow")]
+          <tr class="[r:class]">
+            <td>Knowledge</td>
+            <td><SELECT NAME="new_knowledge">[r:dropdownStr]</select></td>
+            <td></td>
+            <td><input type="checkbox" name="knowledge_add" value="1"></input> </td> 
+          </tr>
+
+          <tr>
+            <th colspan=2><input type="submit" name="Submit" value="Submit"> </input></th>
+            <th colspan=2><input type="submit" name="Submit" value="Refresh"> </input></th>
+          </tr>
+        </table>
+        <!-- hidden input with the weapon number -->
+        <input type="hidden" name="returnMacro" value="[r:returnMacro]"> </input>
+        <input type="hidden" name="refreshMacro" value="[r:refreshMacro]"> </input>
+      </form>
+    </body>
+  </html>
+}]
+[abort(0)]
+
+!!
+@@ @UpdateSkillsOK
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Character Sheet ; tooltip= ; minWidth= ; 
+[h:tokenId=""]
+[h:returnMacro="CharacterSheet@Lib:GM"]
+[h: knowledge_add=0]
+[h: Submit=""]
+[h:there=0]
+[h:trainedKnowledgeSkills=""]
+
+[h:varsFromStrProp(macro.args)]
+[h:props=macro.args]
+
+[h:tokenId=if(tokenId=="",currentToken(),"")]
+[h:abortit=if(tokenId=="",0,1)]
+[h:assert(abortit,"no token id available")]
+[h:switchToken(tokenId)]
+
+[macro("GetSkillNames@Lib:GM"):""]
+[h:skillList=macro.return]
+[foreach(skill,skillList," "), code: {
+  [h:cmd=""]
+<!-- get updates to skills -->
+  [h:currValue=getProperty(skill)]
+  [h: updateProp = "update_" + skill] 
+  [h:value=getStrProp(props, updateProp)]
+  [if(value!=""&&value!=currValue), code: {
+    [h:setProperty(skill,value)]
+    [r:skill] update for [r:getName()] from [r:currValue] to [r:value]
+  };{}]
+  [h:addProp="add_"+skill]
+  [h:value=getStrProp(props, addProp)]
+  [if(value!=""&&value!=currValue), code: {
+    [h:setProperty(skill,"d4e")]
+    [r:skill] update for [r:getName()] from [r:currValue] to [r:value]
+  };{}]
+  [h:removeProp="remove_"+skill]
+  [h:value=getStrProp(props, removeProp)]
+  [if(value!=""), code: {
+    [h:setProperty(skill,"d4e-2")]
+    [r:skill] update for [r:getName()] from [r:currValue] to [r:value]
+  };{}]
+}]
+
+[macro("GetKnowledgeSkillNames@Lib:GM"):""]
+[h:skillList=macro.return]
+[h:tokenKnowledgeSkills=json.fields(getProperty("Knowledge"))]
+
+[foreach(skill,skillList," "), code: {
+  [h:cmd=""]
+<!-- get updates to skills -->
+  [h:there = listContains(tokenKnowledgeSkills,skill)]
+  [if(there==1), code:{
+    [h:currValue=json.get(getProperty("Knowledge"),skill)]
+  };{}]  
+  [h: updateProp = "knowledge_update_" + skill] 
+  [h:value=getStrProp(props, updateProp)]
+  [if(value!=""&&value!=currValue), code: {
+    <br>cmd=[cmd = "Knowledge=json.set(Knowledge,'"+skill+"','"+value+"')"  ]
+  };{}]
+  [h:removeProp="knowledge_remove_"+skill]
+  [h:value=getStrProp(props, removeProp)]
+  [if(value!=""), code: {
+      <br>cmd=[cmd="Knowledge=json.remove(Knowledge,'"+skill+"')" ]
+  };{}]
+  [if(cmd!=""), code: {
+    [h:eval(cmd)][getName()] skill update [cmd]
+  };{}]
+}]
+
+<!-- this does work begin-->
+[h:skill="{}"]
+[if(knowledge_add==1), code: {
+  [h:prop="Knowledge"]
+  [h:skill=getProperty(prop)]
+  [h,if(isPropertyEmpty(prop)): skill="{}"]
+};{}]
+
+[h:len = json.length(skill)]
+
+[if(knowledge_add==1 && len>0  ), code: {
+    [h:trainedKnowledgeSkills=json.fields(skill)]
+    [h:there=listContains(trainedKnowledgeSkills,new_knowledge)]
+};{}]
+
+[if(knowledge_add==1 && there==0), code: {
+    [h:new=json.set("",new_knowledge,"d4e")]
+    [h:skill=json.set(skill,new_knowledge,"d4e")]
+    [h:setProperty(prop,skill)]
+};{}]
+<!-- this does work end -->
+
+<!-- now start powers update/save -->
+
+[macro("GetABTypesJSON@Lib:Powers"):""]
+[h:powerJSON=macro.return]
+[h:arcaneEdges=json.fields(powerJSON)]
+
+[h:arcaneSkillList=""]
+[foreach(e,arcaneEdges,""), code:{
+  [h:p=json.get(powerJSON,e)]
+  [h:s=json.get(p,"Skill")]
+  [h:arcaneSkillList=listAppend(arcaneSkillList,s)]
+}]
+
+[foreach(skill,arcaneSkillList,""), code:{
+  [h:var= "power_add_"+skill]
+  [h:power_add = getStrProp(props,var)]
+  [h:add_flag=if(power_add=="",0,1)]
+  [h:var= "power_update_"+skill]
+  [h:power_update = getStrProp(props,var)]
+  [h:update_flag=if(power_update=="",0,1)]
+  [h:var= "power_remove_"+skill]
+  [h:power_remove = getStrProp(props,var)]
+  [h:remove_flag=if(power_remove=="",0,1)]
+  [if(add_flag==1), code: {
+    [h:ArcaneSkills=json.set(ArcaneSkills,skill,"d4e")]
+  };{}]
+  [if(update_flag==1), code: {
+    [h:ArcaneSkills=json.set(ArcaneSkills,skill,power_update)]
+  };{}]
+  [if(remove_flag==1), code: {
+    [h:ArcaneSkills=json.remove(ArcaneSkills,skill)]
+  };{}]
+}]
+
+<!-- handle updating of super powers skills -->
+[macro("GetPowerNames@Lib:GM"):""]
+[h:powerList=macro.return]
+[foreach(skill,powerList,""), code: {
+  [h:var= "power_update_"+skill]
+  [h:power_update = getStrProp(props,var)]
+  [h:update_flag=if(power_update=="",0,1)]
+  [if(update_flag==1), code: {
+    [h:ArcaneSkills=json.set(ArcaneSkills,skill,power_update)]
+  };{}]
+}]
+
+[if(Submit=="Refresh"), code:{
+  [macro(refreshMacro):""]
+};{  
+  [macro(returnMacro):"returnMacro=CharacterSheet@Lib:GM"]
+}]
+
+!!
+@@ @UpdateStatesDialog
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Character Sheet ; tooltip= ; minWidth= ; 
+[h:tokenId=""]
+[h:returnMacro="argCheck@Lib:GM"]
+[h:varsFromStrProp(macro.args)]
+[h:tokenId=if(tokenId=="",currentToken(),"")]
+[h:abortit=if(tokenId=="",0,1)]
+[h:assert(abortit,"no token id available")]
+
+[h:stateList=getTokenStates()]
+[h:removeList="Wound1,Wound2,Wound3,Wound,Fatigued,Fatigue1,Fatigue2,Bennie1,Bennie2,Bennie3,Bennie4,Bennie5,Bennie6"]
+[foreach(rml,removeList,""), code: {
+  [h:idx=listFind(stateList, rml)]
+  [if(idx!=-1), code: {
+    [h:stateList = listDelete(stateList, idx)]
+  };{}]
+}]
+
+[h: class = "oddRow"]
+[dialog("SkillsUpdate", "width=275; height=775"): {
+  <html>
+    <head>
+      <title>Update States</title>
+      <meta name="input" content="true">
+      <link rel="stylesheet" type="text/css" href="CharSheet_css@Lib:GM">     
+    </head>
+    <body>
+      <form name="PC Properties" action="[r:macroLinkText("UpdateStatesOK@Lib:GM","gm","",tokenId)]">
+        <table id="Attributes" bgcolor=#aaaaaa width="100%">
+          <tr>
+            <th colspan=2>State</th>
+             <th>Set</th>
+          </tr>
+[foreach(state,stateList,""), code: {
+          <tr class="[r:class]">
+            <td><img src='[r:getStateImage(state)]' width="25" height="25" alt="[r:state]"></img></td>
+            <td>[r:state]</td>
+            <td> [h:checked=if(getState(state) ==1 ," checked=1  ","")] 
+               <center>
+              <input type="checkbox" name="state_[r:state]" value="1" [r:checked]></input>
+               </center>
+            </td>
+          </tr>
+[h: class = if(class=="oddRow", "evenRow", "oddRow")]
+}]
+          <tr class="[r:class]">
+            <td>[h:state="Wound"]<img src='[r:getStateImage(state)]' width="25" height="25" alt="[r:state]"></img></td>
+            <td>[r:state]</td>
+            <td><input type="text" value="[r:getProperty("Wounds")]" name="state_[r:state]"></td>
+          </tr>[h: class = if(class=="oddRow", "evenRow", "oddRow")]
+          <tr class="[r:class]">
+            <td>[h:state="Fatigued"]<img src='[r:getStateImage(state)]' width="25" height="25" alt="[r:state]"></img></td>
+            <td>[r:state]</td>
+            <td><input type="text" value="[r:getProperty("Fatigue")]" name="state_[r:state]"></td>
+          </tr >[h: class = if(class=="oddRow", "evenRow", "oddRow")]
+
+        <tr><th colspan=3><input type="submit" name="Submit" value="Submit"> </input></th></tr>
+        </table>
+        <!-- hidden input with the weapon number -->
+        <input type="hidden" name="returnMacro" value="[r:returnMacro]"> </input>
+      </form>
+    </body>
+  </html>
+}]
+
+[abort(0)]
+
+!!
+@@ @UpdateStatesOK
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Character Sheet ; tooltip= ; minWidth= ; 
+[h:tokenId=""]
+[h:returnMacro="argCheck@Lib:GM"]
+[h:macro.args]
+[h:varsFromStrProp(macro.args)]
+[h:tokenId=if(tokenId=="",currentToken(),"")]
+[h:abortit=if(tokenId=="",0,1)]
+[h:assert(abortit,"no token id available")]
+
+[h:stateList=getTokenStates()]
+[h:removeList="Wound,Fatigued,Bennie1,Bennie2,Bennie3,Bennie4,Bennie5,Bennie6"]
+[foreach(rml,removeList,""), code: {
+  [h:idx=listFind(stateList, rml)]
+  [if(idx!=-1), code: {
+    [h:stateList = listDelete(stateList, idx)]
+  };{}]
+}]
+
+[H:argJSON=json.fromStrProp(macro.args)]
+[foreach(state,stateList,""), code:{
+  [if(json.contains(argJSON,"state_"+state)), code:{
+     [h:setState(state,1)]
+  };
+  {
+    [h:setState(state,0)]
+  }]
+}]
+
+[h:state_Wound=if(state_Wound>3,3,state_Wound)]
+[h:setProperty("Wounds",state_Wound)]
+
+[h,c(3,""), code:{
+  [h:num=roll.count+1] 
+  [stateName="Wound"+num]
+  [setState(stateName,0)]
+}]
+
+[h,c(state_Wound,""), code:{
+  [h:num=roll.count+1] 
+  [stateName="Wound"+num]
+  [setState(stateName,1)]
+}]
+
+[h:state_Fatigued=if(state_Fatigued>2,2,state_Fatigued)]
+[h:setProperty("Fatigue",state_Fatigued)]
+[h,c(2,""), code:{
+  [h:num=roll.count+1] 
+  [h:stateName="Fatigue"+num]
+  [h:setState(stateName,0)]
+}]
+[h,c(state_Fatigued,""), code:{
+  [h:num=roll.count+1] 
+  [h:stateName="Fatigue"+num]
+  [h:setState(stateName,1)]
+}]
+  
+[macro(returnMacro):""]
+[abort(0)]
+
+!!
+@@ @conditionalOutput
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Character Sheet ; tooltip= ; minWidth= ; 
+[r: json.get(macro.args, 'toSend')]
+
+!!
+@@ @outputTo
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=true ; applyToSelected=false ; group=Character Sheet ; tooltip= ; minWidth= ; 
+[h: toSend = '{}']
+[h: argTest = json.type(arg(0))]
+[h, if(argTest=='ARRAY'), code:
+{
+    [h: toWho = 'list']
+    [h: toSend = json.set(toSend, 'mlOutputList', arg(0))]
+};{
+    [h: toWho = arg(0)]
+}]
+[h: toSend = json.set(toSend, 'toSend', arg(1))]
+[h: conditionalOutput = macroLinkText('conditionalOutput@this', toWho, toSend)]
+[h: execLink(conditionalOutput, 1)]
+
+!!
+@@ @sendWhisper
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Character Sheet ; tooltip= ; minWidth= ; 
+[H: wText = json.get(macro.args, "wText")]
+[H: numP = json.get(macro.args, "numPlayers")]
+[H: toJ = ""]
+[H, FOR(i, 0, numP), CODE: {
+  [H: key = "spn" + i]
+  [H: test = json.contains(macro.args, key)]
+  [H, IF(test), CODE: {
+    [H: v = json.get(macro.args, key)]
+    [H: toJ = json.append(toJ, v)]
+  }]
+}]
+[H: outputTo(toJ, wText)]
+[macro("CharacterSheet@Lib:GM"): "whisperers="+encode(toJ)]
+
+!!
+@@ @CheckTokenId
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Utility ; tooltip= ; minWidth= ; 
+[h:tokenId=currentToken()]
+[h,if(tokenId==""): assert(0,"No token id available in "+getMacroName())]
+[r:tokenId]
+
+!!
+@@ @CombatSurvivalGuide
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Utility ; tooltip= ; minWidth= ; 
+[frame("CSG", "width=650; height=500"): {
+  <html>
+    <head>
+      
+      <link rel="stylesheet" type="text/css" href="CharSheet_css@Lib:GM">
+      <title>Savage Worlds Combat Survival Guide</title>
+    </head>
+    <body style="font-size:12pt">
+
+<TABLE WIDTH=100% BORDER=1 CELLPADDING=4 CELLSPACING=3>
+  <COL WIDTH=102*>
+  <COL WIDTH=51*>
+  <COL WIDTH=102*>
+  <TR>
+[h:class="evenRow"]
+    <TH COLSPAN=3 WIDTH=100% VALIGN=TOP>
+    Savage Worlds Combat Survival Guide
+    </TH>
+  <TR>
+  <TR>
+    <TD class=[r:class] COLSPAN=3 WIDTH=100% VALIGN=TOP>
+      If you are having problems hitting an opponent
+    </TD>
+  </TR>
+  <TR VALIGN=TOP>
+    [h: class = if(class=="oddRow", "evenRow", "oddRow")]
+    <TD class=[r:class] WIDTH=40%> And... </TD>
+    <TD class=[r:class] WIDTH=20%> Then Try... </TD>
+    <TD class=[r:class] WIDTH=40%> Game Effect: </TD>
+  </TR>
+  <TR VALIGN=TOP>
+    [h: class = if(class=="oddRow", "evenRow", "oddRow")]
+    <TD class=[r:class] WIDTH=40%> Your team outnumbers the opponent</TD>
+    <TD class=[r:class] WIDTH=20%> GANGING UP </TD>
+    <TD class=[r:class] WIDTH=40%> +1 Fighting per additional attacker (max of +4) </TD>
+  </TR>
+  <TR VALIGN=TOP>
+    [h: class = if(class=="oddRow", "evenRow", "oddRow")]
+    <TD class=[r:class] WIDTH=40%> You are more agile </TD>
+    <TD class=[r:class] WIDTH=20%> An agility Trick (throwing sand in opponent's face) </TD>
+    <TD class=[r:class] WIDTH=40%> Success: Opponent -2 on Parry until next action <P>Raise: -2 on parry and opponent is shaken</P> </TD>
+  </TR>
+  <TR VALIGN=TOP>
+    [h: class = if(class=="oddRow", "evenRow", "oddRow")]
+    <TD class=[r:class] WIDTH=40%> You are smarter than your opponent </TD>
+    <TD class=[r:class] WIDTH=20%> A Smarts Trick (“Look!  Behind you!”) </TD>
+    <TD class=[r:class] WIDTH=40%> Success: Opponent -2 on Parry until next action <P>Raise: -2 on parry and opponent is shaken</P> </TD>
+  </TR>
+  <TR VALIGN=TOP>
+    [h: class = if(class=="oddRow", "evenRow", "oddRow")]
+    <TD class=[r:class] WIDTH=40%> You are quick witted (high Taunt) </TD>
+    <TD class=[r:class] WIDTH=20%> Taunting (“Your mother dresses you funny”) </TD>
+    <TD class=[r:class] WIDTH=40%> Success: +2 bonus for next action against opponent<p>Raise: +2 bonus plus opponent Shaken
+ </TD>
+  </TR>
+  <TR VALIGN=TOP>
+    [h: class = if(class=="oddRow", "evenRow", "oddRow")]
+    <TD class=[r:class] WIDTH=40%> You are Fearsome (high Intimidate) or your foe is cowardly  </TD>
+    <TD class=[r:class] WIDTH=20%> Intimidate (Flex muscles or give a war cry)  </TD>
+    <TD class=[r:class] WIDTH=40%> Success: +2 bonus for next action against opponent<p>Raise: +2 bonus plus opponent Shaken</TD>
+  </TR>
+  <TR VALIGN=TOP>
+    [h: class = if(class=="oddRow", "evenRow", "oddRow")]
+    <TD class=[r:class] WIDTH=40%> You are OK with lowering your defenses until your next action </TD>
+    <TD class=[r:class] WIDTH=20%> Wild Attack </TD>
+    <TD class=[r:class] WIDTH=40%> +2 to Fighting and Damage, -2 to Parry </TD>
+  </TR>
+  <TR VALIGN=TOP>
+    [h: class = if(class=="oddRow", "evenRow", "oddRow")]
+    <TD class=[r:class] WIDTH=40%> You are using a ranged weapon </TD>
+    <TD class=[r:class] WIDTH=20%> Aiming </TD>
+    <TD class=[r:class] WIDTH=40%> You miss one action but get a +2 to Shooting </TD>
+  </TR>
+  <TR VALIGN=TOP>
+    [h: class = if(class=="oddRow", "evenRow", "oddRow")]
+    <TD class=[r:class] WIDTH=40%> You are using a Melee Weapon </TD>
+    <TD class=[r:class] WIDTH=20%> Switch to a Ranged Weapon </TD>
+    <TD class=[r:class] WIDTH=40%> Your target number is usually 4 rather than the opponent's Parry </TD>
+  </TR>
+  <TR VALIGN=TOP>
+    [h: class = if(class=="oddRow", "evenRow", "oddRow")]
+    <TD class=[r:class] WIDTH=40%> You are going to die if you keep fighting </TD>
+    <TD class=[r:class] WIDTH=20%> Withdraw from combat </TD>
+    <TD class=[r:class] WIDTH=40%>
+      Each adjacent, non-Shaken opponent gets a free Melee attack. 
+      Try Defend option go give you a +2 to parry for the round.
+    </TD>
+  </TR>
+  <TR>
+    [h: class = if(class=="oddRow", "evenRow", "oddRow")]
+    <TD lass=[r:class] COLSPAN=3 WIDTH=100% VALIGN=TOP>
+      If you are having problems injuring an opponent
+    </TD>
+  </TR>
+  <TR VALIGN=TOP>
+    [h: class = if(class=="oddRow", "evenRow", "oddRow")]
+    <TD class=[r:class] WIDTH=40%> You are having problems hitting your opponent. </TD>
+    <TD class=[r:class] WIDTH=20%> A called shot to an unarmored area or head/vitals </TD>
+    <TD class=[r:class] WIDTH=40%>
+      <P>Limb: –2</P>
+      <P>Head/Vitals: –4</P>
+      <P>Small Target: –4</P>
+      <P>Tiny Target: –6</P>
+      <P>Ignore armor if successful</P>
+      <P>+4 damage for Head/Vitals</P>
+    </TD>
+  </TR>
+  <TR VALIGN=TOP>
+    [h: class = if(class=="oddRow", "evenRow", "oddRow")]
+    <TD class=[r:class] WIDTH=40%>
+      You are OK with lowering your defenses until your next action
+    </TD>
+    <TD class=[r:class] WIDTH=20%> Wild Attack </TD>
+    <TD class=[r:class] WIDTH=40%> +2 to Fighting and Damage, -2 to Parry </TD>
+  </TR>
+</TABLE>
+<P>Recover from being Shaken = Spirit roll 
+</P>
+<P>Soaking Wounds = Vigor roll</P>
+<P>*Many of the combat maneuvers that assist in hitting an opponent also help deal damage, as they increase the chance of getting a raise and extra +1d6 damage (or they make an opponent Shaken).</P>
+<P><BR><BR>
+</P>
+</body></html>
+}]
+
+!!
+@@ @Debug
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=true ; applyToSelected=false ; group=Utility ; tooltip= ; minWidth= ; 
+[h:label=arg(0)]
+[h:value=arg(1)]
+[h:length=json.length(macro.args)]
+[h:callingProc=""]
+[h:callingProc=arg(2)]
+[h:label = label + " from " + callingProc]
+
+[h:a=input("la|"+value+"|"+label)]
+[r:assert(a,"stopping in Debug macro "+callingProc)]
+
+!!
+@@ @DisplayNotes
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Utility ; tooltip= ; minWidth= ; 
+<TABLE WIDTH=100% BORDER=1 CELLPADDING=4 CELLSPACING=3>
+<tr><th>Token Notes</th></tr>
+<tr><p>[r:getNotes()]</p></tr>
+[if(isGM()), code:{
+<tr><th>GM Token Notes</th></tr>
+[r:getGMNotes()]
+};{}]
+</table>
+
+!!
+@@ @FlipClass
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=true ; applyToSelected=false ; group=Utility ; tooltip= ; minWidth= ; 
+[h:class=arg(0)]
+[h:class = if(class=="oddRow", "evenRow", "oddRow")]
+[r:class]
+
+!!
+@@ @Remainder
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=true ; applyToSelected=false ; group=Utility ; tooltip= ; minWidth= ; 
+[h:original=arg(0)]
+[h:divisor=arg(1)]
+[r:value = original - floor(original/divisor)*divisor]
+
+!!
+@@ @SimpleActions
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Utility ; tooltip= ; minWidth= ; 
+[h:passedNames=decode(macro.args)]
+<form name="Whisper" method="json" action='[R: macroLinkText("sendWhisper@this","none","", currentToken())]'>
+      <table border="0" cellpadding="0" cellspacing="0" width="100%">
+        <tr>
+          <th>
+            Send a whispered message to:
+[H: apn = getAllPlayerNames("json")]
+            <input type='hidden' name='numPlayers' value='[R: json.length(apn)]' />
+[H: count = 0]
+          </th>
+        </tr>
+        <tr>
+          <td>[R, FOREACH(pn, apn, ""), CODE: {
+                      [h:checked=if(json.contains(passedNames,pn),"checked","")]
+                      <input type="checkbox" name="spn[R: count]" value="[R: pn]" [r:checked]/> [R: pn] <br />
+                      [H: count = count + 1]
+          }]</td>
+        </tr>
+        <tr>
+          <td>
+           
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <input type="text" width=100 name="wText">     
+          </td>
+        </tr>
+        <tr>
+          <td>
+           
+          </td>
+        </tr>
+        <tr><td align="center">
+          <input type='hidden' name='numPlayers' value='[R: json.length(apn)]' />
+        </td></tr>
+      </table>
+    </form>
+
+!!
+@@ @Split
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=true ; applyToSelected=false ; group=Utility ; tooltip= ; minWidth= ; 
+[h:str=json.get(macro.args,0)]
+[h:cutter=json.get(macro.args,1)]
+[h:len=length(str)]
+[h:cutterLen=length(cutter)]
+[h:rtn=0]
+[h:idx=0]
+[h:end=0]
+[h:rtnList=""]
+[h:end=indexOf(str,cutter)]
+[h,if(end==-1), code:{
+  [h:rtnList=json.append(rtnList,str)]
+}; {}]
+[h,while(end!=-1,"<br>"), code:{
+  [h:end=indexOf(str,cutter,idx)]
+  [h,if(end==-1), code:{
+    [h:rtnList=json.append(rtnList,substring(str,idx))]
+  }; {
+    [h:rtnList=json.append(rtnList,substring(str,idx,end))]
+    [h:idx=end+cutterLen]
+  }]
+}]
+[r:rtnList]
+
+!!
+@@ @argCheck
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=true ; applyToSelected=false ; group=Utility ; tooltip= ; minWidth= ; 
+[macro.args]
+
+!!
+@@ @onCampaignLoad1
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Utility ; tooltip= ; minWidth= ; 
+<!-- define Lib:GM functions -->
+
+[h:defineFunction("GetTraitNum","GetTraitNumber@Lib:GM")]
+[h:defineFunction("GetDieType","GetDieType@Lib:GM")]
+[h:defineFunction("remainder","Remainder@Lib:GM")]
+[h:defineFunction("FlipClass","FlipClass@Lib:GM")]
+[h:defineFunction("CheckTokenId","CheckTokenId@Lib:GM")]
+[h:defineFunction("ShowRoll","GetShowRolls@Lib:GM")]
+[h:defineFunction('outputTo', 'outputTo@this')]
+
+[h:MTpicSize=250]
+[h:SWpicSize=250]
+[h:MTPic = getTokenPortrait(MTpicSize)]
+[h:MTPic= if(MTPic=="",getTokenImage(SWpicSize),MTPic)]
+[h:SWPic=getTokenImage(SWpicSize)]
+[h:SWwords="This game references the Savage Worlds game system, available from Pinnacle Entertainment Group at <a href=http://www.peginc.com>www.peginc.com</a>. Savage Worlds and all associated logos and trademarks are copyrights of Pinnacle Entertainment Group. Used with permission. Pinnacle makes no representation or warranty as to the quality, viability, or suitability for purpose of this product."]
+
+[h:MTwords="The jewel in the RPTools crown, don't let the name fool you. MapTool is much more than just a mapping program. Included are not only powerful tools for the creation of detailed maps, but also a chat function, detailed token management (allowing you to track properties of the units placed on the map and display health and status information), and an initiative tracker. Functions not being used can be hidden out of sight. These features enable your computer screen to function as a virtual table top, filling the role of battlemats and dry-erase markers and providing for infinitely scrollable maps and the ability to use a large-screen TV or video projector.  It is game system agnostic, meaning that while MapTool has special support for some game systems (like hexes for GURPS or square templates for D&D 4E or Cards for Savage Worlds) there is no requirement for you to use these features.
+<p>
+The best part is all this isn't limited to a single PC. You can utilize the integrated server function to connect to players wherever there's an Internet connection. Miss your buddy in Singapore? Not a problem. Roll up that character, and then your sleeves.
+<p>
+And we don't stop there! Not content with just emulating the tabletop, we seek to improve upon the tabletop experience. This, truly, is where MapTool shines. A set of topology and vision features enable the GM to limit the view of his players, revealing the map as they explore it. Walls and other objects can prevent players from seeing what lies behind them. Darkness can be made to fall, blinding players who lack a light. Lights can be set on objects or on tokens that illuminate however much of the map you wish. If the GM wishes, s/he can limit the view of players to what their specific token sees, adding a whole new level to the experience of splitting up the party.  Woe be to the character who can't see around the corner of a wall but steps out into the view of the enemy!
+<p>
+Most impressively, MapTool includes a tremendous macro function that allows you to automate just about any facet of your game that you wish. These are entirely optional bits of code you write yourself (or borrow from others you meet in the forum).  They can read or modify statistics saved in individual tokens to speed up your game by automating the number-crunching and constant rules-checking that can otherwise bog down a gaming session. Rather than looking up the finer details of a rule in the middle of the gaming session, if you've set things up it's as simple as a mouse-click. If you wish, reports on the results can be output to the chat window and displayed to whomever you wish (just the GM, for instance, or to everybody). You can even use macros to keep an updated visual display of things like hit points, mana, or ammunition right on your token.
+<p>
+MapTool is open-source, and is actively contributed to by a large number of gifted persons. It is frequently improved and updated. This can lead to the impression that it is unfinished or in development and thus unstable or difficult to keep up to date with. Nothing could be further from the truth. While the tool is constantly evolving, build 1.3 has been stable for a long time, and if you're ever worried about things changing on you, you can just stick with a version you're comfortable with until word gets to you of a new feature you just can't live without. New 1.3 save files have been backwards-compatible for a long time, meaning you won't have to re-create your campaign to use a new version of MapTool. They should load just fine. Keeping up to date couldn't be easier. MapTool's 1.3 development is slated to be finished in the very near future, resulting in a build that will be the standard, no doubt, for a good while until the new 1.4 builds are fine-tuned into stability.
+<p>
+So don't worry. Fire up the tool, draw a map, and call your friends. It's game time!"]
+
+[h:TrollWords = "<h1>A Note from the RPTroll</h1>
+<p>
+What you have before you is a labor of love.  I've enjoyed role playing for over thirty years starting with the paperback Brown Books of Dungeon and Dragons.  I played with the same gaming group for most of that time until time and distance became obstacles to my primary hobby.  I still gamed now and again and still enjoyed the game.  I tried gaming with other groups but it just wasn't the same.  I looked about for a Virtual Tabletop to bring our group back together again.  After trial and error I finally settled on Maptool. 
+<p>
+Maptool is an open source product (you can download the source yourself) that offers amazing functionality on any platform that supports Java 5 (Linux, Windows, and Mac).  The development team, lead by Trevor, constantly adds new features.  In fact, the hardest part about using Maptool is keeping up with the new functionality!  The active (some would say overly active) community resides at <a href='http://rptools.net'>http://rptools.net</a>.  Join the forums and get involved.  There isn't a more responsive developer community anywhere.
+<p>
+But Maptool is only half the story.  After DnD 3e came out I discovered it took me over an hour to level one character.  I found tools to help but in the back of my mind I realized DnD required more of my valuable time than I cared to give.  A friend of mine suggested trying Savage Worlds and described the system to me.  I have a bias against generic role playing systems.  My belief was that in order to handle a large number of system you had to either make the system so rules heavy to deal with each genre that it became unplayable or the system would be so rules light that it wouldn't allow the flexibility required for me to enjoy the game.  Savage Worlds proved me wrong on all counts.
+<p>
+Never have I found a game system as easy to play and learn as Savage Worlds.  Adventures are easy to design, populate and run and my players find the system lives up to its hype of being Fast, Furious and Fun.  But somehow the rules are robust enough to satisfy even the most dedicated rules lawyer like myself(University of Greyhawk, class of '79, specialize in minutia).  But best of all, its FUN!
+<p>
+So, the campaign framework you're using is the melding of my two great gaming loves: Maptool and Savage Worlds.  If you have questions, please refer to <a href='http://forums.rptools.net/viewtopic.php?f=33&t=7443'>the forum</a> for instructions.
+<p>
+Regards,
+Keith the Role Playing Troll"]
+
+[dialog("Splash Page","width=900; height=700; temporary=1"): {
+  <html>
+    <head>
+      
+      <link rel="stylesheet" type="text/css" href="CharSheet_css@Lib:GM">
+      <title>Savage Worlds : Savage Fan </title>
+    </head>
+    <body background="[r: getImage('image:background')]">
+<center><img src="[r:SWPic]"></img></center>
+<p>
+<center>
+[r:SWwords]
+</center>
+<p>
+<center><img src="[r:MTPic]"></img></center>
+<p>
+[r:MTwords]
+<p>
+[r:TrollWords]
+    </body>
+</html>
+}]
+
+!!
+@@ @Config Extra
+@PROPS@ fontColor=white ; autoExecute=true ; fontSize=1.00em ; sortBy=99 ; color=black ; playerEditable=false ; applyToSelected=true ; group=Token Setup ; tooltip= ; minWidth= ; 
+[h: setPropertyType("Basic")]
+
+setting [r:getName()] to nonwildcard
+
+[h:assert(isGM(),"You must be a GM to run this macro")]
+[h:tokenId=CheckTokenId()]
+[h:tName=getName()]
+
+[h:WildDie=0]
+[h:setProperty("Bennies",0)]
+[h:setProperty("BenniesLeft",0)]
+[h:dieList=DieList()]
+[h:dieList=json.toList(dieList)]
+
+[h:gvs=getLibProperty("GearVar","Lib:Gear")]
+[h:gvs=json.get(gvs,"Weapons")]
+[h:weaponList=json.fields(gvs,"json")]
+[h:weaponList=json.sort(weaponList)]
+[h:meleeWeapons=""]
+[h:shootingWeapons=""]
+[h:thrownWeapons=""]
+[foreach(w,weaponList,""), code:{
+  [h:wj=json.get(gvs,w)]
+  [foreach(we,wj,""), code:{
+    [h,if(json.get(we,"Skill")=="Fighting"): meleeWeapons=json.append(meleeWeapons,w)]
+  }]
+  [foreach(we,wj,""), code:{
+    [h,if(json.get(we,"Skill")=="Shooting"): shootingWeapons=json.append(shootingWeapons,w)]
+  }]
+  [foreach(we,wj,""), code:{
+    [h,if(json.get(we,"Skill")=="Throwing"): thrownWeapons=json.append(thrownWeapons,w)]
+  }]
+
+}]
+
+[h:status=input(  
+  "AGI1|"+dieList+"|Agility|RADIO|ORIENT=H,SELECT=1,VALUE=STRING",
+   "SMA1|"+dieList+"|Smarts|RADIO|ORIENT=H,SELECT=1,VALUE=STRING",
+   "SPI1|"+dieList+"|Spirit|RADIO|ORIENT=H,SELECT=1,VALUE=STRING",
+   "STR1|"+dieList+"|Strength|RADIO|ORIENT=H,SELECT=1,VALUE=STRING",
+   "VIG1|"+dieList+"|Vigor|RADIO|ORIENT=H,SELECT=1,VALUE=STRING",
+   "PAC|0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20|Pace|RADIO|ORIENT=H,SELECT=6,VALUE=STRING",
+   "PAR|0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20|Parry|RADIO|ORIENT=H,SELECT=6,VALUE=STRING",
+   "TUF|0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20|Toughness|RADIO|ORIENT=H,SELECT=6,VALUE=STRING",
+   "ARM|0,1,2,3,4,5,6,7,8,9,10|Armor|RADIO|ORIENT=H,SELECT=0,VALUE=STRING",
+   "junkVar1| ----------------------------------------------  Combat Skills ---------------------------------------------------------------------------------------------------------------------------------------------------------- |-----------------------------------------  |LABEL",
+   "FIG|"+dieList+"|Fighting Skill |RADIO|ORIENT=H,SELECT=2,VALUE=STRING",
+   "SHO|"+dieList+"|Shooting/Throwing Skill |RADIO|ORIENT=H,SELECT=0,VALUE=STRING",
+   "THR|"+dieList+"|Shooting/Throwing Skill |RADIO|ORIENT=H,SELECT=0,VALUE=STRING",
+   "junkVar2| ----------------------------------------------  Weapons -- ---------------------------------------------------------------------------------------------------------------------------------------------------------- |-----------------------------------------  |LABEL",
+   "WPN1|None,"+json.toList(meleeWeapons)+"|Melee Weapon|RADIO|ORIENT=H,SELECT=0,VALUE=STRING",
+   "WPN2|None,"+json.toList(shootingWeapons)+" |Shooting Weapon|RADIO|ORIENT=H,SELECT=0,VALUE=STRING",
+   "WPN3|None,"+json.toList(thrownWeapons)+" |Thrown Weapon|RADIO|ORIENT=H,SELECT=0,VALUE=STRING"
+   )] 
+[h:abort(status)]
+
+[h: Agility = AGI1  ]
+[h: Smarts = SMA1]
+[h: Spirit = SPI1]
+[h: Strength = STR1]
+[h: Vigor = VIG1]
+[h: Pace = PAC]
+[h: Parry = PAR]
+[h: Toughness = TUF]
+[h: Armor = ARM]
+
+<!-- Fighting -->
+[ IF( FIG !=  "None"  ), CODE :
+{
+[h: Fighting = FIG]
+} ; { }; ]	
+
+<!-- Shooting -->
+[ IF( SHO !=  "None"  ), CODE :
+{
+[h: Shooting = SHO]
+} ; { }; ]	
+
+<!-- Throwing -->
+[ IF( THR !=  "None"  ), CODE :
+{
+[h: Throwing = THR]
+} ; { }; ]	
+
+<!-- start the gear JSON structure -->
+[h: Gear =  '{ "'  ]
+
+<!--  weapon -->
+[ IF( WPN1 !=  "None"  ), CODE :
+{
+[h: Gear = Gear  +  WPN1 + '":{"Num":1,"Type":"Weapons","ShotsUsed":0,"ReloadRnd":0}' ]
+} ; { }; ]	
+
+<!-- add comma separator between  weapons -->
+[ IF( WPN1 !=  "None" &&  ( WPN2 !=  "None" ||  WPN3 !=  "None" )  ), CODE :
+{
+[h: Gear = Gear  + ', "'  ]
+} ; { }; ]	
+
+<!--  weapon -->
+[ IF( WPN2 !=  "None" ), CODE :
+{
+[h: Gear = Gear  +  WPN2 + '":{"Num":1,"Type":"Weapons","ShotsUsed":0,"ReloadRnd":0}' ]
+} ; { }; ]	
+
+<!-- add comma separator between  weapons -->
+[ IF( WPN1 !=  "None" &&   WPN2 !=  "None"  &&  WPN3 !=  "None"   ), CODE :
+{
+[h: Gear = Gear  + ', "'  ]
+} ; { }; ]	
+
+<!--  weapon -->
+[ IF( WPN3 !=  "None" ), CODE :
+{
+[h: Gear = Gear  +  WPN3 + '":{"Num":1,"Type":"Weapons","ShotsUsed":0,"ReloadRnd":0}' ]
+} ; { }; ]
+
+<!-- Add Ammunition to Gear -->
+[h: Gear = Gear  +  ', "Arrow":{"Num":12,"Type":"Ammo"},"Quarrel":{"Num":12,"Type":"Ammo"},"SlingStone":{"Num":12,"Type":"Ammo"}'  ]
+
+<!-- close Gear structure -->
+[h: Gear = Gear  + '}' ]
+
+Extra Token Updated <br>
+{Gear}<br>
+
+!!
+@@ @DisplayRoll
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Traits ; tooltip= ; minWidth= ; 
+[h:die=""]
+[h:roll=0]
+[h:varsFromStrProp(macro.args)]
+
+[h:exit=if(roll==0 || die=="",0,1)]
+
+[h:assert(exit,"You must pass roll and die as values")]
+[h:dtype=GetDieType(die)]
+[h:exit=if(dtype!=4&&dtype!=6&&dtype!=8&&dtype!=10&&dtype!=12,0,1)]
+
+[h:assert(exit,"Die type must be 4,6,8,10 or 12")]
+
+[if(ShowRoll()==1), code:{
+  [h:itters=floor(roll/dtype)]
+  [h:itters=if(dtype==roll,0,itters)]
+  [for(i,0,itters,1,""), code:{ 
+      <image src='[r: tableImage("d"+dtype, dtype)]'></image>
+  }]
+  [h:r=roll-(itters*dtype)]
+  [r,if(r>0), code:{ 
+    <image src='[r: tableImage("d"+dtype, r)]'></image>
+  };{}]
+
+};{}]
+
+!!
+@@ @GetDieType
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Traits ; tooltip= ; minWidth= ; 
+[h:die=macro.args]
+[h:a=die]
+[h:b=indexOf(a,"d")]
+[h:c=indexOf(a,"e")]
+[h:d=substring(a,b+1,c)]
+[r:d]
+
+!!
+@@ @GetDisplayControl
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Traits ; tooltip= ; minWidth= ; 
+[h:dc=getLibProperty("DisplayControl")]
+[h:dc=if(json.type(dc)!="OBJECT","{}",dc)]
+[h:macro.return=dc]
+
+!!
+@@ @GetShowRolls
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Traits ; tooltip= ; minWidth= ; 
+[macro("GetDisplayControl@this"):""]
+[h:dc=macro.return]
+[h:showRolls=json.get(dc,"ShowRolls")]
+[if(showRolls==""), code:{
+  [h:showRolls=0]
+  [h:dc=json.set(dc,"ShowRolls",showRolls)]
+  [h:setLibProperty("DisplayControl",dc)]
+};{}]
+[r:macro.return=showRolls]
+
+!!
+@@ @GetTokenTrait
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Traits ; tooltip= ; minWidth= ; 
+<!-- args need to be "property=<propname> ; tokenId=<tokenId> -->
+[h:props=macro.args]
+[h:varsFromStrProp(props, "UNSUFFIXED")]
+[h:tokenId]
+[h:property]
+[h:switchToken(tokenId)]
+[h:getName()]
+[h:xp=getProperty(property)]
+[h:xp=if(xp=="",getPropertyDefault(property),xp)]
+[h:xp=if(xp=="",0,xp)]
+[h:macro.return=xp]
+
+!!
+@@ @GetTokenTraitNames
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Traits ; tooltip= ; minWidth= ; 
+[h:tokenId=CheckTokenId()]
+
+[h:traitList=""]
+[macro("GetAttributeNames@Lib:GM"):""]
+[h:traitList=listAppend(traitList ,macro.return)]
+
+[macro("GetTrainedSkills@Lib:GM"):tokenId]
+[h:skills=macro.return]
+[h:traitList=if(skills!="",listAppend(traitList, skills),traitList)]
+
+[h:kSkills=json.fields(Knowledge)]
+[h:traitList=if(kSkills!="",listAppend(traitList ,kSkills),traitList)]
+
+[h:pSkills=json.fields(ArcaneSkills)]
+[h:traitList=if(pSkills!="",listAppend(traitList ,pSkills),traitList)]
+
+[h:traitList=listAppend(traitList,"Untrained")]
+
+[r:traitList]
+
+!!
+@@ @GetTrait
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Traits ; tooltip= ; minWidth= ; 
+[h:property=macro.args]
+<!-- throw error if property doesn't exist on token -->
+[h: id = findToken(getName())]
+[h:switchToken(id)]
+[h:macro.return=eval(property)]
+
+!!
+@@ @GetTraitById
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Traits ; tooltip= ; minWidth= ; 
+[h:args=macro.args]
+[h:varsFromStrProp(args)]
+<!-- throw error if property doesn't exist on token -->
+[h:switchToken(tokenId)]
+[h:macro.return=eval(property)]
+
+!!
+@@ @GetTraitNumber
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Traits ; tooltip= ; minWidth= ; 
+[h:trait=arg(0)]
+[h:a=trait]
+[h:b=indexOf(a,"d")]
+[h:c=indexOf(a,"e")]
+[h:d=substring(a,b+1,c)]
+[h:e=indexOf(a,"+")]
+[h:f=indexOf(a,"-")]
+[h:g=max(e,f)]
+
+[h,if(g!=-1), code:{
+  [h:mod=substring(a,g)]
+};{
+  [h:mod=0]
+}]
+
+[r:d+mod]
+
+!!
+@@ @RollTokenTrait
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Traits ; tooltip= ; minWidth= ; 
+[h:traitNames=""]
+[h,if(getPropertyType()=="Basic"): traitNames=GetTokenTraitNames()]
+[h,if(getPropertyType()=="Vehicle"): traitNames=listAppend(getLibProperty("VehicleTraits","Lib:Vehicles"),getLibProperty("SettingTraits","Lib:Vehicles"))]
+
+[h,if(traitNames==""): assert(0,"Tokens must be of type vehicle or basic in order to use the macro")]
+
+[h:status=input("trait|"+traitNames+"|"+getName()+" Trait Roll|LIST")]
+[h:abort(status)]
+[h:traitNames=json.fromList(traitNames)]
+[h:trait=json.get(traitNames,trait)]
+
+[macro("TraitTest@Lib:GM"):trait]
+
+!!
+@@ @TraitTest
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Traits ; tooltip= ; minWidth= ; 
+[h:roll2=-1000]
+[h:die="d4e-2"]
+[h:dieMod=0]
+[h:a=0]
+[h:modString=""]
+[h:dieMod=0]
+[h:trait=macro.args]
+[h:roll2Adjusted=0]
+
+[r:TraitTestWithMod(trait,"","")]
+
+!!
+@@ @TraitTestSave
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Traits ; tooltip= ; minWidth= ; 
+[h:roll2=-1000]
+[h:die="d4e-2"]
+[h:dieMod=0]
+[h:a=0]
+[h:modString=""]
+[h:dieMod=0]
+[h:trait=macro.args]
+[h:roll2Adjusted=0]
+
+[h:w=getProperty("Wounds")]
+[h:w=if(w=="",0,w)]
+
+[h:f=getProperty("Fatigue")]
+[h:f=if(f=="",0,f)]
+
+[h:modString=if(w!=0,modString+" Wounds="+w ,modString)]
+[h:modString=if(f!=0,modString+" Fatigue="+f  ,modString)]
+
+[h:abortIt=if(state.Shaken==1&&trait!="Spirit",0,1)]
+[h:assert(abortIt,"When shaken a token can only make a spirit roll and/or move half their pace")]
+
+[h:kSkills=getProperty("Knowledge")]
+[h:kSkills=if(json.type(kSkills)=="UNKNOWN","{}",kSkills)]
+
+[if(json.contains(kSkills,trait)), code:{
+  [h:die=json.get(kSkills,trait)]
+};{}]
+
+[h:aSkills=getProperty("ArcaneSkills")]
+[h:aSkills=if(json.type(aSkills)=="UNKNOWN","{}",aSkills)]
+
+[h:arcaneSkillList=json.fields(aSkills)]
+[if(listContains(arcaneSkillList,trait)>0), code:{
+  [h:die=json.get(ArcaneSkills,trait)]
+  [h:die=if(die=="","d4e-2",die)]
+};{}]
+
+[h:wsIdx=listFind(arcaneSkillList,"WeirdScience")]
+[h:arcaneSkillList=if(wsIdx!=-1,listDelete(arcaneSkillList,wsIdx),arcaneSkillList)]
+[if(listContains(arcaneSkillList,trait)>0), code:{
+  [h:a=json.length(PowersActive)]
+  [h:modString=if(a!=0,modString+" Active Powers=" + a,modString)]
+};{}]
+
+[h:there=getProperty(trait)]
+[if(there!=""), code:
+{
+  [h:die=getProperty(trait)]
+  [h:modIndex=lastIndexOf(die,"+")]
+  [h:dieMod=if(modIndex!=-1,substring(die,modIndex+1),0)]
+  [h:modString=modString+" Trait Bonus " + dieMod]
+  [Debug("dieMod",dieMod,getMacroName())]
+};{}]
+
+[if(die=="d4e-2"), code:{
+  [h:dieMod=dieMod-2]
+  [h:modString=modString+" Untrained Skill -2 "]
+  [h:die="d4e"]
+};{}]
+
+<table width="400">
+[if(dieMod!=0 || w !=0 || f!=0 || a!=0), code:{
+   <tr>
+         <td width='400' colspan='2' style='font-weight:bold'>
+            <b>Roll modified by [r:modString]</b>
+         </td>
+   </tr>
+};{}]
+   <tr>
+      [h:wild=getProperty("WildDie")]
+      [h:wild=if(wild=="",0,wild)]
+      [h:roll1=eval(die)]
+
+      <td width="200" style="font-weight:bold">
+         [r: trait] Roll: <span style="color:maroon;background-color:white">[t: roll1Adjusted=roll1 - w -f -a + dieMod]</span>
+        <br />
+         [macro("DisplayRoll@this"): "die="+die+";roll="+roll1]
+         [h:roll1dietype=GetDieType(die)]
+         [h:numAces = floor((roll1-dieMod)/roll1dietype)]
+         <b>[if(numAces==1): "You Aced!"]</b>
+         <b>[if(numAces>1): "You Aced "+numAces+" times!!!!"]</b>
+
+      </td>
+
+      [if(wild !=0 ), code: {
+         [h:roll2=eval(wild)]
+         <td width="200" style="font-weight:bold">
+            Wild Roll: <span style="color:maroon;background-color:white">[t: roll2Adjusted=roll2 - w -f -a + dieMod]</span>
+            <br />
+            [macro("DisplayRoll@this"): "die="+wild+";roll="+roll2]
+           [h:roll1dietype=GetDieType(wild)]
+           [h:numAces = floor(roll2/roll1dietype)]
+           <b>[if(numAces==1): "Wild Die Aced!"]</b>
+           <b>[if(numAces>1): "Wild Die Aced "+numAces+" times!!!!"]</b>
+         </td>
+      };{}]
+   </tr>
+[h:rtn=max(roll1Adjusted,roll2Adjusted)]
+[if(state.Shaken==1&&trait=="Spirit"), code: {
+  [h:state.Shaken=if(rtn>3,0,state.Shaken)]
+};{}]
+[if(roll1==1 && roll2==1), code:{
+   <tr>
+         <td width='400' colspan='2' style='color:red;font-weight:bold'>
+            Critical Failure on [r:trait] roll!
+         </td>
+   </tr>
+};{}]
+
+[if(roll1==1 && roll2!=1), code:{
+   <tr>
+         <td width='400' colspan='2' style='color:#F47521; font-weight:bold'>
+            [r:trait] rolled a 1
+         </td>
+   </tr>
+};{}]
+</table>
+[h:msg="Trait Roll "+trait+" = "+rtn]
+[h:msg=json.set("","Trait",trait,"Roll",rtn)]
+[h:LogEvent(msg)]
+[h:macro.return=rtn]
+
+!!
+@@ @TraitTestWithMod
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Traits ; tooltip= ; minWidth= ; 
+[h:roll2=-1000]
+[h:die="d4e-2"]
+[h:mod=0]
+[h:a=0]
+[h:traitModifier=0]
+[h:modString=""]
+[h:dieMod=0]
+[h:trait="Untrained"]
+
+[h:trait=arg(0)]
+[h:dieMod=dieMod+arg(1)]
+[h:modString=modString+arg(2)]
+
+[h:roll2Adjusted=0]
+
+[h:w=getProperty("Wounds")]
+[h:w=if(w=="",0,w)]
+
+[h:f=getProperty("Fatigue")]
+[h:f=if(f=="",0,f)]
+
+[h:modString=if(w!=0,modString+" Wounds=-"+w ,modString)]
+[h:modString=if(f!=0,modString+" Fatigue=-"+f  ,modString)]
+
+[r,if(state.Shaken==1), code:{
+<span style="color:red;background-color:white">[r:getName()] is <b>Shaken</b> and can only perform free actions such as opposed rolls. </span>
+};{}]
+<!-- 
+abortIt=if(state.Shaken==1&&trait!="Spirit",0,1)
+assert(abortIt,"When shaken a token can only make a spirit roll and/or move half their pace")
+-->
+[h:kSkills=getProperty("Knowledge")]
+[h:kSkills=if(json.type(kSkills)=="UNKNOWN","{}",kSkills)]
+
+[if(json.contains(kSkills,trait)), code:{
+  [h:die=json.get(kSkills,trait)]
+};{}]
+
+[h:aSkills=getProperty("ArcaneSkills")]
+[h:aSkills=if(json.type(aSkills)=="UNKNOWN","{}",aSkills)]
+
+[h:arcaneSkillList=json.fields(aSkills)]
+[if(listContains(arcaneSkillList,trait)>0), code:{
+  [h:die=json.get(ArcaneSkills,trait)]
+  [h:die=if(die=="","d4e-2",die)]
+};{}]
+
+[h:wsIdx=listFind(arcaneSkillList,"WeirdScience")]
+[h:arcaneSkillList=if(wsIdx!=-1,listDelete(arcaneSkillList,wsIdx),arcaneSkillList)]
+[if(listContains(arcaneSkillList,trait)>0), code:{
+  [h:a=json.length(PowersActive)]
+  [h:modString=if(a!=0,modString+" Active Powers=-" + a,modString)]
+};{}]
+
+[h:there=getProperty(trait)]
+[if(there!=""), code:
+{
+  [h:die=eval(trait)]
+  [h:modIndex=lastIndexOf(die,"+")]
+  [h:mod=mod+if(modIndex!=-1,substring(die,modIndex+1),0)]
+  [h,if(mod!=0):modString=modString+" Trait Modifer=" + mod]
+  [h:traitModifier=mod]
+  [h:dieMod=dieMod+mod]
+};{}]
+
+[if(die=="d4e-2"), code:{
+  [h:mod=-2]
+  [h:dieMod=dieMod+mod]
+  [h:modString=modString+" Untrained Skill=-2 "]
+  [h:die="d4e"]
+};{}]
+
+<table width="400">
+[if(modString!=""), code:{
+   <tr>
+         <td width='400' colspan='2' style='font-weight:bold'>
+            <b>Roll modified by [r:modString]</b>
+         </td>
+   </tr>
+};{}]
+   <tr>
+      [macro("GetTrait@Lib:GM"):"WildDie"]
+      [h:wild=macro.return]
+      [h:roll1=eval(die)-traitModifier]
+
+      <td width="200" style="font-weight:bold">
+         [r: trait] Roll: <span style="color:maroon;background-color:white">[t: roll1Adjusted=roll1 - w -f -a + dieMod]</span>
+        <br />
+         [macro("DisplayRoll@this"): "die="+die+";roll="+roll1]
+         [h:roll1dietype=GetDieType(die)]
+         [h:numAces = floor((roll1)/roll1dietype)]
+         <b>[if(numAces==1): "You Aced!"]</b>
+         <b>[if(numAces>1): "You Aced "+numAces+" times!!!!"]</b>
+
+      </td>
+
+      [if(wild !=0 ), code: {
+         [h:roll2=eval(wild)]
+         <td width="200" style="font-weight:bold">
+            Wild Roll: <span style="color:maroon;background-color:white">[t: roll2Adjusted=roll2 - w -f -a + dieMod]</span>
+            <br />
+            [macro("DisplayRoll@this"): "die="+wild+";roll="+roll2]
+           [h:roll1dietype=GetDieType(wild)]
+           [h:numAces = floor(roll2/roll1dietype)]
+           <b>[if(numAces==1): "Wild Die Aced!"]</b>
+           <b>[if(numAces>1): "Wild Die Aced "+numAces+" times!!!!"]</b>
+         </td>
+      };{}]
+   </tr>
+[h:rtn=max(roll1Adjusted,roll2Adjusted)]
+[if(state.Shaken==1&&trait=="Spirit"), code: {
+  [h:state.Shaken=if(rtn>3,0,state.Shaken)]
+};{}]
+[if(roll1==1 && roll2==1), code:{
+   <tr>
+         <td width='400' colspan='2' style='color:red;font-weight:bold'>
+            Critical Failure on [r:trait] roll!
+         </td>
+   </tr>
+};{}]
+
+[if(roll1==1 && roll2!=1), code:{
+   <tr>
+         <td width='400' colspan='2' style='color:#F47521; font-weight:bold'>
+            [r:trait] rolled a 1
+         </td>
+   </tr>
+};{}]
+</table>
+[h:msg="Trait Roll "+trait+" = "+rtn]
+[h:msg=json.set("","Trait",trait,"Roll",rtn)]
+[h:LogEvent(msg)]
+[h:macro.return=rtn]
+
+!!
+@@ @TraitTestWithModSave
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Traits ; tooltip= ; minWidth= ; 
+[h:roll2=-1000]
+[h:die="d4e-2"]
+[h:mod=0]
+[h:a=0]
+[h:modString=""]
+[h:dieMod=0]
+[h:trait="Untrained"]
+
+[h:trait=arg(0)]
+[h:mod=mod+arg(1)]
+[h:modString=modString+arg(2)]
+
+[h:roll2Adjusted=0]
+
+[macro("GetTrait@Lib:GM"):"Wounds"]
+[h:w=macro.return]
+[macro("GetTrait@Lib:GM"):"Fatigue"]
+[h:f=macro.return]
+[h:modString=if(w!=0,modString+" Wounds="+w ,modString)]
+[h:modString=if(f!=0,modString+" Fatigue="+f  ,modString)]
+
+[h:abortIt=if(state.Shaken==1&&trait!="Spirit",0,1)]
+[h:assert(abortIt,"When shaken a token can only make a spirit roll and/or move half their pace")]
+
+[if(json.contains(Knowledge,trait)), code:{
+  [h:die=json.get(Knowledge,trait)]
+};{}]
+
+[h:arcaneSkillList=json.fields(ArcaneSkills)]
+[if(listContains(arcaneSkillList,trait)>0), code:{
+  [h:die=json.get(ArcaneSkills,trait)]
+  [h:die=if(die=="","d4e-2",die)]
+};{}]
+
+[h:wsIdx=listFind(arcaneSkillList,"WeirdScience")]
+[h:arcaneSkillList=if(wsIdx!=-1,listDelete(arcaneSkillList,wsIdx),arcaneSkillList)]
+[if(listContains(arcaneSkillList,trait)>0), code:{
+  [h:a=json.length(PowersActive)]
+  [h:modString=if(a!=0,modString+" Active Powers=" + a,modString)]
+};{}]
+
+[h:there=getProperty(trait)]
+[if(there!=""), code:
+{
+  [h:die=eval(trait)]
+  [h:modIndex=lastIndexOf(die,"+")]
+  [h:dieMod=if(modIndex!=-1,substring(die,modIndex+1),0)]
+};{}]
+
+[if(die=="d4e-2"), code:{
+  [h:mod=mod-2]
+  [h:modString=modString+" Untrained Skill -2 "]
+  [h:die="d4e"]
+};{}]
+
+<table width="400">
+[if(mod!=0 || w !=0 || f!=0 || a!=0), code:{
+   <tr>
+         <td width='400' colspan='2' style='font-weight:bold'>
+            <b>Roll modified by [r:modString]</b>
+         </td>
+   </tr>
+};{}]
+   <tr>
+      [macro("GetTrait@Lib:GM"):"WildDie"]
+      [h:wild=macro.return]
+      [h:roll1=eval(die)]
+
+      <td width="200" style="font-weight:bold">
+         [r: trait] Roll: <span style="color:maroon;background-color:white">[t: roll1Adjusted=roll1 - w -f -a + mod]</span>
+        <br />
+         [macro("DisplayRoll@this"): "die="+die+";roll="+roll1]
+         [h:roll1dietype=GetDieType(die)]
+         [h:numAces = floor((roll1-dieMod)/roll1dietype)]
+         <b>[if(numAces==1): "You Aced!"]</b>
+         <b>[if(numAces>1): "You Aced "+numAces+" times!!!!"]</b>
+
+      </td>
+
+      [if(wild !=0 ), code: {
+         [h:roll2=eval(wild)]
+         <td width="200" style="font-weight:bold">
+            Wild Roll: <span style="color:maroon;background-color:white">[t: roll2Adjusted=roll2 - w -f -a + mod]</span>
+            <br />
+            [macro("DisplayRoll@this"): "die="+wild+";roll="+roll2]
+           [h:roll1dietype=GetDieType(wild)]
+           [h:numAces = floor(roll2/roll1dietype)]
+           <b>[if(numAces==1): "Wild Die Aced!"]</b>
+           <b>[if(numAces>1): "Wild Die Aced "+numAces+" times!!!!"]</b>
+         </td>
+      };{}]
+   </tr>
+[h:rtn=max(roll1Adjusted,roll2Adjusted)]
+[if(state.Shaken==1&&trait=="Spirit"), code: {
+  [h:state.Shaken=if(rtn>3,0,state.Shaken)]
+};{}]
+[if(roll1==1 && roll2==1), code:{
+   <tr>
+         <td width='400' colspan='2' style='color:red;font-weight:bold'>
+            Critical Failure on [r:trait] roll!
+         </td>
+   </tr>
+};{}]
+
+[if(roll1==1 && roll2!=1), code:{
+   <tr>
+         <td width='400' colspan='2' style='color:#F47521; font-weight:bold'>
+            [r:trait] rolled a 1
+         </td>
+   </tr>
+};{}]
+</table>
+[h:msg="Trait Roll "+trait+" = "+rtn]
+[h:msg=json.set("","Trait",trait,"Roll",rtn)]
+[h:LogEvent(msg)]
+[h:macro.return=rtn]
+
+!!
+@@ @DisplaySettingList
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=true ; applyToSelected=false ; group=SettingLists ; tooltip= ; minWidth= ; 
+[r:lists=decode(getLibProperty("SettingLists"))]
+<br>
+[h: id = strfind(lists, "(\\S+)\\n*")]
+[h:fc=getFindCount(id)]
+
+[r,count(fc,"<br>"), code:{
+  [h:tmp=Split(getGroup(id, roll.count+1, 0),"=")]
+  [r:rtn=json.get(tmp,0)+":"+json.get(tmp,1)]
+}]
+
+!!
+@@ @EditSettingLists
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=green ; playerEditable=true ; applyToSelected=false ; group=SettingLists ; tooltip= ; minWidth= ; 
+[h:lists=getLibProperty("SettingLists")]
+[h:okMacro="EditSettingListsOK"]
+
+[dialog("SettingLists6", "width=450; height=500; input=1; temporary=1; title='Setting List Dialog'"): {
+  <html>
+  <head>
+    <title>Setting Lists</title>
+    <link rel='stylesheet' type='text/css' href="CharSheet_css@Lib:GM"></link>
+  </head>
+  <body>
+    <h1>Enter GM-Defined Setting Lists</h1>
+    <form name="PC Gear" method='json' action="[r:macroLinkText(okMacro+"@Lib:GM","gm","")]">
+      <textarea  name="lists" rows="10" cols="50">[r:decode(lists)]</textarea>
+      <input type="submit" name="Submit" value="Save Lists"/>
+      <input type="submit" name="Submit" value="Cancel"/>
+    </form>
+
+    <br>Lists in the box above are to be used if you want GM specific lists for to display on character sheets. Entry should be in the form of a list name, an equals sign, then a comma separated list of values. Each list should be on its own line.
+    <p>Example:
+    <br><b>professions=reporter,scientist,mechanic <br>connections=mayor,police,mob <br>Favors=1,2,3,4,5,6</b>
+    <p>The comma separate values will turn into selections on the players character sheet like powers, edges, and hindrances
+  </body>
+  </html>
+}]
+
+!!
+@@ @EditSettingListsOK
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=true ; applyToSelected=false ; group=SettingLists ; tooltip= ; minWidth= ; 
+[r:macro.args]
+[h:action=json.get(macro.args,"Submit")]
+[if(action=="Cancel"): abort(0)]
+[h:lists=json.get(macro.args,"lists")]
+<br>
+[r:lists]
+Saving [r:lists] to Lib:GM SettingLists
+[setLibProperty("SettingLists",encode(lists))]
+
+!!
+@@ @GetSettingLists
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=SettingLists ; tooltip= ; minWidth= ; 
+[h:tokenId=""]
+[h:returnMacro="CharacterSheet@Lib:GM"]
+[h:refreshMacro=getMacroName()+"@Lib:GM"]
+
+[h:tokenId=if(tokenId=="",currentToken(),"")]
+[h:abortit=if(tokenId=="",0,1)]
+[h:assert(abortit,"no token id available")]
+[h:okMacro="UpdateSettingListsOK@Lib:GM"]
+
+[h:listsToken=getProperty("SettingLists")]
+[h:listsToken=if(json.type(listsToken)!="OBJECT","{}",listsToken)]
+
+[h:lists=decode(getLibProperty("SettingLists"))]
+
+[h:id = strfind(lists, "(\\S+)\\n*")]
+[h:fc=getFindCount(id)]
+[h:listsJSON=""]
+[h,count(fc,"<br>"), code:{
+  [h:v=getGroup(id, roll.count+1, 0)]
+  [h:tmp=Split(v,"=")]
+  [h:listsJSON=json.set(listsJSON,json.get(tmp,0),json.get(tmp,1))]
+}]
+
+[h:keys=json.sort(json.fields(listsJSON,"json"))]
+[h:rtn=""]
+[h:rtn=rtn+"<table border="1"><tr><td>setting list name</td><td>value</td></tr>"]
+[h,foreach(k,keys,""), code:{
+  [h:rtn=rtn+"<tr><td>"+k+":</td><td>"+json.toList(json.get(listsToken,k))+"</td></tr>"]
+}]
+[h:rtn=rtn+"</table>"]
+[r:rtn]
+
+!!
+@@ @SettingListsTable
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=true ; applyToSelected=false ; group=SettingLists ; tooltip= ; minWidth= ; 
+[h:tokenId=""]
+[h:tokenId=if(tokenId=="",currentToken(),"")]
+[h:abortit=if(tokenId=="",0,1)]
+[h:assert(abortit,"no token id available")]
+
+[h:listsToken=getProperty("SettingLists")]
+[h:listsToken=if(json.type(listsToken)!="OBJECT","{}",listsToken)]
+
+[h:lists=decode(getLibProperty("SettingLists"))]
+[h:id = strfind(lists, "(\\S+)\\n*")]
+[h:fc=getFindCount(id)]
+[h:listsJSON=""]
+[h,count(fc,"<br>"), code:{
+  [h:tmp=Split(getGroup(id, roll.count+1, 0),"=")]
+  [h:listsJSON=json.set(listsJSON,json.get(tmp,0),json.get(tmp,1))]
+}]
+
+[h:keys=json.sort(json.fields(listsJSON,"json"))]
+[h: class = "oddRow"]
+[foreach(k,keys,""), code:{
+  [h:settingValues=json.fromList(json.get(listsJSON,k))]
+  [h:tokenValues=json.get(listsToken,k)]
+  [h:tokenValues=if(json.type(tokenValues)!="ARRAY","[]",tokenValues)]
+  [h:class = if(class=="oddRow", "evenRow", "oddRow")]
+  <tr><th colspan=2>[r:k]</th></tr>
+  [foreach(v,settingValues,"</tr>"), code:{
+    [h:checked=if(json.contains(tokenValues,v),"checked","")]
+    <tr class="[r:class]">
+      <td>[r:v]</td>
+      <td><input type="checkbox" name="cb_[r:k]_[r:v]" value="1" [r:checked]></input></td>
+  }]
+}]
+
+!!
+@@ @UpdateSettingLists
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=true ; applyToSelected=false ; group=SettingLists ; tooltip= ; minWidth= ; 
+[h:tokenId=""]
+[h:returnMacro="CharacterSheet@Lib:GM"]
+[h:refreshMacro=getMacroName()+"@Lib:GM"]
+[h:okMacro=getMacroName()+"OK@Lib:GM"]
+
+[h:tokenId=if(tokenId=="",currentToken(),"")]
+[h:abortit=if(tokenId=="",0,1)]
+[h:assert(abortit,"no token id available")]
+
+[h:listsToken=getProperty("SettingLists")]
+[h:listsToken=if(json.type(listsToken)!="OBJECT","{}",listsToken)]
+
+[h:lists=decode(getLibProperty("SettingLists"))]
+[h:id = strfind(lists, "(\\S+)\\n*")]
+[h:fc=getFindCount(id)]
+[h:listsJSON=""]
+[h,count(fc,"<br>"), code:{
+  [h:tmp=Split(getGroup(id, roll.count+1, 0),"=")]
+  [h:listsJSON=json.set(listsJSON,json.get(tmp,0),json.get(tmp,1))]
+}]
+
+[h:keys=json.sort(json.fields(listsJSON,"json"))]
+
+[h: class = "oddRow"]
+[dialog("SettingListUpdate1", "width=200; height=500; temporary=1"): {
+  <html>
+    <head>
+      <title>Update Other</title>
+      <meta name="input" content="true">
+      <link rel="stylesheet" type="text/css" method="json" href="CharSheet_css@Lib:GM">     
+    </head>
+    <body>
+      <form name="SettingLists" method="json" action="[r:macroLinkText(okMacro,"gm","",tokenId)]">
+        <table id="Lists" bgcolor=#aaaaaa width="100%">
+        [macro("SettingListsTable@Lib:GM"):""]
+        <tr><th colspan=2><input type="submit" name="Submit" value="Submit"> </input></th></tr>
+        </table>
+        <!-- hidden input with the weapon number -->
+        <input type="hidden" name="returnMacro" value="[r:returnMacro]"> </input>
+      </form>
+    </body>
+  </html>
+}]
+
+!!
+@@ @UpdateSettingListsOK
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=true ; applyToSelected=false ; group=SettingLists ; tooltip= ; minWidth= ; 
+[h:tokenId=""]
+[h:tokenId=if(tokenId=="",currentToken(),"")]
+[h:abortit=if(tokenId=="",0,1)]
+[h:assert(abortit,"no token id available")]
+
+[h:settingLists=getProperty("SettingLists")]
+
+[h:settingLists=if(json.type(settingLists)!="OBJECT","{}",settingLists)]
+[h:keys=json.fields(macro.args)]
+
+[h:newSettingLists="{}"]
+[h,foreach(k,keys,"<br>"), code:{
+  [h:jarr=Split(k,"_")]
+  [h,if(json.get(jarr,0)=="cb"), code:{
+    [h:key=json.get(jarr,1)]
+    [h:value=json.get(jarr,2)]
+    [h:list=json.get(newSettingLists,key)]
+    [h:list=json.append(list,value)]
+    [h:newSettingLists=json.set(newSettingLists,key,list)]
+  };{}]
+}]
+[h:setProperty("SettingLists",newSettingLists)]
+<br>Setting [r:getName()] setting lists to [r:newSettingLists]
+[macro("CharacterSheet@Lib:GM"):""]
+
+!!
+@@ @DrV
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=true ; applyToSelected=false ; group=Frames ; tooltip= ; minWidth= ; 
+<--   ViewCardHand   -->
+
+[Frame("CharSheet"): {
+  <html>
+    <head>
+      <title>[R: TokenViewed = getImpersonatedName() ] Adventure Card Hand</title>
+    </head>
+    <body>
+      <table>
+        [foreach(Card, AdventureCardHand, ""), code: {
+          [H: Callback = "PlayAdventureCard@" + getMacroLocation()]    
+           <tr>
+            <td>
+              <image src='[R: tableImage("Adventure",Card)]' ></image>
+            </td>
+            <td width = "400">
+              <table>
+                <tr>
+                  <td>
+                    [R: table("Adventure",Card)]
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    [R: macroLink("Play This Card Now", "PlayAdventureCard@" + getMacroLocation(), "gm", Card,"selected")]
+   <br>
+                    [R: macroLink("Discard This Card Now", "DiscardAdventureCard@" + getMacroLocation(), "gm", Card,"selected")]
+                  </td>
+                </tr>
+              </table>
+       </td>
+          </tr>
+   }]
+      </table>
+    </body>
+  </html>
+}
+
+!!
+@@ @SelectPCDialog
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Frames ; tooltip= ; minWidth= ; 
+[dialog("PCSelect", "undecorated=1"): {
+[h: link=macro.args]
+[h: ids = getPC()]
+[h: rtnIds = ""]
+  <html>
+    <head>
+      <title>Select PCs</title>
+      <meta name="input" content="true">
+      <link rel="stylesheet" type="text/css" href="CharSheet_css@Lib:GM">     
+    </head>
+    <body>
+      <form name="PCs" action="[r:macroLinkText(link,"gm")]">
+        <input type="hidden" name="PCCount" value="[r: listCount(ids)]"></input>
+        <table id="PCs" bgcolor=#aaaaaa width=200>
+          <tr>
+            <th>
+              <label for="Check all PCs to act upon">Names</label>
+            </th>
+            <th>
+              Marked
+            </th>
+          </tr>
+[h:firstTime=1]
+[h:i=0]
+[h: class = "oddRow"]
+[foreach(id,ids,""), code: {
+  [h:i=i+1]
+  [h:var="PC"+i]
+  [macro("GetTokenName@Lib:GM"): id]
+  [h:name = macro.return]
+        <tr class="[r:class]">
+          <td>[r:name]</td>
+          <td><input type="checkbox" name="[r:var]" value="[r:id]"></td>
+        </tr>
+  [h: class = if(class=="oddRow", "evenRow", "oddRow")]
+}]
+        </table>
+        <!-- hidden input with the weapon number -->
+        <input type="submit" name="Submit" value="Submit"> </input>
+      </form>
+    </body>
+  </html>
+}]
+
+!!
+@@ @UpdateCharacterDialog
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=true ; group=Frames ; tooltip= ; minWidth= ; 
+[dialog("PCSelect", "undecorated=1"): {
+[h: link=macro.args]
+[h: ids = getPC()]
+[h: rtnIds = ""]
+  <html>
+    <head>
+      <title>Select PCs</title>
+      <meta name="input" content="true">
+      <link rel="stylesheet" type="text/css" href="CharSheet_css@Lib:GM">     
+    </head>
+    <body>
+      <form name="PCs" action="[r:macroLinkText(link,"gm")]">
+        <input type="hidden" name="PCCount" value="[r: listCount(ids)]"></input>
+        <table id="PCs" bgcolor=#aaaaaa width=200>
+          <tr>
+            <th>
+              <label for="Check all PCs to act upon">Names</label>
+            </th>
+            <th>
+              Marked
+            </th>
+          </tr>
+[h:firstTime=1]
+[h:i=0]
+[h: class = "oddRow"]
+[foreach(id,ids,""), code: {
+  [h:i=i+1]
+  [h:var="PC"+i]
+  [macro("GetTokenName@Lib:GM"): id]
+  [h:name = macro.return]
+        <tr class="[r:class]">
+          <td>[r:name]</td>
+          <td><input type="checkbox" name="[r:var]" value="[r:id]"></td>
+        </tr>
+  [h: class = if(class=="oddRow", "evenRow", "oddRow")]
+}]
+        </table>
+        <!-- hidden input with the weapon number -->
+        <input type="submit" name="Submit" value="Submit"> </input>
+      </form>
+    </body>
+  </html>
+}]
+
+!!
+@@ @EdgesToolTip
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=1. Setup ; tooltip= ; minWidth= ; 
+[h:edgeName=arg(0)]
+<span title='[r:decode(getLibProperty("Edge."+edgeName+".desc"))]'>[r:decode(edgeName)]</span>
+
+!!
+@@ @EditEdges
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=1. Setup ; tooltip= ; minWidth= ; 
+[h:edgeList=getLibProperty("Edges","Lib:GM")]
+[h:settingEdgeList=getLibProperty("SettingEdges","Lib:GM")]
+
+[h:okMacro=getMacroName()+"OK@"+getMacroLocation()]
+[h:refreshMacro=getMacroName()+"@"+getMacroLocation()]
+[returnMacro=getStrProp(macro.args,"returnMacro")]
+[h:tokenId=currentToken()]
+
+[h: class = "oddRow"]
+[dialog("Edit Edges"): {
+  <html>
+    <head>
+      <title>Update Edge Descriptions</title>
+      <meta name="input" content="true">
+      <link rel="stylesheet" type="text/css" href="CharSheet_css@Lib:GM">     
+    </head>
+    <body>
+      <form name="Edges"  method='json' action="[r:macroLinkText(okMacro,"gm","",tokenId)]">
+        <table id="Attributes" bgcolor=#aaaaaa width="100%">
+          <tr>
+            <th>Edge Name</th>
+            <th>Description</th>
+          </tr>
+[foreach(c,edgeList,""), code: {
+          <tr class="[r:class]">
+[h: class = if(class=="oddRow", "evenRow", "oddRow")]
+            <td>[r:decode(c)]</td>
+            <td>
+              <input type="text" name="edgeDesc_[r:c]" value='[r:decode(getLibProperty("Edge."+c+".desc"))]' ></input>
+            </td> 
+          </tr>
+}]
+[foreach(c,settingEdgeList,""), code: {
+          <tr class="[r:class]">
+[h: class = if(class=="oddRow", "evenRow", "oddRow")]
+            <td>[r:decode(c)]</td>
+            <td>
+              <input type="text" name="edgeDesc_[r:c]" value='[r:decode(getLibProperty("Edge."+c+".desc"))]' ></input>
+            </td> 
+          </tr>
+}]
+
+        <tr><th colspan=2>
+        <input type="submit" name="Submit" value="Submit"> </input>
+        <input type="hidden" name="returnMacro" value="[r:returnMacro]"> </input>
+        </th></tr>
+        </table>
+      </form>
+    </body>
+  </html>
+}]
+
+!!
+@@ @EditEdgesOK
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=1. Setup ; tooltip= ; minWidth= ; 
+[macro.args]
+[h:returnMacro=json.get(macro.args,"returnMacro")]
+
+[h:edgeList=getLibProperty("Edges","Lib:GM")]
+[h:settingEdgeList=getLibProperty("SettingEdges","Lib:GM")]
+
+[foreach(c,edgeList,""), code: {
+  [h:t="edgeDesc_"+c]
+  [h:there=json.contains(macro.args,t)]
+  setting [r:c] to [encode(json.get(macro.args,t))]<br>
+  [h,if(there): setLibProperty("Edge."+c+".desc",encode(json.get(macro.args,t)))]
+}]
+[foreach(c,settingEdgeList,""), code: {
+  [h:t="edgeDesc_"+c]
+  [h:there=json.contains(macro.args,t)]
+  setting [r:c] to [encode(json.get(macro.args,t))]<br>
+  [h,if(there): setLibProperty("Edge."+c+".desc",encode(json.get(macro.args,t)))]
+}]
+
+!!
+@@ @EditHindrances
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=1. Setup ; tooltip= ; minWidth= ; 
+[macro("GetMajorHindranceNames@Lib:GM"):""]
+[h:majorHindranceList=macro.return]
+[macro("GetMinorHindranceNames@Lib:GM"):""]
+[h:minorHindranceList=macro.return]
+
+[h:okMacro=getMacroName()+"OK@"+getMacroLocation()]
+[h:refreshMacro=getMacroName()+"@"+getMacroLocation()]
+[returnMacro=getStrProp(macro.args,"returnMacro")]
+[h:tokenId=currentToken()]
+
+[h: class = "oddRow"]
+[dialog("Edit Hindrances"): {
+  <html>
+    <head>
+      <title>Update Edge Descriptions</title>
+      <meta name="input" content="true">
+      <link rel="stylesheet" type="text/css" href="CharSheet_css@Lib:GM">     
+    </head>
+    <body>
+      <form name="Hindrances"  method='json' action="[r:macroLinkText(okMacro,"gm","",tokenId)]">
+        <table id="Attributes" bgcolor=#aaaaaa width="100%">
+          <tr>
+            <th>Major Hindrance Name</th>
+            <th>Description</th>
+          </tr>
+[foreach(c,majorHindranceList,""), code: {
+          <tr class="[r:class]">
+[h: class = if(class=="oddRow", "evenRow", "oddRow")]
+            <td>[r:decode(c)]</td>
+            <td>
+              <input type="text" name="hindMajDesc_[r:c]" value="[r:decode(getLibProperty("Hindrance.Major."+c+".desc"))]" ></input>
+            </td> 
+          </tr>
+}]
+          <tr>
+            <th>Minor Hindrance Name</th>
+            <th>Description</th>
+          </tr>
+[foreach(c,minorHindranceList,""), code: {
+          <tr class="[r:class]">
+[h: class = if(class=="oddRow", "evenRow", "oddRow")]
+            <td>[r:decode(c)]</td>
+            <td>
+              <input type="text" name="hindMinDesc_[r:c]" value="[r:decode(getLibProperty("Hindrance.Minor."+c+".desc"))]" ></input>
+            </td> 
+          </tr>
+}]
+
+        <tr><th colspan=2>
+        <input type="submit" name="Submit" value="Submit"> </input>
+        <input type="hidden" name="returnMacro" value="[r:returnMacro]"> </input>
+        </th></tr>
+        </table>
+      </form>
+    </body>
+  </html>
+}]
+
+!!
+@@ @EditHindrancesOK
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=1. Setup ; tooltip= ; minWidth= ; 
+[macro.args]
+[h:returnMacro=json.get(macro.args,"returnMacro")]
+
+[macro("GetMajorHindranceNames@Lib:GM"):""]
+[h:majorHindranceList=macro.return]
+[macro("GetMinorHindranceNames@Lib:GM"):""]
+[h:minorHindranceList=macro.return]
+
+[foreach(c,majorHindranceList,""), code: {
+  [h:t="hindMajDesc_"+c]
+  [h:there=json.contains(macro.args,t)]
+  setting [r:c] to [encode(json.get(macro.args,t))]<br>
+  [h,if(there): setLibProperty("Hindrance.Major."+c+".desc",encode(json.get(macro.args,t)))]
+}]
+[foreach(c,minorHindranceList,""), code: {
+  [h:t="hindMinDesc_"+c]
+  [h:there=json.contains(macro.args,t)]
+  setting [r:c] to [encode(json.get(macro.args,t))]<br>
+  [h,if(there): setLibProperty("Hindrance.Minor."+c+".desc",encode(json.get(macro.args,t)))]
+}]
+
+!!
+@@ @HindrancesToolTip
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=1. Setup ; tooltip= ; minWidth= ; 
+[h:hindName=arg(0)]
+[h:type=arg(1)] <!-- Major or Minor -->
+[if(type!="Major" && type!="Minor"): assert(0,"either Major or Minor must be passed as second arg to "+getMacroName())]
+<span title= '[r:decode(getLibProperty("Hindrance."+type+"."+hindName+".desc"))]' > [r:decode(hindName)]</span>
+
+!!
+@@ @GetAttributeNames
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Get Trait ; tooltip= ; minWidth= ; 
+[h:propNames =getLibProperty("Attributes")]
+[h:macro.return=propNames]
+
+!!
+@@ @GetDerivedNames
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Get Trait ; tooltip= ; minWidth= ; 
+[h:propNames = getLibProperty("Derived")]
+[h:macro.return=propNames]
+
+!!
+@@ @GetEdgeNames
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Get Trait ; tooltip= ; minWidth= ; 
+[h:propNames = getLibProperty("Edges")]
+[h:settingEdges=getLibProperty("SettingEdges")]
+[h:propNames=if(settingEdges=="",propNames,listAppend(propNames,settingEdges))]
+[h:macro.return=propNames]
+
+!!
+@@ @GetGearNames
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Get Trait ; tooltip= ; minWidth= ; 
+[h:propNames = getLibProperty("Gear")]
+[h:macro.return=propNames]
+
+!!
+@@ @GetHindranceNames
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Get Trait ; tooltip= ; minWidth= ; 
+[h:propNames =getLibProperty("Hindrances")]
+[h:macro.return=propNames]
+
+!!
+@@ @GetKnowledgeSkillNames
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Get Trait ; tooltip= ; minWidth= ; 
+[h:macro.return=getLibProperty("SettingKnowledgeSkills")]
+
+!!
+@@ @GetLanguageNames
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=true ; applyToSelected=false ; group=Get Trait ; tooltip= ; minWidth= ; 
+[h:propNames =getLibProperty("Languages")]
+[h:macro.return=propNames]
+
+!!
+@@ @GetMajorHindranceNames
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Get Trait ; tooltip= ; minWidth= ; 
+[h:propNames = getLibProperty("Major Hindrances")]
+[h:setMajHind = getLibProperty("SettingMajHind")]
+[h:propNames=if(setMajHind=="",propNames,listAppend(propNames,setMajHind))]
+[h:macro.return=propNames]
+
+!!
+@@ @GetMinorHindranceNames
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Get Trait ; tooltip= ; minWidth= ; 
+[h:propNames = getLibProperty("Minor Hindrances")]
+[h:setMinHind = getLibProperty("SettingMinHind")]
+[h:propNames=if(setMinHind=="",propNames,listAppend(propNames,setMinHind))]
+[h:macro.return=propNames]
+
+!!
+@@ @GetPowerNames
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=true ; applyToSelected=false ; group=Get Trait ; tooltip= ; minWidth= ; 
+[macro("GetPowersList@Lib:Powers"):""]
+[h:macro.return=macro.return]
+
+!!
+@@ @GetSkillNames
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Get Trait ; tooltip= ; minWidth= ; 
+[h:rtn=listAppend(getLibProperty("Skills"),getLibProperty("SettingSkills"))]
+[h:macro.return=rtn]
+
+!!
+@@ @GetStateNames
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Get Trait ; tooltip= ; minWidth= ; 
+[h:macro.return="Shaken, Wound, Fatigued, Dead, Prone, Incapcitate, Panicked, Entangled, Flying, FullDefense, FightingDefense"]
+
+!!
+@@ @GetTokenName
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Get Trait ; tooltip= ; minWidth= ; 
+[h:tokenId=macro.args]
+[h: switchToken(tokenId)]
+[h:macro.return=getName()]
+
+!!
+@@ @LoadRaces
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Setup ; tooltip= ; minWidth= ; 
+[h:races=json.append("","Human","Other","Sharkman","Catman","Librarian","Dwarf","Porcian","Draconian","Robotman")]
+[setLibProperty("SettingRaces",races)]
+
+!!
+@@ @UpdateGearDialog
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Dialogs ; tooltip= ; minWidth= ; 
+<!-- args are tokenId -->
+[h:props=macro.args]
+
+[h:tokenId=""]
+[h:returnMacro="argCheck@Lib:GM"]
+[h:varsFromStrProp(macro.args)]
+[tokenId=if(tokenId=="",currentToken(),"")]
+[h:abortit=if(tokenId=="",0,1)]
+[h:assert(abortit,"no token id available")]
+
+[macro("ArmorJSON@Lib:Gear"): ""]
+[h:armorJSON=macro.return]
+
+<br>armor <br>
+[armorList=json.fields(armorJSON)]
+<br>
+[foreach(gear1,armorList,"<br>"), code: {
+gear is [gear1]
+}]
+
+[macro("AmmoJSON@Lib:Gear"): ""]
+[h:ammoJSON=macro.return]
+[h:ammoList=json.fields(ammoJSON)]
+
+[macro("WeaponsJSON@Lib:Gear"): ""]
+[h:weaponsJSON=macro.return]
+[h:weaponsList=json.fields(weaponsJSON)]
+
+[macro("OtherJSON@Lib:Gear"): ""]
+[h:otherJSON=macro.return]
+[h:otherList=json.fields(otherJSON)]
+
+[macro("GetGearNames@Lib:GM"):""]
+[h:gearList=macro.return]
+[h:switchToken(tokenId)]
+[h:currGear=Gear]
+[h:numOnLine=3]
+
+[h: class = "oddRow"]
+[dialog("GearUpdate", "width=610; height=650"): {
+  <html>
+    <head>
+      <title>Select Gear</title>
+      <meta name="input" content="true">
+      <link rel="stylesheet" type="text/css" href="CharSheet_css@Lib:GM">     
+    </head>
+    <body>
+      <form name="PC Gear" action="[r:macroLinkText("UpdatGearOK@Lib:GM","gm","",tokenId)]">
+        <table id="Hindrances" bgcolor=#aaaaaa width="100%">
+          <tr>
+          <th colspan=[r:3*numOnLine]>Armor [h:count=0] </th>
+          </tr>
+          <tr>
+[foreach(gear1,armorList,""), code: {
+             <td class="[r:class]">
+  [h:checked=""]
+  [h:value=getStrProp(currGear, gear1)]
+
+  [h:checked=if(value!=""," checked  "," ")]
+            <input type="checkbox" name="gear_[r:gear1]" value="1" [r:checked]></input>
+  [h:switch=if(count==NumOnLine,1,0)]
+  [h:count=if(count==NumOnLine,0,count)]
+            </td><td class="[r:class]">[r:gear1] </td><td class="[r:class]" <input type="text" name="gearNum_[r:gear1]" size=1 value="[r:value]">
+  [h:count=count+1]
+  [h: class = if(class=="oddRow", "evenRow", "oddRow")]
+  [h:p=if(count==NumOnLine,"</td></tr><tr>","</td>")][r:p]
+}]
+
+[while(count<numOnline,""), code: {
+  [h:count=count+1]
+  <td class="[r:class]"></td>
+  <td class="[r:class]"></td>
+  <td class="[r:class]">
+  [if(count==NumOnLine,"</td></tr><tr>","</td>")]
+  [h: class = if(class=="oddRow", "evenRow", "oddRow")]
+}]
+          <th colspan=[r:3*numOnLine]>Weapons [h:count=0] </th>
+          </tr>
+          <tr>
+[foreach(gear1,weaponsList,""), code: {
+             <td class="[r:class]">
+  [h:checked=""]
+  [h:value=getStrProp(currGear, gear1)]
+
+  [h:checked=if(value!=""," checked  "," ")]
+            <input type="checkbox" name="gear_[r:gear1]" value="1" [r:checked]></input>
+  [h:switch=if(count==NumOnLine,1,0)]
+  [h:count=if(count==NumOnLine,0,count)]
+            </td><td class="[r:class]">[r:gear1] </td><td class="[r:class]" <input type="text" name="gearNum_[r:gear1]" size=1 value="[r:value]">
+  [h:count=count+1]
+  [h: class = if(class=="oddRow", "evenRow", "oddRow")]
+  [if(count==NumOnLine,"</td></tr><tr>","</td>")]
+}]
+[while(count<numOnline,""), code: {
+  [h:count=count+1]
+  <td class="[r:class]"></td>
+  <td class="[r:class]"></td>
+  <td class="[r:class]">
+  [if(count==NumOnLine,"</td></tr><tr>","</td>")]
+  [h: class = if(class=="oddRow", "evenRow", "oddRow")]
+}]
+
+          <th colspan=[r:3*numOnLine]>Ammo [h:count=0] </th>
+          </tr>
+          <tr>
+[foreach(gear1,ammoList,""), code: {
+             <td class="[r:class]">
+  [h:checked=""]
+  [h:value=getStrProp(currGear, gear1)]
+
+  [h:checked=if(value!=""," checked  "," ")]
+            <input type="checkbox" name="gear_[r:gear1]" value="1" [r:checked]></input>
+  [h:switch=if(count==NumOnLine,1,0)]
+  [h:count=if(count==NumOnLine,0,count)]
+            </td><td class="[r:class]">[r:gear1] </td><td class="[r:class]" <input type="text" name="gearNum_[r:gear1]" size=1 value="[r:value]">
+  [h:count=count+1]
+  [h: class = if(class=="oddRow", "evenRow", "oddRow")]
+  [h:p=if(count==NumOnLine,"</td></tr><tr>","</td>")][r:p]
+}]
+[while(count<numOnline,""), code: {
+  [h:count=count+1]
+  <td class="[r:class]"></td>
+  <td class="[r:class]"></td>
+  <td class="[r:class]">
+  [if(count==NumOnLine,"</td></tr><tr>","</td>")]
+  [h: class = if(class=="oddRow", "evenRow", "oddRow")]
+
+}]
+          <th colspan=[r:3*numOnLine]>Other Items [h:count=0] </th>
+          </tr>
+          <tr>
+[foreach(gear1,otherList,""), code: {
+             <td class="[r:class]">
+  [h:checked=""]
+  [h:value=getStrProp(currGear, gear1)]
+
+  [h:checked=if(value!=""," checked  "," ")]
+            <input type="checkbox" name="gear_[r:gear1]" value="1" [r:checked]></input>
+  [h:switch=if(count==NumOnLine,1,0)]
+  [h:count=if(count==NumOnLine,0,count)]
+            </td><td class="[r:class]">[r:gear1] </td><td class="[r:class]" <input type="text" name="gearNum_[r:gear1]" size=1 value="[r:value]">
+  [h:count=count+1]
+  [h: class = if(class=="oddRow", "evenRow", "oddRow")]
+  [h:p=if(count==NumOnLine,"</td></tr><tr>","</td>")][r:p]
+}]
+[while(count<numOnline,""), code: {
+  [h:count=count+1]
+  <td class="[r:class]"></td>
+  <td class="[r:class]"></td>
+  <td class="[r:class]">
+  [h:p=if(count==NumOnLine,"</td></tr><tr>","</td>")][r:p]
+  [h: class = if(class=="oddRow", "evenRow", "oddRow")]
+
+}]
+          <th colspan=[r:3*numOnLine]> <input type="submit" name="Submit" value="Submit"> </input> </th>
+          </tr>
+        </table>
+        <!-- hidden input with the weapon number -->
+        <input type="hidden" name="returnMacro" value="[r:returnMacro]"> </input>
+      </form>
+    </body>
+  </html>
+}]
+
+!!
+@@ @UpdatePowersDialog
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Dialogs ; tooltip= ; minWidth= ; 
+<!-- args are tokenId -->
+[h:props=macro.args]
+
+[dialog("PowerUpdate", "width=600; height=800"): {
+  <html>
+    <head>
+      <title>Select Powers</title>
+      <meta name="input" content="true">
+      <link rel="stylesheet" type="text/css" href="CharSheet_css@Lib:GM">     
+    </head>
+    <body>
+[macro("UpdatePowersForm@this"):props]
+    </body>
+  </html>
+}]
+
+[h:abort(0)]
+
+!!
+@@ @UpdatePowersForm
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Dialogs ; tooltip= ; minWidth= ; 
+<!-- args are tokenId -->
+[h:props=macro.args]
+
+[h:tokenId=""]
+[h:returnMacro="argCheck@Lib:GM"]
+[h:varsFromStrProp(macro.args)]
+[h:tokenId=if(tokenId=="",currentToken(),"")]
+[h:abortit=if(tokenId=="",0,1)]
+[h:assert(abortit,"no token id available")]
+
+[macro("GetPowerNames@Lib:GM"):""]
+[h:powerList=macro.return]
+[h:switchToken(tokenId)]
+[h:skills=json.fields(getProperty("Powers"))]
+
+[h:numOnLine=4]
+
+[h: class = "oddRow"]
+
+      <form name="PC Powers" action="[r:macroLinkText("UpdatePowersOK@Lib:GM","gm","",tokenId)]">
+        <table id="Powers" bgcolor=#aaaaaa width=[r:numOnLine*150]>
+[foreach(skill,skills,""), code:{
+          <tr>
+          <th colspan=[r:2*numOnLine]>[r:skill] Powers [h:count=0] </th>
+          </tr>
+          <tr>
+  [h:currPowers=json.get(Powers,skill)]
+  [foreach(powr,powerList,""), code: {
+             <td class="[r:class]">
+    [h:checked=""]
+    [h:checked=if(json.contains(currPowers,powr)," checked  "," ")]
+            <input type="checkbox" name="power_[r:skill]_[r:powr]" value="1" [r:checked]></input>
+    [h:switch=if(count==NumOnLine,1,0)]
+    [h:count=if(count==NumOnLine,0,count)]
+            </td><td class="[r:class]">[r:powr]
+    [h:count=count+1]
+    [h: class = if(class=="oddRow", "evenRow", "oddRow")]
+    [h:p=if(count==NumOnLine,"</td></tr><tr>","</td>")][r:p]
+  }]
+  [for(count,count,numOnLine,1,""), code: {
+    <td class="[r:class]"></td>
+    <td class="[r:class]">
+    [h:p=if(count==NumOnLine,"</td></tr><tr>","</td>")][r:p]
+    [h: class = if(class=="oddRow", "evenRow", "oddRow")]
+  }]
+        </tr>
+        <tr>
+          <th colspan=[r:2*numOnLine]><center> 
+            Power Points for [r:skill]:
+            <input type="text" name="[r:skill]_pp" size=2 value="[r:json.get(json.get(PowerPoints,skill),"Max")]"> </input> 
+          <center></th>
+         </tr>
+         <tr>
+}]
+          <th colspan=[r:2*numOnLine]> <input type="submit" name="Submit" value="Submit"> </input> </th>
+          </tr>
+        </table>
+        <!-- hidden input with the weapon number -->
+        <input type="hidden" name="returnMacro" value="[r:returnMacro]"> </input>
+      </form>
+
+!!
+@@ @UpdatePowersOK
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Dialogs ; tooltip= ; minWidth= ; 
+[h:tokenId=""]
+[h:returnMacro="argCheck@Lib:GM"]
+[h:props=macro.args]
+[h:varsFromStrProp(macro.args)]
+[tokenId=if(tokenId=="",currentToken(),"")]
+[h:abortit=if(tokenId=="",0,1)]
+[h:assert(abortit,"no token id available")]
+
+[macro("GetPowerNames@Lib:GM"):""]
+[h:powerList=macro.return]
+[h:switchToken(tokenId)]
+[h:oldPowers=getProperty("Powers")]
+[h:skills=json.fields(oldPowers)]
+[h:oldPowerPoints=getProperty("PowerPoints")]
+
+[foreach(skill,skills,""), code:{
+[h:newPowers="[]"]
+  [foreach(powr,powerList," "), code: {
+    [h:check="power_"+skill+"_"+powr]
+    [h: value=getStrProp(props, check)]
+    [h:newPowers=if(value==1, json.append(newPowers,powr),newPowers)]
+  }]
+  [h:Powers=json.set(Powers,skill,newPowers)]
+  [h:pp_name=skill+"_pp"]
+  [h: value=getStrProp(props, pp_name)]
+  [h:t=json.set("","Max",value)]
+  [h:PowerPoints=json.set(PowerPoints,skill,t)]
+}]
+
+<!-- handle Super Powers Skill Update -->
+[h:tOld=getProperty("ArcaneSkills")]
+[h:skill="Super"]
+[h:there=json.contains(Powers,skill)]
+[h,foreach(powr,powerList,""): ArcaneSkills=json.remove(ArcaneSkills,powr)]
+
+[h:superPowers=if(there>0,json.get(Powers,skill),"")]
+[foreach(powr,superPowers," "), code: {
+  [value=if(json.contains(tOld,powr),json.get(tOld,powr),"d4e")]    
+  [h:ArcaneSkills=json.set(ArcaneSkills,powr,value)]
+}]
+
+[getName()] updated Powers <b>from </b> [oldPowers] <b> to 
+</b> [getProperty("Powers")] and power points [oldPowerPoints] to [PowerPoints]<br>
+
+[macro(returnMacro):""]
+
+!!

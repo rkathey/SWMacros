@@ -1,0 +1,736 @@
+@@ @onCampaignLoad
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group= ; tooltip= ; minWidth= ; 
+[h:libName="Lib:Init"]
+
+[h:defineFunction("DeckName","GetDeckName@"+libName)]
+[h:defineFunction("Holding","GetHolding@"+libName)]
+[h:defineFunction("CurrentInit","GetCurrentInit@"+libName)]
+[h:defineFunction("LastRoundActed","GetLastRoundActed@"+libName)]
+[h:defineFunction("InitStep","GetInitStep@"+libName)]
+[h:defineFunction("CurrentRound","GetCurrentRound@"+libName)]
+[h:defineFunction("LogEvent","SetEvent@"+libName)]
+[h:defineFunction("Inits","GetInits@"+libName)]
+[h:defineFunction("MyEvents","GetMyEvents@"+libName)]
+[h:defineFunction("NextInit","NextInit@"+libName)]
+[h:defineFunction("DrawInitCard","DrawInitCardById@"+libName)]
+[h:defineFunction("RemoveFromInit","RemoveFromInit@"+libName)]
+[h:defineFunction("ToggleHoldByName","ToggleHoldByName@"+libName)]
+[h:defineFunction("ShowEvents","ShowEvents@"+libName)]
+[h:defineFunction("FindLastEvent","FindLastEvent@"+libName)]
+
+!!
+@@ @FindLastEvent
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group= ; tooltip= ; minWidth= ; 
+[h:name=arg(0)]
+[h:eventKey=arg(1)]
+[h:e=getLibProperty("Events")]
+[h:ne=json.get(e,name)]
+[h:ne=if(json.type(ne)=="UNKNOWN","{}",ne)]
+[h:rounds=json.fields(ne,'json')]
+[h:rounds=json.sort(rounds,"d")]
+[h:found=0]
+[h:len=json.length(rounds)]
+[h,foreach(r,rounds,""), code:{
+  [h:roundEvents=json.get(ne,r)]
+  [h,foreach(roundEvent,roundEvents,""), code:{
+    [h:there=if(json.contains(roundEvent,eventKey)&&found==0,1,0)]
+    [h:found=if(there==1||found==1,1,0)]
+    [h,if(there==1):rtn=json.get(roundEvent,eventKey)]
+  }]
+}]
+
+[h,if(found==0):rtn=""]
+
+[r:rtn]
+
+!!
+@@ @Init Control
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group= ; tooltip= ; minWidth= ; 
+[h:okMacro="Init ControlOK@this"]
+[h:returnMacro=getMacroName()+"@"+getMacroLocation()]
+
+[h:step=getLibProperty("StepCount")]
+[h:step=if(step=="",-1,step)]
+[h:is=Inits()]
+[h:iSize=json.length(is)]
+
+[h:class="oddRow"]
+[h:count=0]
+[frame("InitControl", "width=650; height=500"): {
+  <html>
+    <head>
+      <link rel="stylesheet" type="text/css" href="CharSheet_css@Lib:GM">
+      <title>Init Control</title>
+    </head>
+      <form name="InitControl" method='json' action="[r:macroLinkText(okMacro,"all")]">
+      <table width="100%">
+         <tr>
+            <td colspan="7" valign="bottom" style="background-color:#3A1E1A; text-align:center; color:white; font-weight:bold;font-size:14pt"> Round [r:CurrentRound()]  </td>
+         </tr>
+
+       <tr>
+         <th width=21>*</th>
+         <th>Card</th>
+         <th align="left" colspan=2>Name</th>
+         <th>Select</th>
+         <th align="left" colspan=2>States</th>
+          [h: class = if(class=="oddRow", "evenRow", "oddRow")]
+       </tr>
+        [foreach(i,is,""), code:{
+         <tr class="[r:class]">
+          <td align="right" width=21>
+          [r,if(count==step):  "<img src='" + getStateImage("Holding") + "' width='20' height='20' alt='Has Inititiative' />"]
+          </td>
+          <td align="center">
+          [h:card=json.get(i,"Card")]
+          [r:CardSymbol(card)]</td>
+         <td colspan=2>
+          [h:name=json.get(i,"Name")]
+          [h:tokenId=findToken(name)]
+          [h,if(tokenId!=""): switchToken(tokenId)]
+          [h:linkit=""]
+          [h,if(getPropertyType(tokenId)=="Basic"): linkit=macroLinkText("CharacterSheet@Lib:GM", "gm","returnMacro=CharacterSheet@Lib:GM", findToken(name))]
+          [h,if(getPropertyType(tokenId)=="Vehicle"): linkit=macroLinkText("VehicleSheet@Lib:Vehicles", "gm","returnMacro=VehicleSheet@Lib:Vehicles", findToken(name))]
+          [h,if(linkit==""): assert(0,"Cannot find token type for "+name)]
+         <a style="font-weight:bold;color:maroon" href="[r:linkit]">[r:name]</a>
+        </td><td align="center"> <input TYPE=CHECKBOX NAME="[r:name]"   [r,if(step==count): "CHECKED"] ></input>
+          [h:count=count+1]
+        </td>
+        <td colspan=2> [h:states=GetStatesList()]
+           [r,foreach(state,states,""): "<img src='" + getStateImage(state) + "' width='20' height='20' alt='" + state + "' />"]
+        [h: class = if(class=="oddRow", "evenRow", "oddRow")]
+        </td></tr>
+        }]
+      </table>
+      <table width="100%">
+        <th colspan=1><input type="submit" name="Submit" value="Next"> </input></th>
+        <th colspan=1><input type="submit" name="Submit" value="Delete"> </input></th>
+        <th colspan=1><input type="submit" name="Submit" value="Toggle Hold"> </input></th>
+        <th colspan=1><input type="submit" name="Submit" value="Trait Roll"> </input></th>
+        <th colspan=1><input type="submit" name="Submit" value="Attack"> </input></th>
+        <th colspan=1><input type="submit" name="Submit" value="States"> </input></th>
+      </table>
+       <input type="hidden" name="returnMacro" value="[r:returnMacro]"> </input>
+       <input type="hidden" name="iSize" value="[r:iSize]"> </input>
+       <input type="hidden" name="step" value="[r:step]"> </input>
+      </form>
+      <table width="100%">
+
+      </table>
+    </body>
+  </html>
+}]
+
+!!
+@@ @Init ControlOK
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group= ; tooltip= ; minWidth= ; 
+[h:action=json.get(macro.args,"Submit")]
+[h:step=json.get(macro.args,"step")]
+[h:iSize=json.get(macro.args,"iSize")]
+[h:returnMacro=json.get(macro.args,"returnMacro")]
+
+[h:is=Inits()]
+
+[r,if(action=="Next"): NextInit()]
+
+[if(action=="Delete"), code:{
+
+  [h:newInits="[]"]
+  [h:count=0]
+  [foreach(i,is,""), code:{
+    [h:tName=json.get(i,"Name")]
+    [h:remove=if(json.contains(macro.args,tName),1,0)]
+    [h,if(remove): RemoveFromInit(tName)]
+    [h:newInits=if(remove==0,json.append(newInits,i),newInits)]
+    [h:step=if(remove==1&&count<=step,step-1,step)]
+    [h:count=count+1]
+  }]
+
+  [h:setLibProperty("Inits",newInits)]
+  [h:setLibProperty("StepCount",step)]
+
+};{}]
+
+[if(action=="Toggle Hold"), code:{
+
+  [foreach(i,is,""), code:{
+    [h:tName=json.get(i,"Name")]
+    [h:toggle=if(json.contains(macro.args,tName),1,0)]
+    [r,if(toggle): ToggleHoldByName(tName)]
+  }]
+};{}]
+
+[if(action=="Trait Roll"), code:{
+  [h:traitMacro="RollTokenTrait@Lib:GM"]
+  [foreach(i,is,""), code:{
+    [h:tName=json.get(i,"Name")]
+    [h:rollit=if(json.contains(macro.args,tName),1,0)]
+    [h:tokenId=findToken(tName)]
+    [h:link = if(tokenId!=""&&rollit==1,macroLinkText(traitMacro, "all", "", tokenId),"")]
+    [h,if(link!=""): execLink(link)]
+  }]
+};{}]
+
+[if(action=="Attack"), code:{
+  [h:attackMacro="UseWeapon@Lib:Gear"]
+  [foreach(i,is,""), code:{
+    [h:tName=json.get(i,"Name")]
+    [h:rollit=if(json.contains(macro.args,tName),1,0)]
+    [h:tokenId=findToken(tName)]
+    [h:link = if(tokenId!=""&&rollit==1,macroLinkText(attackMacro, "all", "", tokenId),"")]
+    [h,if(link!=""): execLink(link)]
+  }]
+};{}]
+
+[if(action=="States"), code:{
+  <br>return macro = [r:returnMacro]<br>
+  [h:statesMacro="UpdateStatesDialog@Lib:GM"]
+  [foreach(i,is,""), code:{
+    [h:tName=json.get(i,"Name")]
+    [h:rollit=if(json.contains(macro.args,tName),1,0)]
+    [h:tokenId=findToken(tName)]
+    [h:link = if(tokenId!=""&&rollit==1,
+      macroLinkText(statesMacro, "gm","returnMacro="+returnMacro,tokenId), "")]
+    [h,if(link!=""): execLink(link)]
+  }]
+};{}]
+
+[if(iSize==step+1&&action=="Next"), code:{
+  [foreach(i,is,""), code:{
+    [h:name=json.get(i,"Name")]
+    [h:tokenId=findToken(name)]
+    [r,if(tokenId!=""): DrawInitCard(tokenId)]
+  }]
+};{}]
+
+[macro(returnMacro):""]
+[h,if(action!="Next"): abort(0)]
+
+!!
+@@ @ResetInit
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=red ; playerEditable=false ; applyToSelected=false ; group= ; tooltip= ; minWidth= ; 
+[h:setLibProperty("Round",0)]
+[h:setLibProperty("StepCount",-1)]
+[h:dtok=DeckName()]
+[h:mcall="ResetDeck@"+getLibProperty("DeckToken")]
+[macro(mcall):""]
+[h:setLibProperty("Events","{}")]
+[h:setLibProperty("Inits","[]")]
+[h:setLibProperty("HoldingPlayers","[]")]
+
+!!
+@@ @ShowEvents
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group= ; tooltip= ; minWidth= ; 
+[h:tName=""]
+[h:mArgs=macro.args]
+[h:mArgs=if(json.type(mArgs)=="UNKNOWN","{}",mArgs)]
+[h,if(json.contains(mArgs,"tName")): tName=json.get(mArgs,"tName")]
+
+[h:refreshMacro=getMacroName()+"@this"]
+[h:mArgs=json.set("","tName",tName)]
+[h:class="oddRow"]
+[h:frameName="ShowEvent_"+if(tName=="","All",tName)]
+[h:title="Show Events for " + if(tName=="","All",tName)]
+
+[if(tName==""), code:{
+  [h:frameName="ShowEvent_All"]
+  [h:title="Show Events for All"]
+  [h:names=json.fields(getLibProperty("Events"))]
+};{
+  [h:frameName="ShowEvent_"+tName]
+  [h:title="Show Events for " + tName]
+  [h:names=json.append("",tName)]
+}]
+
+[frame(frameName, "width=650; height=500"): {
+  <html>
+    <head>
+      <link rel="stylesheet" type="text/css" href="CharSheet_css@Lib:GM">
+      <title>[r:title]</title>
+    </head>
+      <form name="ShowEvents" method='json' action="[r:macroLinkText(refreshMacro,"gm")]">
+      [foreach(name,names,""), code:{
+        [h:mArgs=json.set(mArgs,"tName",name)]
+        [macro("GetShowEvents@this"):mArgs]
+      }]
+      <table width="100%">
+        <th colspan=1><input type="submit" name="Submit" value="Refresh"> </input></th>
+      </table>
+       <input type="hidden" name="tName" value="[r:tName]"> </input>
+      </form>
+    </body>
+  </html>
+}]
+[abort(0)]
+
+!!
+@@ @DrawInitCard
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Deck Interface ; tooltip= ; minWidth= ; 
+[h:tokenId=CheckTokenId()]
+[h:tName=getName()]
+[h:dtok=DeckName()]
+[h:hands=Held()]
+
+[h:there=json.contains(hands,tName)]
+[if(there): assert(0,tName + " is holding or has already drawn an init card and cannot draw another")]
+
+[h:junk="check to see if holding action"]
+
+[h:holders=Holding()]
+[h:holding=json.contains(holders,tName)]
+[if(holding): assert(0,tName+" cannot draw a card while holding an action"]
+[h:states=GetStatesList()]
+[h,if(listContains(states,'Dead') > 0 || listContains(states,'Incapcitated') > 0), code:{
+  [h:RemoveFromInit(tName)]
+  [h:assert(0,tName+" cannot draw a card while Dead or Incapacitated")]
+};{}]
+
+[h:currentInit=CurrentInit()]
+[h:lastActed=LastRoundActed()]
+[h:mapName=getCurrentMapName()]
+
+[h:junk = "put number of cards to draw with max and min code here"]
+
+[h:numCards=1]
+[h:LevelHeaded=0]
+[h:ImpLevelHeaded=0]
+[h:Quick=0]
+[h:Slow=0]
+[h:LevelHeaded=listFind(Edges, "LevelHeaded")]
+[h:ImpLevelHeaded=listFind(Edges, "ImpLevelHeaded")]
+[h:Quick=listFind(Edges, "Quick")]
+[h:Slow=listFind(MajorHindrances, "Slow")]
+[
+h:found=0]
+[if(Slow>-1), code:{
+  [h,if(LevelHeaded>-1), code:{ [LevelHeaded=-1][found=1]};{}]
+  [h,if(ImpLevelHeaded>-1), code:{ [ImpLevelHeaded=-1][LevelHeaded=1][found=1]};{}]
+  [h,if(found==1), code:{ [Slow=-1]};{[Quick=-1]}]
+};{}]
+
+[h:numCards=if(Slow>-1,2,numCards)]
+[h:numCards=if(LevelHeaded>-1,2,numCards)]
+[h:numCards=if(ImpLevelHeaded>-1,3,numCards)]
+[h:MinCard = if(Quick>-1,16,0)]
+
+[h:junk = " now for the slow hindrance. check the number of cards, if its 1 then make it 2. If its 2 then make it 1, if its 3 then make it two."]
+
+[macro("DrawNCards@"+dtok): numCards]
+[h:msg=""]
+[if(Slow>-1), code:{
+  [h:msg="is Slow and "]
+  [macro("GetLowCard@"+dtok):""]
+  [h:highCard=macro.return]
+};{
+  [h, if(LevelHeaded>-1): msg="is Level Headed and "]
+  [h, if(ImpLevelHeaded>-1): msg="has Improved Level Headed and "]
+  [macro("GetHighCard@"+dtok):""]
+  [h:highCard=macro.return]
+}]
+
+[r:msg]
+[h:firstTime=1]
+[while(highCard<minCard,""), code:{
+  [if(firstTime): "Quick Edge: <br>"]
+  High Card of [r:a=CardDesc(highCard)] is too low<br>
+  [macro("DrawNCards@"+dtok): 1]
+  [macro("GetHighCard@"+dtok):""]
+  [h:highCard=macro.return]
+  [h:firstTime=0]
+}]
+
+[macro("GetTableName@"+dtok):""]
+[h:tableName=macro.return]
+
+[h:showCard=0]
+
+[if(showCard==1), code:{
+  [r:CardPic(highCard)]
+};{
+  draws [r:a=CardDesc(highCard)]
+}]
+[h:states=json.fromList(states)]
+
+[h:inits=getLibProperty("Inits")]
+[h:t=json.set("","Card",highCard,"Name",tName)]
+[h:inits=json.append(inits,t)]
+[h:inits=json.sort(inits,"d","Card","Name")]
+[h:setLibProperty("Inits",inits)]
+
+[h:junk = "get DefaultDeck from dtok and find high card, getting the State value. Use this to setState getTokenStates(",", "Init-Clubs")]on token"]
+[h:states = getTokenStates(",", "Init-Clubs")]
+[h:states=listAppend(states,getTokenStates(",", "Init-Diamonds"))]
+[h:states=listAppend(states,getTokenStates(",", "Init-Hearts"))]
+[h:states=listAppend(states,getTokenStates(",", "Init-Spades"))]
+[h:states=listAppend(states,getTokenStates(",", "Init-Jokers"))]
+[h,foreach(s,states,"<br>"), code:{
+  [h: setState(s, 0)]
+}]
+
+[h:defaultDeck = getLibProperty("DefaultDeck",dtok)]
+
+[h:cardInfo=json.get(defaultDeck,highCard)]
+
+[h:state=json.get(cardInfo,"State")]
+
+[h:setState(state,1)]
+
+!!
+@@ @DrawInitCardById
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Deck Interface ; tooltip= ; minWidth= ; 
+[switchToken(arg(0))]
+[h:link=macroLinkText("DrawInitCard@Lib:Init", "all", "", currentToken())]
+[r:execLink(link)]
+
+!!
+@@ @NextInit
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Deck Interface ; tooltip= ; minWidth= ; 
+[h:step=getLibProperty("StepCount")]
+    [h:step=if(step=="",-1,step)]
+    [if(step==-1), code:{
+      [macro("SortInits@this"):""]
+    };{}]
+
+    [h:inits=getLibProperty("Inits")]
+    [h:inits=if(json.type(Inits)!="ARRAY","[]",inits)]
+    [h:numInits=json.length(Inits)]
+    [h:assert(numInits,"No one has drawn any cards " + getMacroName())]
+
+    [h:holders=Holding()]
+
+    [h:step=step+1]
+    [h:round=getLibProperty("Round")]
+    [h:round=if(round=="",0,round)]
+    [if(step>=numInits), code:{
+      [macro("RoundReset@this"):round]
+    };{
+      [h:current=json.get(inits,step)]
+      [h:tName=json.get(current,"Name")]
+      <b>It&#39;s [r:tName][r,if(endsWith(tName, "s")): "&#39;"; "&#39;s"] Turn!</b>
+      [h:tokenId=findToken(tName)]
+      [if(tokenId!=""), code:{
+        [macro("CheckExpiredPowers@Lib:Powers"): "tokenId="+tokenId]
+      };{}]
+      [h:setLibProperty("StepCount",step)]
+      [if(json.length(holders) > 0 || step+1 < numInits): "<br> Remaining Inits: "]
+      [foreach(holder,holders): holder + "(holding) "]
+      [for(i,step+1,numInits), code:{
+        [json.get(json.get(inits,i),"Name")]
+        [h:card=json.get(json.get(inits,i),"Card")]
+        [CardSymbol(card)]
+      }]
+    }]
+
+!!
+@@ @NextInitOld
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Deck Interface ; tooltip= ; minWidth= ; 
+[h:step=getLibProperty("StepCount")]
+[h:step=if(step=="",-1,step)]
+[if(step==-1), code:{
+  [macro("SortInits@this"):""]
+};{}]
+
+[h:inits=getLibProperty("Inits")]
+[h:inits=if(json.type(Inits)!="ARRAY","[]",inits)]
+[h:numInits=json.length(Inits)]
+[h:assert(numInits,"No one has drawn any cards " + getMacroName())]
+
+[h:holders=Holding()]
+
+[h:step=step+1]
+[h:round=getLibProperty("Round")]
+[h:round=if(round=="",0,round)]
+[if(step>=numInits), code:{
+  [macro("RoundReset@this"):round]
+};{
+  [h:current=json.get(inits,step)]
+  [h:tName=json.get(current,"Name")]
+  <b>Next Intiative Called.  Its time for [r:tName] to act</b>
+  [h:tokenId=findToken(tName)]
+  [if(tokenId!=""), code:{
+    [macro("CheckExpiredPowers@Lib:Powers"): "tokenId="+tokenId]
+  };{}]
+  [h:setLibProperty("StepCount",step)]
+  [if(json.length(holders) > 0 || step+1 < numInits): "<br> Remaining Inits: "]
+  [foreach(holder,holders): holder + "(holding) "]
+  [for(i,step+1,numInits), code:{
+    [json.get(json.get(inits,i),"Name")]
+    [h:card=json.get(json.get(inits,i),"Card")]
+    [CardSymbol(card)]
+  }]
+}]
+
+!!
+@@ @RemoveFromInit
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Deck Interface ; tooltip= ; minWidth= ; 
+[h:tName=arg(0)]
+[h:dtok=DeckName()]
+[macro("FoldHand@"+dtok):tName]
+
+!!
+@@ @RoundReset
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=true ; applyToSelected=false ; group=Deck Interface ; tooltip= ; minWidth= ; 
+[h:round=macro.args]
+[h:setLibProperty("Round",round+1)]
+[h:holders=getLibProperty("HoldingPlayers")]
+[h:holders=if(json.type(holders)!="ARRAY","[]",holders)]
+[h:inits=getLibProperty("Inits")]
+[h:dtok=DeckName()]
+[h:newInits="[]"]
+[foreach(init,inits,""), code:{
+  [h:tName=json.get(init,"Name")]
+  [h:holding=json.contains(holders,tName)]
+  [if(holding==1), code:{
+     [h:t=json.set("","Card",51,"Name",tName)]
+     [h:newInits=json.append(newInits,t)]
+  };{
+    [macro("FoldHand@"+dtok):tName]
+  }]
+}]
+
+[h:setLibProperty("Inits",newInits)]
+[h:setLibProperty("StepCount","")]
+
+[h:jokerFound=0]
+[h:resets=getLibProperty("ResetCards")]
+[h:discards=getLibProperty("DiscardPile",dtok)]
+[foreach(card,resets,""), code:{
+  [h:there=json.contains(discards,card)]
+  [h:jokerFound=if(there,1,jokerFound)]
+}]
+
+[if(jokerFound==1), code:{
+  [macro("ReturnDiscards2Deck@"+dtok):""]
+};{}]
+
+<b>Time to start another round</b>
+
+!!
+@@ @SortInits
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Deck Interface ; tooltip= ; minWidth= ; 
+[h:inits=getLibProperty("Inits")]
+[h:inits=json.sort(inits,"d","Card","Name")]
+[h:setLibProperty("Inits",inits)]
+
+!!
+@@ @ToggleHold
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Deck Interface ; tooltip= ; minWidth= ; 
+[h:tokenId=CheckTokenId()]
+[h:tName=getName()]
+[h:initStep=getLibProperty("StepCount")]
+
+[if(initStep==""): assert(0,"You cannot go on hold between rounds.  You must wait until initiative starts<br>")]
+
+[h:holders=getLibProperty("HoldingPlayers")]
+[h:holders=if(json.type(holders)!="ARRAY","[]",holders)]
+
+[h:myStep=InitStep()]
+[h:idx=json.indexOf(holders,tName)]
+[if(idx>=0), code:{
+  [h:holders=json.remove(holders,idx)]
+  [h:setState("Holding", 0)]
+  <b>Setting Hold State Off</b>
+};{
+  [if(initStep>myStep): assert(0,"You cannot go on hold after your intiative order has passed<br>")]
+  [h:holders=json.append(holders,tName)]
+  [h:setState("Holding", 1)]
+  <b>Setting Hold State On</b>
+}]
+[h:holders=setLibProperty("HoldingPlayers",holders)]
+
+!!
+@@ @ToggleHoldByName
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Deck Interface ; tooltip= ; minWidth= ; 
+[h:tName=arg(0)]
+[h:holdMacro="ToggleHold@this"]
+[h:tokenId=findToken(tName)]
+[switchToken(tokenId)]
+[h:tokenId=CheckTokenId()]
+
+[h:link = macroLinkText(holdMacro, "all", "", tokenId)]
+[h:execLink(link)]
+
+!!
+@@ @UnregisterToken
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=true ; applyToSelected=false ; group=Deck Interface ; tooltip= ; minWidth= ; 
+[h:tokenId=currentToken()]
+[h,if(tokenId==""): assert(0,"No token id available in "+getMacroName())]
+
+[h:tokens=getLibProperty("Tokens")]
+[h:tokens=if(json.type(tokens)!="ARRAY","[]",tokens)]
+[h:there=json.contains(tokens,tokenId)]
+[h,macro("FoldHand@this"): ""]
+[h,if(there==1): tokens=json.remove(tokens,json.indexOf(tokens,tokenId))]
+
+[h:setLibProperty("Tokens",tokens)]
+
+!!
+@@ @GetCurrentInit
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Gets ; tooltip= ; minWidth= ; 
+[h:tokenId=CheckTokenId()]
+[h:tName=getName()]
+[h:inits=getLibProperty("Inits")]
+[h:rtn=-1]
+[foreach(init,inits,""), code:{
+  [h:name=json.get(init,"Name")]
+  [h:rtn=if(name==tName,json.get(init,"Card"),rtn)]
+}]
+[h:macro.return=rtn]
+
+!!
+@@ @GetCurrentRound
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Gets ; tooltip= ; minWidth= ; 
+[h:t=getLibProperty("Round")]
+[if(t==""), code:{
+  [h:t=0]
+  [h:setLibProperty("Round",t)]
+};{}]
+[h:macro.return=t]
+
+!!
+@@ @GetDeckName
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Gets ; tooltip= ; minWidth= ; 
+[h:dtok=getLibProperty("DeckToken")]
+[if(dtok==""), code:{
+  [h:dtok="Lib:Deck")]
+  [h:setLibProperty("DeckToken",dtok)]
+};{}]
+[r:dtok]
+
+!!
+@@ @GetHolding
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Gets ; tooltip= ; minWidth= ; 
+[h:t=getLibProperty("HoldingPlayers")]
+[h:t=if(json.type(t)!="ARRAY","[]",t)]
+[r:t]
+
+!!
+@@ @GetInitStep
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Gets ; tooltip= ; minWidth= ; 
+[h:tokenId=CheckTokenId()]
+[h:tName=getName()]
+[h:inits=getLibProperty("Inits")]
+[h:rtn=-1]
+[h:count=0]
+[foreach(init,inits,""), code:{
+  [h:name=json.get(init,"Name")]
+  [h:rtn=if(name==tName,count,rtn)]
+  [h:count=count+1]
+}]
+[h:macro.return=rtn]
+
+!!
+@@ @GetInits
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Gets ; tooltip= ; minWidth= ; 
+[r:getLibProperty("Inits")]
+
+!!
+@@ @GetLastRoundActed
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Gets ; tooltip= ; minWidth= ; 
+[h:tokenId=CheckTokenId()]
+[h:tName=getName()]
+[h:events=getLibProperty("Events")]
+[h:myEvents=json.get(events,tName)]
+[h:myEvents=if(json.type(myEvents)!="OBJECT","{}",myEvents)]
+[h:roundsActed=json.fields(myEvents,'json')]
+[if(json.length(roundsActed)!=0), code:{
+  [h:roundsActed=json.sort(roundsActed,"d")]
+  [h:t=json.get(roundsActed,0)]
+};{
+  [h:t=0]
+}]
+
+[h:t=if(t=="",0,t)]
+[r:macro.return=t]
+
+!!
+@@ @GetMyEvents
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Gets ; tooltip= ; minWidth= ; 
+[h:tokenId=CheckTokenId()]
+[h:tName=getName()]
+[h:events=getLibProperty("Events")]
+[h:myEvents=json.get(events,tName)]
+[h:myEvents=if(json.type(myEvents)!="OBJECT","{}",myEvents)]
+
+[h:myLastRound=LastRoundActed()]
+[h:currentRound=CurrentRound()]
+[h:diff=currentRound-myLastRound]
+[if(diff==0), code:{
+  [h:rEvents=json.get(myEvents,myLastRound)]
+};{
+  [h:rEvents="{}"]
+}]
+[r:rEvents]
+
+!!
+@@ @GetShowEvents
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Gets ; tooltip= ; minWidth= ; 
+[h:tName=""]
+[h:mArgs=macro.args]
+[h:mArgs=if(json.type(mArgs)=="UNKNOWN","{}",mArgs)]
+[h:tName=json.get(mArgs,"tName")]
+[h:abortit=if(tName=="",0,1)]
+[h:assert(abortit,"You must pass a token name to GetShowEvents macro")]
+
+[h:e=getLibProperty("Events")]
+
+[h:class="oddRow"]
+
+<table width="100%">
+<tr><th colspan=2>Rolls for [r:tName]</th></tr>
+[h:t=json.get(e,tName)]
+[h:t=if(json.type(t)=="UNKNOWN","{}",t)]
+
+[h:rounds = json.fields(t)]
+[h:firstTime=1]
+[foreach(r,rounds,""), code:{
+
+  <tr class="[r:class]"><td colspan=2 align="center"> Round [r:r] </td></tr>
+  [h:firstTime=0]
+  [h:mres=json.get(t,r)]
+  [h:count=json.length(mres)]
+  [h: class = if(class=="oddRow", "evenRow", "oddRow")]
+  [c(count,""), code:{
+    <tr class='[r:class]'>
+        [h:et=json.get(mres,roll.count)]
+        [h:keys=json.fields(et)]
+        [r,foreach(k,keys,"</td>"): "<td>"+k+":"+json.get(et,k)]
+        [h:class = if(class=="oddRow", "evenRow", "oddRow")]
+    </tr>
+  }]
+}]
+</table>
+
+!!
+@@ @SetCurrentRound
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=true ; applyToSelected=false ; group=Sets ; tooltip= ; minWidth= ; 
+[h:setLibProperty("Round",macro.args)]
+
+!!
+@@ @SetEvent
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=true ; applyToSelected=false ; group=Sets ; tooltip= ; minWidth= ; 
+[h:tokenId=CheckTokenId()]
+[h:tName=getName()]
+[h:msg=arg(0)]
+
+[h:tEvents=getLibProperty("Events")]
+[h:tEvents=if(json.type(tEvents)!="OBJECT","{}",tEvents)]
+[h:myEvents=json.get(tEvents,tName)]
+[h:myEvents=if(json.type(myEvents)!="OBJECT","{}",myEvents)]
+[h:round=getLibProperty("Round")]
+[h:rEvents=json.get(myEvents,round)]
+[h:rEvents=if(json.type(rEvents)!="ARRAY","[]",rEvents)]
+[h:rEvents=json.append(rEvents,msg)]
+[h:myEvents=json.set(myEvents,round,rEvents)]
+[h:tEvents=json.set(tEvents,tName,myEvents)]
+<br>[r:tName]<br>[r:rEvents]<br>[r:myEvents]<br>[r:tEvents]<br>
+[h:setLibProperty("Events",tEvents)]
+
+!!
+@@ @setHolding
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=true ; applyToSelected=false ; group=Sets ; tooltip= ; minWidth= ; 
+[h:tokenId=CheckTokenId()]
+[if(macro.args==""): assert(0,"You must pass value to "+getMacroName()+" on "+getMacroLocation()]
+[h:t=json.set(RoundInfo,"Holding",macro.args)]
+
+!!
