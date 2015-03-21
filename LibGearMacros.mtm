@@ -1,2600 +1,414 @@
 @@ @onCampaignLoad
-@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Utility ; tooltip= ; minWidth= ; 
-[libName=getMacroLocation()]
-<br>
-[defineFunction("GearType","GetGearTypebyName@Lib:Gear")]
-[defineFunction("NameBox","GetInputName@"+libName)]
-[defineFunction("Reload","ReloadWeapon@"+libName)]
-[defineFunction("UseAmmo","UseAmmo@"+libName)]
-[defineFunction("GetTargets","GetVisibleTokensByDistance@"+libName)]
-[defineFunction("Autofire","Autofire@"+libName)]
-[defineFunction("Debug","Debug@"+libName)]
-
-[defineFunction("UseWeapon","UseWeapon@"++libName)]
-
-!!
-@@ @EditGear
-@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=green ; playerEditable=false ; applyToSelected=false ; group= ; tooltip= ; minWidth= ; 
-[h:macroName=getMacroName()]
-[h:macroName=macroName+"@this"]
-[h:selected=macro.args]
-[h: class = "oddRow"]
-[h:class2=FlipClass(class)]
-[h:td1="<th>"]
-[h:td2="<td>"]
-
-[h:lables = getLibProperty("GearTypes")]
-[selected=if(selected=="",json.get(lables,0),selected)]
-
-[dialog("Edit Gear"), code:{
-<html>
-<link rel="stylesheet" type="text/css" href="CharSheet_css@Lib:GM">
-<body>
-
-<div id="header">
-
-<table width="100%" border="1"><tr >
-
-[foreach(l,lables,""), code:{
-   [h: linkit=macroLinkText(macroName, "gm",l)]
-   [r:td=if(l==selected,td1,td2)]  
-   <a href="[r:linkit]">[r:l]</a></td>
-}]
-</tr>
-</table>
-
-    [macro("GearTableTabbed@this"): "type="+selected+";class="+class+";returnMacro="+macroName]
-</div>
-<div id="content">
-Click on any of th links above to edit gear.  Use the "Add New Gear" link to create new gear. 
-</div>
-</body>
-</html>
-}]
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=X ; tooltip= ; minWidth= ; 
+[r:libName=getMacroLocation()]
+[defineFunction("FindTokensOnVehicle","FindTokensOnVehicle@Lib:Groups")]
+[defineFunction("SelectTokenGroups","SelectTokens@Lib:Groups")]
+[defineFunction("CheckLeader","CheckLeader@Lib:Groups")]
+[defineFunction("CheckGroupMembers","CheckGroupMembers@Lib:Groups")]
+[defineFunction("CreateGroup","CreateGroup@Lib:Groups")]
+[defineFunction("GetGroupMembers","GetGroupMembers@Lib:Groups")]
+[defineFunction("GetGroupLeader","GetGroupLeader@Lib:Groups")]
+[defineFunction("GetLeaders","GetLeaders@Lib:Groups")]
+[defineFunction("GetMembers","GetMembers@Lib:Groups")]
+[defineFunction("DisbandGroup","DisbandGroup@Lib:Groups")]
+[defineFunction("SaveGroup","SaveGroup@Lib:Groups")]
+[defineFunction("isLeader","isLeader@Lib:Groups")]
+[defineFunction("RemoveTokenFromGroup","RemoveTokenFromGroup@Lib:Groups")]
+[defineFunction("AddToExistingGroup","AddToExistingGroup@Lib:Groups")]
+[defineFunction("GroupTraitRoll","GroupTraitRoll@Lib:Groups")]
+[defineFunction("GroupAttack","GroupAttack@Lib:Groups")]
+[defineFunction("GetLeaderNames","GetLeaderNames@Lib:Groups")]
+[defineFunction("GetMemberNames","GetMemberNames@Lib:Groups")]
 
 !!
-@@ @AmmoJSON
-@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=RunOnce ; tooltip= ; minWidth= ; 
-[h:t1=json.set("","Name","Arrow","Type","Ammo","Weight",0.2,"Cost",0.5)]
-[h:t2=json.set("","Name","Quarrel","Type","Ammo","Weight",0.2,"Cost",2)]
-[h:t3=json.set("","Name","SlingStone","Type","Ammo","Weight",0.1,"Cost",0.05)]
-[h:Ammo=json.set("","Arrow",t1,"Quarrel",t2,"SlingStone",t3)]
-[macro.return=Ammo]
-
-!!
-@@ @ArmorJSON
-@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=RunOnce ; tooltip= ; minWidth= ; 
-[h:t1=json.set("","Name","Leather","Type","Armor","Weight",15,"Cost",50,"Armor",1,"Head",0,"Torso",1,"Legs",1,"Arms",1,"Parry",0)]
-[h:t2=json.set("","Name","ChainHauberk","Type","Armor","Weight",25,"Cost",300,"Armor",2,"Head",0,"Torso",2,"Legs",2,"Arms",2,"Parry",0)]
-[h:t3=json.set("","Name","PlateCorselet","Type","Armor","Weight",25,"Cost",499,"Armor",3,"Head",0,"Torso",3,"Legs",0,"Arms",0,"Parry",0)]
-[h:t4=json.set("","Name","PlateArms","Type","Armor","Weight",10,"Cost",200,"Armor",3,"Head",0,"Torso",0,"Legs",0,"Arms",3,"Parry",0)]
-[h:t5=json.set("","Name","PlateLeggings","Type","Armor","Weight",15,"Cost",300,"Armor",3,"Head",0,"Torso",0,"Legs",3,"Arms",3,"Parry",0)]
-[h:t6=json.set("","Name","PotHelm","Type","Armor","Weight",4,"Cost",75,"Armor",3,"Head",3,"Torso",0,"Legs",0,"Arms",0,"Parry",0)]
-[h:t7=json.set("","Name","SteelHelm","Type","Armor","Weight",8,"Cost",150,"Armor",3,"Head",3,"Torso",0,"Legs",0,"Arms",0,"Parry",0)]
-[h:t8=json.set("","Name","SmallShield","Type","Armor","Weight",8,"Cost",25,"Armor",0,"Head",0,"Torso",0,"Legs",0,"Arms",0,"Parry",1)]
-[h:t9=json.set("","Name","MediumShield","Type","Armor","Weight",12,"Cost",50,"Armor",0,"Head",0,"Torso",0,"Legs",0,"Arms",0,"Parry",1,"Ranged",2)]
-[h:t10=json.set("","Name","LargeShield","Type","Armor","Weight",20,"Cost",200,"Armor",0,"Head",0,"Torso",0,"Legs",0,"Arms",1,"Parry",2,"Ranged",2)]
-[h:Armor=json.set("","Leather",t1,"ChainHauberk",t2,"PlateCorselet",t3,"PlateArms",t4,"PlateLeggings",t5,"PotHelm",t6,"SteelHelm",t7,"SmallShield",t8,"MediumShield",t9,"LargeShield",t10)]
-[macro.return=Armor]
-
-!!
-@@ @OtherJSON
-@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=true ; applyToSelected=false ; group=RunOnce ; tooltip= ; minWidth= ; 
-[h:t1=json.set("","Name","Backpack","Type","Other","Weight",0,"Cost",0)]
-[h:t2=json.set("","Name","Bedroll","Type","Other","Weight",0,"Cost",0)]
-[h:t3=json.set("","Name","Candle","Type","Other","Weight",0,"Cost",0)]
-[h:t4=json.set("","Name","FlintAndSteel","Type","Other","Weight",0,"Cost",0)]
-[h:t5=json.set("","Name","Lantern","Type","Other","Weight",0,"Cost",0)]
-[h:t6=json.set("","Name","Lockpicks","Type","Other","Weight",0,"Cost",0)]
-[h:t7=json.set("","Name","Oil","Type","Other","Weight",0,"Cost",0)]
-[h:t8=json.set("","Name","Rope","Type","Other","Weight",0,"Cost",0)]
-[h:t9=json.set("","Name","Torch","Type","Other","Weight",0,"Cost",0)]
-[h:Other=json.set("","Backpack",t1,"Bedroll",t2,"Candle",t3,"FlintAndSteel",t4,"Lantern",t5,"Lockpicks",t6,"Oil",t7,"Rope",t8,"Torch",t9)]
-[macro.return=Other]
-
-!!
-@@ @SetGear
-@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=true ; applyToSelected=false ; group=RunOnce ; tooltip= ; minWidth= ; 
-[h:Gear=""]
-[h:GearVar=""]
-[h:GearTypes=json.append("","Weapons","Ammo","Armor","Other")]
-
-[h:type="Armor"]
-[h:collector="{}"]
-[h:gtemp=getProperty(type)]
-[h:names=json.fields(gtemp)]
-[h:attrs=json.get(GearAttrs,type)]
-[foreach(name,names,""), code:{
-  [h:t=""]
-  [h:gvalues=json.get(gtemp,name)]
-  [foreach(attr,attrs,"<br>"), code:{
-    [h:value=json.get(gvalues,attr)]
-    [h:t=json.set(t,attr,value)]
-  }]
-  [h:collector=json.set(collector,name,t)]
-}]
-[h:Gear=json.set(Gear,type,collector)]
-
-[h:attrs=json.get(GearVarAttrs,type)]
-[h:collector="{}"]
-[h:currList="[]")]
-[foreach(name,names,""), code:{
-  [h:t=""]
-  [h:gvalues=json.get(gtemp,name)]
-  [foreach(attr,attrs,"<br>"), code:{
-    [h:value=json.get(gvalues,attr)]
-    [h:t=json.set(t,attr,value)]
-  }]
-  [h:currList=json.get(collector,name)]
-  [h:currList=json.append(currList,t)]
-  [h:collector=json.set(collector,name,currList)]
-}]
-[h:GearVar=json.set(GearVar,type,collector)]
-
-[h:type="Weapons"]
-[h:collector="{}"]
-[h:gtemp=getProperty(type)]
-[h:names=json.fields(gtemp)]
-[h:attrs=json.get(GearAttrs,type)]
-[foreach(name,names,""), code:{
-  [h:t=""]
-  [h:gvalues=json.get(gtemp,name)]
-  [foreach(attr,attrs,""), code:{
-    [h:value=json.get(gvalues,attr)]
-    [h:t=json.set(t,attr,value)]
-  }]
-  [h:collector=json.set(collector,name,t)]
-}]
-[h:Gear=json.set(Gear,type,collector)]
-
-[h:type="Ammo"]
-[h:collector="{}"]
-[h:gtemp=getProperty(type)]
-[h:names=json.fields(gtemp)]
-[h:attrs=json.get(GearAttrs,type)]
-[foreach(name,names,""), code:{
-  [h:t=""]
-  [h:gvalues=json.get(gtemp,name)]
-  [foreach(attr,attrs,"<br>"), code:{
-    [h:value=json.get(gvalues,attr)]
-    [h:t=json.set(t,attr,value)]
-  }]
-  [h:collector=json.set(collector,name,t)]
-}]
-[h:Gear=json.set(Gear,type,collector)]
-
-[h:type="Other"]
-[h:collector="{}"]
-[h:gtemp=getProperty(type)]
-[h:names=json.fields(gtemp)]
-[h:attrs=json.get(GearAttrs,type)]
-[foreach(name,names,""), code:{
-  [h:t=""]
-  [h:gvalues=json.get(gtemp,name)]
-  [foreach(attr,attrs,"<br>"), code:{
-    [h:value=json.get(gvalues,attr)]
-    [h:t=json.set(t,attr,value)]
-  }]
-  [h:collector=json.set(collector,name,t)]
-}]
-[h:Gear=json.set(Gear,type,collector)]
-
-[h:type="Weapons"]
-[h:collector="{}"]
-[h:attrs=json.get(GearVarAttrs,type)]
-[h:collector="{}"]
-[h:currList="[]")]
-[foreach(wd,WeaponDamage,""), code:{
-  [h:t=""]
-  [h:name=json.get(wd,"Name")]
-  [foreach(attr,attrs,"<br>"): t=json.set(t,attr,json.get(wd,attr))]
-  [h:currList=json.get(collector,name)]
-  [h:currList=json.append(currList,t)]
-  [h:collector=json.set(collector,name,currList)]
-}]
-[h:GearVar=json.set(GearVar,type,collector)]
-<br>
-Gear = [Gear]
-<br>
-GearVar = [GearVar]
-
-!!
-@@ @SetGearAttrTypes
-@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=true ; applyToSelected=false ; group=RunOnce ; tooltip= ; minWidth= ; 
-[GearAttrTypes=json.set(GearAttrTypes,"Name",json.set("","Size","20","Type","Text"))]
-[GearAttrTypes=json.set(GearAttrTypes,"Type",json.set("","Size","8","Type","Dropdown","Values","Armor,Weapons,Other,Ammo"))]
-[GearAttrTypes=json.set(GearAttrTypes,"Weight",json.set("","Size","2","Type","Text"))]
-[GearAttrTypes=json.set(GearAttrTypes,"Cost",json.set("","Size","3","Type","Text"))]
-[GearAttrTypes=json.set(GearAttrTypes,"Notes",json.set("","Size","20","Type","Text"))]
-[GearAttrTypes=json.set(GearAttrTypes,"Armor",json.set("","Size","2","Type","Text"))]
-[GearAttrTypes=json.set(GearAttrTypes,"Head",json.set("","Size","2","Type","Text"))]
-[GearAttrTypes=json.set(GearAttrTypes,"Torso",json.set("","Size","2","Type","Text"))]
-[GearAttrTypes=json.set(GearAttrTypes,"Legs",json.set("","Size","2","Type","Text"))]
-[GearAttrTypes=json.set(GearAttrTypes,"Arms",json.set("","Size","2","Type","Text"))]
-[GearAttrTypes=json.set(GearAttrTypes,"Parry",json.set("","Size","2","Type","Text"))]
-[GearAttrTypes=json.set(GearAttrTypes,"Skill",json.set("","Size","8","Type","Dropdown","Values","Fighting,Shooting,Throwing,None"))]
-[GearAttrTypes=json.set(GearAttrTypes,"Tag",json.set("","Size","8","Type","Text"))]
-[GearAttrTypes=json.set(GearAttrTypes,"Damage",json.set("","Size","4","Type","Text"))]
-[GearAttrTypes=json.set(GearAttrTypes,"Range",json.set("","Size","10","Type","Text"))]
-[GearAttrTypes=json.set(GearAttrTypes,"RoF",json.set("","Size","1","Type","Text"))]
-[GearAttrTypes=json.set(GearAttrTypes,"Shots",json.set("","Size","4","Type","Text"))]
-[GearAttrTypes=json.set(GearAttrTypes,"NumHands",json.set("","Size","1","Type","Text" ))]
-[GearAttrTypes=json.set(GearAttrTypes,"AP",json.set("","Size","2","Type","Text"))]
-[GearAttrTypes=json.set(GearAttrTypes,"AmmoType",json.set("","Size","8","Type","Dropdown","Values","None"))]
-[GearAttrTypes=json.set(GearAttrTypes,"ParryBonus",json.set("","Size","1","Type","Text" ))]
-[GearAttrTypes=json.set(GearAttrTypes,"ShotsUsed",json.set("","Size","4","Type","Text" ))]
-[GearAttrTypes=json.set(GearAttrTypes,"SkillBonus",json.set("","Size","2","Type","Text"))]
-[GearAttrTypes=json.set(GearAttrTypes,"Ammo2Fill",json.set("","Size","2","Type","Text"))]
-
-!!
-@@ @SetGearAttrs
-@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=true ; applyToSelected=false ; group=RunOnce ; tooltip= ; minWidth= ; 
-<!--
-Name, Type, Weight, Cost, Notes, Armor, Head, Torso, Legs, Arms, Parry, Skill, Tag, Damage, Range, RoF, Shots, NumHands, AP, AmmoType, ParryBonus
--->
-[foreach(type,GearTypes,""), code:{
-  [h:GearAttrs=json.set(GearAttrs,type,json.append("","Weight","Cost"))]
-}]
-
-[h:t=json.append("",  "Armor","Head","Torso","Legs","Arms","Parry")]
-[h:GearVarAttrs=json.set(GearVarAttrs,"Armor",t)]
-[h:t= json.append("","Skill", "SkillBonus","Tag", "Damage", "Range", "RoF", "Shots", "NumHands", "AP", "AmmoType", "Ammo2Fill","ParryBonus","RndToReload", "ShotsUsed", "Notes")]
-[h:GearVarAttrs=json.set(GearVarAttrs,"Weapons",t)]
-
-[foreach(type,GearTypes,""), code:{
-  [h:t=json.get(GearAttrs,type)]
-  [h:t=json.append(t,"Notes")]
-  [h:GearAttrs=json.set(GearAttrs,type,t)]
-}]
-[r:GearAttrs]
-
-!!
-@@ @WeaponDamageJSON
-@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=true ; applyToSelected=false ; group=RunOnce ; tooltip= ; minWidth= ; 
-[h:t1=json.set("","Skill","Fighting","Name","Dagger","Tag","thrusts a","Damage","eval(Strength)+d4e","Range","Reach 0","RoF",1,"Shots","None","NumHands",1,"AP",0,"AmmoType","None","ParryBonus",0,"RndToReload",0,"ShotsUsed",0,"Notes",0)]
-[h:t2=json.set("","Skill","Throwing","Name","Dagger","Tag","throws a","Damage","eval(Strength)+d4e","Range","Range 03/06/12","RoF",1,"Shots","None","NumHands",1,"AP",0,"AmmoType","None","ParryBonus",0,"RndToReload",0,"ShotsUsed",0,"Notes",0)]
-[h:t3=json.set("","Skill","Fighting","Name","GreatSword","Tag","slashes a","Damage","eval(Strength)+d10e","Range","Reach 0","RoF",1,"Shots","None","NumHands",2,"AP",0,"AmmoType","None","ParryBonus",-1,"RndToReload",0,"ShotsUsed",0,"Notes",0)]
-[h:t4=json.set("","Skill","Fighting","Name","Flail","Tag","swings a", "Damage","eval(Strength)+d6e","Range","Reach 0","RoF",1,"Shots","None","NumHands",1,"AP",0,"AmmoType","None","ParryBonus",0,"RndToReload",0,"ShotsUsed",0,"Notes","Ignores Shield and Cover Bonus")]
-[h:t5=json.set("","Skill","Fighting","Name","Katana","Tag","swings a", "Damage","eval(Strength)+d6e+2","Range","Reach 0","RoF",1,"Shots","None","NumHands",1,"AP",2,"AmmoType","None","ParryBonus",0,"RndToReload",0,"ShotsUsed",0,"Notes",0)]
-[h:t6=json.set("","Skill","Fighting","Name","LongSword","Tag","swings a", "Damage","eval(Strength)+d8e","Range","Reach 0","RoF",1,"Shots","None","NumHands",1,"AP",0,"AmmoType","None","ParryBonus",0,"RndToReload",0,"ShotsUsed",0,"Notes",0)]
-[h:t7=json.set("","Skill","Fighting","Name","Rapier","Tag","thrusts a","Damage","eval(Strength)+d4e","Range","Reach 0","RoF",1,"Shots","None","NumHands",1,"AP",0,"AmmoType","None","ParryBonus",1,"RndToReload",0,"ShotsUsed",0,"Notes",0)]
-[h:t8=json.set("","Skill","Fighting","Name","ShortSword","Tag","swings a", "Damage","eval(Strength)+d6e","Range","Reach 0","RoF",1,"Shots","None","NumHands",1,"AP",0,"AmmoType","None","ParryBonus",0,"RndToReload",0,"ShotsUsed",0,"Notes",0)]
-[h:t9=json.set("","Skill","Fighting","Name","Axe","Tag","swings an ","Damage","eval(Strength)+d6e","Range","Reach 0","RoF",1,"Shots","None","NumHands",1,"AP",0,"AmmoType","None","ParryBonus",0,"RndToReload",0,"ShotsUsed",0,"Notes",0)]
-[h:t10=json.set("","Skill","Throwing","Name","Axe","Tag","throws an ","Damage","eval(Strength)+d6e","Range","Range 3/6/12 ", "RoF",1,"Shots","None","NumHands",1,"AP",0,"AmmoType","None","ParryBonus",0,"RndToReload",0,"ShotsUsed",0,"Notes",0)]
-[h:t11=json.set("","Skill","Fighting","Name","BattleAxe","Tag","swings a", "Damage","eval(Strength)+d8e","Range","Reach 0","RoF",1,"Shots","None","NumHands",1,"AP",0,"AmmoType","None","ParryBonus",0,"RndToReload",0,"ShotsUsed",0,"Notes",0)]
-[h:t12=json.set("","Skill","Fighting","Name","GreatAxe","Tag","slashes a","Damage","eval(Strength)+d10e","Range","Reach 0","RoF",1,"Shots","None","NumHands",2,"AP",1,"AmmoType","None","ParryBonus",-1,"RndToReload",0,"ShotsUsed",0,"Notes",0)]
-[h:t13=json.set("","Skill","Fighting","Name","Maul","Tag","slashes a","Damage","eval(Strength)+d8e","Range","Reach 0","RoF",1,"Shots","None","NumHands",2,"AP",2,"AmmoType","None","ParryBonus",-1,"RndToReload",0,"ShotsUsed",0,"Notes","AP applies only to rigid armor")]
-[h:t14=json.set("","Skill","Fighting","Name","WarHammer","Tag","swings a", "Damage","eval(Strength)+d6e","Range","Reach 0","RoF",1,"Shots","None","NumHands",1,"AP",1,"AmmoType","None","ParryBonus",0,"RndToReload",0,"ShotsUsed",0,"Notes","AP is against rigid armor only")]
-[h:t15=json.set("","Skill","Fighting","Name","Halberd","Tag","thrusts a","Damage","eval(Strength)+d8e","Range","Reach 1","RoF",1,"Shots","None","NumHands",2,"AP",0,"AmmoType","None","ParryBonus",1,"RndToReload",0,"ShotsUsed",0,"Notes",0)]
-[h:t16=json.set("","Skill","Fighting","Name","Lance","Tag","thrusts a","Damage","eval(Strength)+d8e","Range","Reach 2", "RoF",1, "Shots","None", "NumHands",1,"AP",2,"AmmoType","None","ParryBonus",1,"RndToReload",0,"ShotsUsed",0,"Notes","AP applies only when charging")]
-[h:t17=json.set("","Skill","Fighting","Name","Staff","Tag","swings a","Damage","eval(Strength)+d4e","Range","Reach 1","RoF",1,"Shots","None","NumHands",2,"AP",0,"AmmoType","None","ParryBonus",1,"RndToReload",0,"ShotsUsed",0,"Notes",0)]
-[h:t18=json.set("","Skill","Fighting","Name","Spear","Tag","thrusts a","Damage","eval(Strength)+d6e","Range","Reach 1","RoF",1,"Shots","None","NumHands",2,"AP",0,"AmmoType","None","ParryBonus",1,"RndToReload",0,"ShotsUsed",0,"Notes",0)]
-[h:t19=json.set("","Skill","Throwing","Name","Spear","Tag","throws a","Damage","eval(Strength)+d6e","Range","Range 03/06/12","RoF",1,"Shots","None","NumHands",1,"AP",0,"AmmoType","None","ParryBonus",0,"RndToReload",0,"ShotsUsed",0,"Notes",0)]
-[h:t20=json.set("","Skill","Shooting","Name","Bow","Tag","fires a","Damage","2d6e","Range","Range 12/24/48","RoF",1,"Shots",1,"NumHands",2,"AP",0,"AmmoType","Arrow","ParryBonus",0,"RndToReload",0,"ShotsUsed",0,"Notes",0)]
-[h:t21=json.set("","Skill","Shooting","Name","Sling","Tag","fires a","Damage","eval(Strength)+d4e","Range","Range 04/08/16","RoF",1,"Shots",1,"NumHands",1,"AP",0,"AmmoType","SlingBullet","ParryBonus",0,"RndToReload",0,"ShotsUsed",0,"Notes",0)]
-
-[h:t22=json.set("","Skill","Fighting","Name","d4Attack","Tag","Slashes 
-a","Damage","eval(Strength)+d4e","Range","Reach  0", "RoF",1, "Shots",1, "NumHands",1, "AP",0, "AmmoType","None", "ParryBonus",0,"RndToReload",0,"ShotsUsed",0,"Notes",0)]
-[h:t23=json.set("","Skill","Throwing","Name","d4Attack","Tag","fires a","Damage","eval(Strength)+d4e","Range","Range 03/06/12","RoF",1,"Shots",1,"NumHands",1,"AP",0,"AmmoType","None","ParryBonus",0,"RndToReload",0,"ShotsUsed",0,"Notes",0)]
-[h:t24=json.set("","Skill","Shooting","Name","d4Attack","Tag","fires a","Damage","d4e","Range","Range 12/24/48","RoF",1,"Shots",1,"NumHands",1,"AP",0,"AmmoType","None","ParryBonus",0,"RndToReload",0,"ShotsUsed",0,"Notes",0)]
-
-[h:t25=json.set("","Skill","Fighting","Name","d6Attack","Tag","Slashes a","Damage","eval(Strength)+d6e","Range","Reach  0","RoF",1,"Shots",1,"NumHands",1,"AP",0,"AmmoType","None","ParryBonus",0,"RndToReload",0,"ShotsUsed",0,"Notes",0)]
-[h:t26=json.set("","Skill","Throwing","Name","d6Attack","Tag","fires a","Damage","eval(Strength)+d6e","Range","Range 03/06/12","RoF",1,"Shots",1,"NumHands",1,"AP",0,"AmmoType","None","ParryBonus",0,"RndToReload",0,"ShotsUsed",0,"Notes",0)]
-[h:t27=json.set("","Skill","Shooting","Name","d6Attack","Tag","fires a","Damage","d6e","Range","Range 12/24/48","RoF",1,"Shots",1,"NumHands",1,"AP",0,"AmmoType","None","ParryBonus",0,"RndToReload",0,"ShotsUsed",0,"Notes",0)]
-
-[h:t28=json.set("","Skill","Fighting","Name","d8Attack","Tag","Slashes a","Damage","eval(Strength)+d8e","Range","Reach  0","RoF",1,"Shots",1,"NumHands",1,"AP",0,"AmmoType","None","ParryBonus",0,"RndToReload",0,"ShotsUsed",0,"Notes",0)]
-[h:t29=json.set("","Skill","Throwing","Name","d8Attack","Tag","fires a","Damage","eval(Strength)+d8e","Range","Range 03/06/12","RoF",1,"Shots",1,"NumHands",1,"AP",0,"AmmoType","None","ParryBonus",0,"RndToReload",0,"ShotsUsed",0,"Notes",0)]
-[h:t30=json.set("","Skill","Shooting","Name","d8Attack","Tag","fires a","Damage","d8e","Range","Range 12/24/48","RoF",1,"Shots",1,"NumHands",1,"AP",0,"AmmoType","None","ParryBonus",0,"RndToReload",0,"ShotsUsed",0,"Notes",0)]
-
-[h:t31=json.set("","Skill","Fighting","Name","d10Attack","Tag","Slashes a","Damage","eval(Strength)+d10e","Range","Reach  0","RoF",1,"Shots",1,"NumHands",1,"AP",0,"AmmoType","None","ParryBonus",0,"RndToReload",0,"ShotsUsed",0,"Notes",0)]
-[h:t32=json.set("","Skill","Throwing","Name","d10Attack","Tag","fires a","Damage","eval(Strength)+d10e","Range","Range 03/06/12","RoF",1,"Shots",1,"NumHands",1,"AP",0,"AmmoType","None","ParryBonus",0,"RndToReload",0,"ShotsUsed",0,"Notes",0)]
-[h:t33=json.set("","Skill","Shooting","Name","d10Attack","Tag","fires a","Damage","d10e","Range","Range 12/24/48","RoF",1,"Shots",1,"NumHands",1,"AP",0,"AmmoType","None","ParryBonus",0,"RndToReload",0,"ShotsUsed",0,"Notes",0)]
-
-[h:t34=json.set("","Skill","Fighting","Name","d12Attack","Tag","Slashes a","Damage","eval(Strength)+d12e","Range","Reach  0","RoF",1,"Shots",1,"NumHands",1,"AP",0,"AmmoType","None","ParryBonus",0,"RndToReload",0,"ShotsUsed",0,"Notes",0)]
-[h:t35=json.set("","Skill","Throwing","Name","d12Attack","Tag","fires a","Damage","eval(Strength)+d12e","Range","Range 03/06/12","RoF",1,"Shots",1,"NumHands",1,"AP",0,"AmmoType","None","ParryBonus",0,"RndToReload",0,"ShotsUsed",0,"Notes",0)]
-[h:t36=json.set("","Skill","Shooting","Name","d12Attack","Tag","fires a","Damage","d12e","Range","Range 12/24/48","RoF",1,"Shots",1,"NumHands",1,"AP",0,"AmmoType","None","ParryBonus",0,"RndToReload",0,"ShotsUsed",0,"Notes",0)]
-[h:WeaponDamage=json.append("",t1,t2,t3,t4,t5,t6,t7,t8,t9,t10,t11,t12,t13,t14,t15,t16,t17,t18,t19,t20,t21,t22,t23,t24,t25,t26,t27,t28,t29,t30,t31,t32,t33,t34,t35,t36)]
-
-[macro.return=WeaponDamage]
-
-!!
-@@ @WeaponsJSON
-@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=true ; applyToSelected=false ; group=RunOnce ; tooltip= ; minWidth= ; 
-[h:t1=json.set("","Name","Dagger","Type","Weapon","Weight",2,"Cost",15)]
-[h:t2=json.set("","Name","GreatSword","Type","Weapon","Weight",1,"Cost",1)]
-[h:t3=json.set("","Name","Flail","Type","Weapon","Weight",1,"Cost",8)]
-[h:t4=json.set("","Name","Katana","Type","Weapon","Weight",6,"Cost",40)]
-[h:t5=json.set("","Name","LongSword","Type","Weapon","Weight",12,"Cost",80)]
-[h:t6=json.set("","Name","Rapier","Type","Weapon","Weight",3,"Cost",35)]
-[h:t7=json.set("","Name","ShortSword","Type","Weapon","Weight",5,"Cost",5)]
-[h:t8=json.set("","Name","Axe","Type","Weapon","Weight",8,"Cost",15)]
-[h:t9=json.set("","Name","BattleAxe","Type","Weapon","Weight",5,"Cost","Mil")]
-[h:t10=json.set("","Name","GreatAxe","Type","Weapon","Weight",2,"Cost",300)]
-[h:t11=json.set("","Name","Maul","Type","Weapon","Weight",1,"Cost",250)]
-[h:t12=json.set("","Name","WarHammer","Type","Weapon","Weight",6,"Cost",400)]
-[h:t13=json.set("","Name","Halberd","Type","Weapon","Weight",3,"Cost",20)]
-[h:t14=json.set("","Name","Lance","Type","Weapon","Weight",5,"Cost",10)]
-[h:t15=json.set("","Name","Pike","Type","Weapon","Weight",1,"Cost",1)]
-[h:t16=json.set("","Name","Staff","Type","Weapon","Weight",2,"Cost",10)]
-[h:t17=json.set("","Name","Spear","Type","Weapon","Weight",4,"Cost",200)]
-[h:t18=json.set("","Name","Bow","Type","Weapon","Weight",8,"Cost",350)]
-[h:t19=json.set("","Name","CrossBow","Type","Weapon","Weight",4,"Cost",300)]
-[h:t20=json.set("","Name","Sling","Type","Weapon","Weight",5,"Cost",250)]
-[h:t21=json.set("","Name","d4Attack","Type","Weapon","Weight",5,"Cost",250)]
-[h:t22=json.set("","Name","d6Attack","Type","Weapon","Weight",5,"Cost",250)]
-[h:t23=json.set("","Name","d8Attack","Type","Weapon","Weight",5,"Cost",250)]
-[h:t24=json.set("","Name","d10Attack","Type","Weapon","Weight",5,"Cost",250)]
-[h:t25=json.set("","Name","d12Attack","Type","Weapon","Weight",5,"Cost",250)]
-[h:Weapons=json.set("","Dagger",t1,"GreatSword",t2,"Flail",t3,"Katana",t4,"LongSword",t5,"Rapier",t6,"ShortSword",t7,"Axe",t8,"BattleAxe",t9,"GreatAxe",t10,"Maul",t11,"WarHammer",t12,"Halberd",t13,"Lance",t14,"Pike",t15,"Staff",t16,"Spear",t17,"Bow",t18,"CrossBow",t19,"Sling",t20,"d4Attack",t21,"d6Attack",t22,"d8Attack",t23,"d10Attack",t24,"d12Attack",t25)]
-[macro.return=Weapons]
-
-!!
-@@ @Autofire
-@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=CharacterSheet ; tooltip= ; minWidth= ; 
-[h:shooting=arg(0)]
-[h:damage=arg(1)]
-[h:num=arg(2)]
-<br>
-[h:dam=eval(damage)]
-[h:raiseDamage=d6e]
-Autofire Attack 1 does damage of [r:dam] or [r:dam+raiseDamage] if you hit with a raise<br>
-[count(num-1,"<br>"), code:{
-  [h:roll=eval(shooting)]
-  [h:dam=eval(damage)]
-  [h:raiseDamage=d6e]
-  Autofire Attack [r:roll.count+2] Shooting roll [r:roll] does damage of [r:dam] or [r:dam+raiseDamage] if you hit with a raise
-}]
-
-!!
-@@ @GearUse
-@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=CharacterSheet ; tooltip= ; minWidth= ; 
-[h:tokenId=""]
-[h:wd=""]
-[h:name=""]
-[h:type=""]
-[h:returnMacro="CharacterSheet@Lib:GM"]
-[h:props=macro.args]
-[h:varsFromStrProp(props)]
-[h:tokenId=if(tokenId=="",currentToken(),tokenId)]
-[h:abortit=if(tokenId=="",0,1)]
-[h:assert(abortit,"no token id available")]
-[h:switchToken(tokenId)]
-
-[h:numWeapons=json.get(json.get(getProperty("Gear"),name),"Num")]
-
-[h:shotsUsed=json.get(json.get(getProperty("Gear"),name),"ShotsUsed")]
-[h:shotsString=shotsUsed]
-[h:shotsUsed=if(isNumber(shotsUsed),shotsUsed,0)]
-[h:shotsString=if(isNumber(shotsString),shotsString,0)]
-[h:shotsString=if(shotsString<2,""," ,Shots Fired="+shotsString)]
-
-[h:ReloadRndString=json.get(json.get(getProperty("Gear"),name),"ReloadRnd")]
-[h:ReloadRndString=if(isNumber(ReloadRndString),ReloadRndString,0)]
-
-[h:tokens = GetTargets()]
-[h:lastTarget=FindLastEvent(getName(),"Target")]
-[h:dropdownStr=""]
-[h,foreach(token,tokens,""), code: {
-  [h:tokenName=json.get(token,"Name")]
-  [h:selected=if(tokenName==lastTarget,"SELECTED","")]
-  [h:dropdownStr= dropdownStr + "<OPTION value='" + tokenName + "' " + selected + ">" +  json.get(token,"Distance") +"-" +tokenName + "</option>"]
-}]
-[h,if(type=="Weapons"), code: {
-  [h:wd=json.get(getLibProperty("GearVar"),type)]
-  [h:wd=json.get(wd,name)]
-  [h:len = json.length(wd)]
-  [h:assert(len,"no objects in weapon array")]
-};{}]
-[h:firstTime=1]
-[h:class = "oddRow"]
-<form name="PC Gear Use" action="[r:macroLinkText("GearUseOK@this","all","",tokenId)]">
-[if(type!="Weapons"), code: {
-      <table width="100%">
-        <tr>
-          <th colspan=6>[r:getName()] uses [r:name] (...)</th>
-        </tr>
-        <tr>
-          <td colspan=6><textarea rows="4" cols="40" name="Action"></textarea></td>
-        </tr>
-};{}]
-[if(type=="Weapons"), code: {
-      <table width="100%">
-         <tr  valign="bottom" style="background-color:#3A1E1A;text-align:center;color:white;font-weight:bold;font-size:14pt">
-              Use [r:decode(name)] Against <SELECT NAME="Target">[r:dropdownStr]</select></tr> 
-      </table>
-      <table width="100%">
-        <tr>
-          <th>Skill</th>
-          <th>Damage</th>
-          <th colspan=2>Range</th>
-          <th colspan=2>Notes[h: class = if(class=="oddRow", "evenRow", "oddRow")]</th>
-        </tr>
-};{}]
-[foreach(weapon,wd,""), code:{
-        <tr class="[r:class]">
-          <td align="center">
-  [h:checked=if(firstTime==1,"checked=1","")]
-            <input TYPE=RADIO NAME="Action" VALUE="[r:encode(json.get(weapon,"Tag"))]" [r:checked]> [r:json.get(weapon,"Skill")]
-  [h:firstTime=0]
-
-          </td>
-          <td align="center">
-            [r:json.get(weapon,"Damage")]
-          </td>
-          <td colspan=2 align="center">
-            [r:json.get(weapon,"Range")]
-          </td>
-          <td colspan=2 align="center">
-
-            [h:notesStr=""]
-            [h:RndToReload=json.get(weapon,"RndToReload")]
-            [h:RndToReload=if(isNumber(RndToReload),RndToReload,0)]
-
-            [h:reloadString=if((RndToReload!=0)&&(ReloadRndString!=0),"<b>RELOADING:"+ReloadRndString +"/"+RndToReload+"</b>","")]
-
-            [h:notes=json.get(weapon,"Notes")]
-            [h:notesStr=if(notes==0,"",listAppend(notesStr,notes))]
-            [h:pb=json.get(weapon,"ParryBonus")]
-            [h:pb=if(isNumber(pb),pb,0)]
-            [h:notesStr=if(pb<1,notesStr,listAppend(notesStr,"Parry Bonus="+pb))]
-            [h:rof=json.get(weapon,"RoF")]
-            [h:rof=if(isNumber(rof),rof,0)]
-            [h:notesStr=if(rof<2,notesStr,listAppend(notesStr,"RoF="+rof))]
-            [h:numHands=json.get(weapon,"NumHands")]
-            [h:numHands=if(isNumber(numHands),numHands,0)]
-            [h:notesStr=if(numHands<2,notesStr,listAppend(notesStr,"#Hands="+numHands))]
-            [h:ap=json.get(weapon,"AP")]
-            [h:ap=if(isNumber(ap),ap,0)]
-            [h:notesStr=if(ap<1,notesStr,listAppend(notesStr,"AP="+ap))]
-            [h:ammo=json.get(weapon,"AmmoType")]
-            [h:ammo=if(ammo=="",0,ammo)]
-
-            [h:shots=json.get(weapon,"Shots")]
-            [h:shots=if(isNumber(shots),shots,0)]
-            [h:numWeapons=if(isNumber(numWeapons),numWeapons,0)]
-            [h:shots=shots*numWeapons]
-            [h:notesStr=if(ammo=="None",notesStr,listAppend(notesStr,"AmmoType="+decode(ammo)))]
-            [r:notesStr]
-            [h: class = if(class=="oddRow", "evenRow", "oddRow")]
-          </td>
-        </tr>
-
-}]
-
-[if(ammo!="Self" && ammo!="None" && shotsUsed>0), code:{
-  <tr>
-    <td colspan="2"><input TYPE=RADIO NAME="Action" VALUE="Reload">Reload</td>
-    <td colspan="2"> [r:shotsUsed] of [r:shots] used</td>
-  </tr>
-};{}]
-      </table>
-      <table width="100%">
-          <th> <input type="submit" name="Submit" value="Submit"> 
-<input type="hidden" name="gearName" value="[r:name]"> 
-<input type="hidden" name="gearType" value="[r:type]"> 
-<input type="hidden" name="returnMacro" value="[r:returnMacro]">
-          </th>
-        </tr>
-      </table>
-</form>
-
-!!
-@@ @GearUseOK
-@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=true ; group=CharacterSheet ; tooltip= ; minWidth= ; 
-[h:Action=""]  
-[h:Target=""]  
-[h:Submit= ""]  
-[h:gearName= ""]  
-[h:gearType=""]  
-[h:rangeString=""]  
-[h:tokenId=currentToken()]
-
-[h:fireWeapon="1"]  
-
-[h:damages=""]
-[h:damageJSON=""]
-
-[h:props=macro.args]
-[h:varsFromStrProp(props)]
-[h:tokenId=if(tokenId=="",currentToken(),tokenId)]
-[h:abortit=if(tokenId=="",0,1)]
-[h:assert(abortit,"no token id available")]
-[h:switchToken(tokenId)]
-
-[if(gearType=="Weapons"), code:{
-  [h:wd=json.get(getLibProperty("GearVar"),gearType)]
-  [h:damages=json.get(wd,gearName)]
-};{}]
-
-[h:firstTime=1]
-[foreach(damage,damages,""), code:{
-  [h:tag=json.get(damage,"Tag")]
-  [h:actionTag=if(Action=="Reload" && firstTime==1,tag,Action)]
-  [h:firstTime=0]
-  [h:damageJSON=if(tag==decode(actionTag),damage,damageJSON)]
-}]
-
-[if(gearType=="Weapons"), code:{
-[h:junk=" get target information"]
-  [h:targetId=findToken(Target)]
-  [h:targetParry=getProperty("Parry",targetId)]
-  [h:targetTuff=getProperty("Toughness",targetId)]
-  [h:targetArmor=getProperty("Armor",targetId)]
-  [h:targetDistance=getDistance(targetId)-1]
-
-[h:junk = "get weapon info"]
-
-  [h:shots=json.get(damageJSON,"Shots")]
-  [h:shots=if(isNumber(shots),shots,0)]
-  [h:ammoType=json.get(damageJSON,"AmmoType")]
-  [h:ammo2Fill=json.get(damageJSON,"Ammo2Fill")]
-  [h:RoF=json.get(damageJSON,"RoF")]
-  [h:RoF=if(RoF=="",1,RoF)]
-  [h:skillBonus=json.get(damageJSON,"SkillBonus")]
-  [h:skillBonus=if(skillBonus=="",0,skillBonus)]
-  [h:skillBonusStr=if(skillBonus!=0,gearName + " to hit bonus=" + skillBonus,"")]
-
-  [h:RndToReload=json.get(damageJSON,"RndToReload")]
-  [h:RndToReload=if(RndToReload=="",0,RndToReload)]
-
-  [h:ammo2Fill=if(ammo2Fill=="",1,ammo2Fill)]
-
-  [h:aP=json.get(damageJSON,"AP")]
-  [h:aP=if(aP=="",0,aP)]
-  [h:isRange=matches(json.get(damageJSON,"Range"), "Range.*")]
-  [h:rangeBegin=6]
-  [h:range=substring(json.get(damageJSON,"Range"),rangeBegin)]
-  [if(isRange), code:{
-    [h:firstSlash=indexOf(range,"/")]
-    [h:secondSlash=indexOf(range,"/",firstSlash+1)]
-    [h:short=substring(range,0,firstSlash)]
-    [h:medium=substring(range,firstSlash+1,secondSlash)]
-    [h:long=substring(range,secondSlash+1)]
-    [h:rangeString="Out of"]
-    [h:rangeString=if(targetDistance<=long,"Long",rangeString)]
-    [h:rangeString=if(targetDistance<=medium,"Medium",rangeString)]
-    [h:rangeString=if(targetDistance<=short,"Short",rangeString)]
-  };{}]
-
-  [h:g=getProperty("Gear")]
-
-  [h:thisG=json.get(g,gearName)]
-  [if(json.contains(thisG,"ShotsUsed")==0), code:{
-    [h:thisG=json.set(thisG,"ShotsUsed",0)]
-  };{}]
-  [h:usedShots=json.get(thisG,"ShotsUsed")]
-  [h:usedShots=if(usedShots=="",0,usedShots)]
-
-  [h:ReloadRnd=json.get(thisG,"ReloadRnd")]
-  [h:ReloadRnd=if(ReloadRnd=="",0,ReloadRnd)]
-
-  [h:totalShots=json.get(thisG,"Num") * shots]
-  [h:totalShots=if(totalShots=="",0,totalShots)]
-
-  [h:ammo2Fill=ammo2Fill*json.get(thisG,"Num")]
-
-  [h:empty=if(totalShots<=usedShots,1,0)]
-
-  [h:empty=if(ammoType == "None",0,empty)]
-
-[h:junk = "RELOAD"]
-
-  [if(Action=="Reload"), code:{
-    <b>Reloading [decode(gearName)] </b><br>
-    [h:g=Reload(gearName,ammoType,totalShots,ammo2Fill,ReloadRnd)]
-    [h:setProperty("Gear",g)]
-    [h:fireWeapon="0"]  
-  };{}]
-
-  [if(empty && ammoType != "None" && (RndToReload==0 || RndToReload==ReloadRnd)), code:{
-    <b>Reloading [decode(gearName)] </b><br>
-    [h:g=Reload(gearName,ammoType,totalShots,ammo2Fill,ReloadRnd)]
-    [h:setProperty("Gear",g)]
-    [h:fireWeapon="1"]  
-  };{}]
-
-  [if(empty && (RndToReload!=0 && RndToReload!=ReloadRnd)), code:{
-    [h:thisG=json.set(thisG,"ReloadRnd",ReloadRnd+1)]
-    [h:g=json.set(g,gearName,thisG)] 
-    [h:setProperty("Gear",g)]
-    <b>Action Spent Reloading [decode(gearName)] </b>
-    [h:msg=json.set("","Action","Multiaction Reload","Weapon",gearName)]
-    [h:LogEvent(msg)]
-    [h:fireWeapon="0"]  
-  };{}]
-
- [h:skill=json.get(damageJSON,"Skill")]
-        [if(skill=="Fighting" || targetDistance <= 0), code:{
-             [h:thisText="(Parry " + targetParry + ")"]
-        };{
-             [h:thisText="(distance " +targetDistance + " = " +rangeString + " Range)"]
-        }]
-
-  [if(fireWeapon=="1"), code:{
-  
-       [h:setProperty("Gear",g)]
-       [h:g=UseAmmo(gearName,ammoType,RoF,shots)]
-       [h:setProperty("Gear",g)]
-       [h:thisG=json.get(g,gearName)]
-
-      
-       [h:damage=json.get(damageJSON,"Damage")]
-       <b>
-       [decode(Action)] [decode(gearName)] at [Target]
-
-         [thisText]
-
-       </b>
-       <br>
-	[h,if(rangeString=="Long"): skillBonus=skillBonus-4]
-	[h,if(rangeString=="Long"): skillBonusStr=skillBonusStr+ " Long Range=-4"]
-	[h,if(rangeString=="Medium"): skillBonus=skillBonus-2]
-	[h,if(rangeString=="Medium"): skillBonusStr=skillBonusStr+ " Medium Range=-2"]
-        [r:tempis=TraitTestWithMod(skill,skillBonus,skillBonusStr)]
-        [h:effectiveArmor=targetArmor-aP]
-        [h:effectiveArmor=if(effectiveArmor<0,0,effectiveArmor)]
-        [h:damageDone=eval(damage)] 
-        [h:effTuff=targetTuff + effectiveArmor]
-        <b>
-        [r,if(startsWith(damage, "Autofire")): damageDone + "<br>against a toughness of "+effTuff; "<br> The attack does "+damageDone +" damage if successful against a Toughness of  "+effTuff+" <br>If you hit with a raise your damage is "+(damageDone+eval("d6e"))]
-       </b>
-       [h:msg=json.set("","Target",Target,"Weapon",gearName)]
-       [h:LogEvent(msg)]
-    };{}]
-
- };{
-          Uses a [gearName] [decode(Action)]
-}]
-
-[macro(returnMacro): ""]
-
-!!
-@@ @Get Gear
-@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=true ; group=CharacterSheet ; tooltip= ; minWidth= ; 
-[h:gear1=getProperty("Gear")]
-[h:gNames=json.fields(gear1)]
-[h:tokenId=currentToken()]
-[h:returnMacro=macro.args]
-
-[h:continue=if(tokenId=="",0,1)]
-[h:assert(continue,"bogus token id in "+getMacroLocation())]
-[h:rtnStr=""]
-[h:Gear=if(json.type(gear1)=="UNKNOWN","{}",gear1)]
-[h,if(json.type(gear1)=="UNKNOWN"), code:{
-  [h:gear1="{}"]
-  [h:setProperty("Gear",gear1)]
-};{}]
-
-[h:gTypes=getLibProperty("GearTypes")]
-
-[h:gTypeJSON="{}"]
-
-[foreach(gt,gTypes,""), code:{  
-  [h:typeArray="[]"]
-  [foreach(name,gNames,""), code:{
-    [h:gJSON=json.get(gear1,name)]
-    [h:gJSON=json.set(gJSON,"Name",name)]
-    [h:type=json.get(gJSON,"Type")]
-    [h:typeArray=if(type==gt,json.append(typeArray,name),typeArray)]
-  }]
-  [h:typeArray=json.sort(typeArray)]
-  [h,if(json.length(typeArray)>0): gTypeJSON=json.set(gTypeJSON,gt,typeArray)]
-}]
-[h:foundTypes=json.fields(gTypeJSON)]
-
-[if(getPropertyType(tokenId)=="Basic"), code:{
-  [h:rtnStr=rtnStr+"Weight Carried = "+if(getProperty("WeightCarried")!="", getProperty("WeightCarried"), "Unknown") + "<br>"]
-};{}]
-[h:firstTime=1]
-
-[foreach(gType,foundTypes,""), code:{  
-  [h:rtnStr=rtnStr+gType+" : "]
-  [h:firstTime=1]
-  [foreach(name,gNames,""), code:{
-    [h:gJSON=json.get(gear1,name)]
-    [h:gJSON=if(json.type(gJSON)=="UNKNOWN","{}",gJSON)]
-    [h:type=json.get(gJSON,"Type")]
-    [h:num=json.get(gJSON,"Num")]
-    [h:num=if(num=="",1,num)]
-    [h:numStr=if(num>1,"x"+num,"")]
-    [h:shotsUsed=json.get(gJSON,"ShotsUsed")]
-    [h:shotsUsed=if(shotsUsed=="",0,shotsUsed)]
-    [h:shotsStr=if(shotsUsed>1,"("+shotsUsed+")","")]
-
-    [h: linkit=macroLinkText(returnMacro, "gm","lowerWindowFill=gear;gearName="+name+";gearType="+type,tokenId)]
-    [h:name1 =  "<a href='"+linkit+"'> " + decode(name) +  "</a> "]
-    [h:name2=decode(name)]
-    [h:name=if(gType!="Weapons"&&type==gType,name2,name1)]
-    [h:tmpStr=rtnStr+if(firstTime==1&&type==gType,"",", ")+name+shotsStr+numStr]
-    [h:rtnStr=if(type==gType,tmpStr,rtnStr)]
-    [h:firstTime=if(type==gType,0,firstTime)]
-  }]
-  [h:rtnStr=rtnStr+"<BR>"]
-}]
-[h:macro.return=rtnStr]
-
-!!
-@@ @ReloadWeapon
-@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=CharacterSheet ; tooltip= ; minWidth= ; 
-[h:weaponName=arg(0)]
-[h:ammoType=arg(1)]
-[h:shots=arg(2)]
-[h:ammo2Fill=arg(3)]
-[h:ReloadRnd=arg(4)]
-
-[h:tType=getPropertyType()]
-[h,if(tType!="Basic"&&tType!="Vehicle"): assert(0,"You must have a non-Lib token selected in order to reload")]
-
-[h:g=getProperty("Gear")]
-
-[if(ammoType!="None" && ammoType != "Self"), code:{
-  [h:w=json.get(g,weaponName)]
-  [h:wNum=json.get(w,"Num")]
-  [h:wUsed=json.get(w,"ShotsUsed")]
-  [h:ammoDelta=shots-wUsed]
-  [h:a=json.get(g,ammoType)]
-
-  [h:a=if(json.type(a)=="UNKNOWN","{}",a)]
-  [h:aNum=json.get(a,"Num")]
-  [h:aNum=if(aNum=="",0,aNum)]
-  [if(aNum==0), code:{
-    [assert(aNum,"You have no " + ammoType + " for " + weaponName)]
-  };{}]
-  [h:needed=ammo2Fill-ammoDelta)]
-  [h:refilled=if(aNum>=needed,needed,aNum)]
-  [h:aNum=aNum-needed]
-  [if(aNum<=0), code:{
-    [h:g=json.remove(g,ammoType)]
+@@ @AddToExistingGroup
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=1 - Groups ; tooltip= ; minWidth= ; 
+[h:ids=arg(0)]
+[h:length=json.length(ids)]
+[h,if(length<2): assert(0,"You must have at least 2 tokens selected one of which must be a leader")]
+[h:leaderFound=0]
+[h:leader=""]
+[h:members=""]
+[h,foreach(id,ids,""), code:{
+  [h,if(isLeader(id) && leaderFound): assert(0, "Two Leaders are selected:"+getName(id)+" and " + getName(leader)]
+  [h,if(isLeader(id)), code:{
+    [h:leaderFound=1]
+    [h:leader=id]
   };{
-    [h:a=json.set(a,"Num",aNum)]
-    [h:g=json.set(g,ammoType,a)]
+    [h,if(getState("Group Member", id)): assert(0,"Token "+getName(id)+" is already part of a group")]
+    [h:members=json.append(members,id)]
   }]
-  [h:shotsUsed=if(ammo2Fill==1,wUsed-refilled*shots,wUsed-refilled)]
-  [h:w=json.set(w,"ShotsUsed",shotsUsed)]
-  [h:w=json.set(w,"ReloadRnd",0)]
-  [h:g=json.set(g,weaponName,w)]
-};{}]
-
-[r:g]
+}]
+[if(!leaderFound): assert(0,"No leader found in selected tokens")]
+[h:group=GetGroupMembers(leader)]
+[h:members=json.union(group,members)]
+[SaveGroup(leader,members)]
 
 !!
-@@ @UpdateDialogFormByType
-@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=CharacterSheet ; tooltip= ; minWidth= ; 
-<tr>
-[h:gType=""]
-[h:numOnLine=""]
-[h:t=2]
-[h:currGear=Gear]
-[h:currGear=if(json.type(currGear)=="UNKNOWN","{}",currGear)]
+@@ @CreateGroup
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=1 - Groups ; tooltip= ; minWidth= ; 
+[h:groupLeader=arg(0)]
+[h:groupMembers=arg(1)]
 
-[h:varsFromStrProp(macro.args)]
+[h:CheckLeader(groupLeader)]
+[h:CheckGroupMembers(groupMembers)]
 
-[h:currGearType=json.get(currGear,gType)]
-[h:currGearType=if(json.type(currGearType)=="UNKNOWN","{}",currGearType)]
-
-[h: class = "oddRow"]
-[h:count=1]
-[h:gJSON=json.get(getLibProperty("Gear"),gType)]
-[h:gNames=json.fields(gJSON)]
-[foreach(name,gNames,""), code:{
-  [if(t==0), code:{
-    [h:t=remainder(count,numOnLine)]
-    [h:class=if(t<2,"oddRow","evenRow")]
-    </tr><tr>
-  };{
-    [h:t=remainder(count,numOnLine)]
-    [h:class=if(t<2,"oddRow","evenRow")]
-  }]
-  <td class="[r:class]">
-  [h:checked=""]
-  [h:value=json.contains(currGear,name)]
-  [h:checked=if(value," checked  "," ")]
-  [h:currGearJSON=if(value,json.get(currGear,name),"{}")]
-  [h:value=json.get(currGearJSON,"Num")]
-  [h:value=if(value==0,"",value)]
-    <input type="checkbox" name="gear_[r:gType]_[r:name]" value="1" [r:checked]></input>
-  </td>
-  <td class="[r:class]">
-  [r:decode(name)]
-  </td>
-  <td class="[r:class]">
-    <input type="text" name="gearNum_[r:gType]_[r:name]" size=2 value="[r:value]">
-  [h:count=count+1]
-  </td>
-}]
-[h:t=if(t==0,3,t)]
-[for(i,t,3,1,""), code:{
-    [h:t=remainder(count,numOnLine)]
-    [h:class=if(t<2,"oddRow","evenRow")]
-  <td colspan=3 class="[r:class]"></td>
-}]
-
-</tr>
+[h:SaveGroup(groupLeader,groupMembers)]
 
 !!
-@@ @UpdateDialogFormByTypeSave
-@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=CharacterSheet ; tooltip= ; minWidth= ; 
-[h:gType=""]
-[h:numOnLine=""]
-[h:t=2]
-[h:currGear=Gear]
-[h:currGear=if(json.type(currGear)=="UNKNOWN","{}",currGear)]
+@@ @DisbandGroup
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=1 - Groups ; tooltip= ; minWidth= ; 
+[h:groupLeader=arg(0)]
 
-[h:varsFromStrProp(macro.args)]
+[h:groupMembers=GetMembers()]
+[h:groupLeader=GetGroupLeader(groupLeader)]
 
-[h:currGearType=json.get(currGear,gType)]
-[h:currGearType=if(json.type(currGearType)=="UNKNOWN","{}",currGearType)]
+[h:members=GetGroupMembers(groupLeader)]
 
-[h: class = "oddRow"]
-[h:count=1]
-<tr>
-  <th colspan=[r:numOnLine*3]>[r:gType]
-[h:gJSON=json.get(getLibProperty("Gear"),gType)]
-[h:gNames=json.fields(gJSON)]
-  </th>
-</tr>
-<tr>
-[foreach(name,gNames,""), code:{
-  [if(t==0), code:{
-    [h:t=remainder(count,numOnLine)]
-    [h:class=if(t<2,"oddRow","evenRow")]
-    </tr><tr>
-  };{
-    [h:t=remainder(count,numOnLine)]
-    [h:class=if(t<2,"oddRow","evenRow")]
-  }]
-  <td class="[r:class]">
-  [h:checked=""]
-  [h:value=json.contains(currGear,name)]
-  [h:checked=if(value," checked  "," ")]
-  [h:currGearJSON=if(value,json.get(currGear,name),"{}")]
-  [h:value=json.get(currGearJSON,"Num")]
-  [h:value=if(value==0,"",value)]
-    <input type="checkbox" name="gear_[r:gType]_[r:name]" value="1" [r:checked]></input>
-  </td>
-  <td class="[r:class]">
-  [r:decode(name)]
-  </td>
-  <td class="[r:class]">
-    <input type="text" name="gearNum_[r:gType]_[r:name]" size=2 value="[r:value]">
-  [h:count=count+1]
-  </td>
-}]
-[h:t=if(t==0,3,t)]
-[for(i,t,3,1,""), code:{
-    [h:t=remainder(count,numOnLine)]
-    [h:class=if(t<2,"oddRow","evenRow")]
-  <td colspan=3 class="[r:class]"></td>
-}]
+[h:setState("Group Leader", 0,groupLeader)]
+[h,foreach(member,members,""): setState("Group Member", 0,member)]
 
-</tr>
+[h:groupMembers=json.remove(groupMembers, groupLeader)]
+[h:groupLeaders=json.fields(groupMembers,"json")]
+[h:setLibProperty("GroupLeaders",groupLeaders)]
+[h:setLibProperty("Groups",groupMembers)]
 
 !!
-@@ @UpdateGearDialog
-@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=CharacterSheet ; tooltip= ; minWidth= ; 
-<!-- args are tokenId -->
-[h:macroName=getMacroName()]
-[h:macroName=macroName+"@this"]
+@@ @GroupTraitRoll
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=1 - Groups ; tooltip= ; minWidth= ; 
+[h:leader=arg(0)]
+[h:assert(isLeader(leader),"Group rolls must pass a leader id")]
+[h:members=GetGroupMembers(leader)]
+[h:ids=json.append(members,leader)]
+
+[h:switchToken(leader)]
+[h:traitNames=""]
+[h,if(getPropertyType()=="Basic"): traitNames=GetTokenTraitNames()]
+[h,if(getPropertyType()=="Vehicle"): traitNames=listAppend(getLibProperty("VehicleTraits","Lib:Vehicles"),getLibProperty("SettingTraits","Lib:Vehicles"))]
+
+[h,if(traitNames==""): assert(0,"Tokens must be of type vehicle or basic in order to use the macro")]
+
+[h:status=input("trait|"+traitNames+"|"+getName()+" Trait Roll|LIST")]
+[h:abort(status)]
+[h:traitNames=json.fromList(traitNames)]
+[h:trait=json.get(traitNames,trait)]
+
+<b>Group [r:trait] Roll</b><br>
+[r,foreach(id,ids,"<br>"), code:{
+  [h:switchToken(id)]
+  [r: getName()]
+  [macro("TraitTest@Lib:GM"):trait]
+}]
+
+!!
+@@ @RemoveTokenFromGroup
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=1 - Groups ; tooltip= ; minWidth= ; 
+[h:id=arg(0)]
+[h,if(isLeader(id)): assert(0,"Cannot removed "+getName(id)+" from group because it is the leader. Use Disband Group macro")]
+[h:leaders=GetLeaders()]
+[h,foreach(l,leaders,""), code:{
+  [h:members=GetGroupMembers(l)]
+  [h:num=json.count(members,id)]
+  [h,if(num>0), code:{ 
+    [h:index=json.indexOf(members,id)]
+    [h:members=json.remove(members,index)]
+    [h:setState("Group Member", 0,id)]
+    [SaveGroup(l,members)]
+  };{}]
+}]
+
+!!
+@@ @SaveGroup
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=1 - Groups ; tooltip= ; minWidth= ; 
+[h:leader=arg(0)]
+
+[h:members=arg(1)]
+
+[h:setState("Group Leader", 1,leader)]
+[h,foreach(member,members,""): setState("Group Member", 1,member)]
+
+[h:groupLeaders=GetLeaders()]
+
+[h:groupLeaders=json.append(groupLeaders,leader)]
+
+[h:groupMembers=GetMembers()]
+
+[h:groupMembers=json.set(groupMembers,leader,members)]
+
+[h:setLibProperty("Groups",groupMembers)]
+[h:setLibProperty("GroupLeaders",groupLeaders)]
+[h:currentMap=getCurrentMapName()]
+[h,if(isCurrentMap(currentMap)==1), code:{
+  [h:leaderName=getName(leader)]
+  [h:namesInGroup=""];
+  [h,foreach(m,members):namesInGroup=json.append(namesInGroup,getName(m))]
+  [h:leaderNames=GetLeaderNames()]
+  [h:memberNames=GetMemberNames()]
+  [h:there=json.contains(leaderNames,leaderName)]
+  [h,if(!there): leaderNames=json.append(leaderNames,leaderName)]
+[h:t=Debug("leader Name",leaderName)]
+[h:t=Debug("member names",namesInGroup)]
+  [h:memberNames=json.set(memberNames,leaderName,namesInGroup)]
+  [h:t=Debug("leaderNames",leaderNames)]
+  [h:t=Debug("memberNames",memberNames)]
+}]
+
+!!
+@@ @CheckGroupMembers
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=1.1 - Group Checks ; tooltip= ; minWidth= ; 
+[h:members=arg(0)]
+
+!!
+@@ @CheckLeader
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=1.1 - Group Checks ; tooltip= ; minWidth= ; 
+[h:leaderId=arg(0)]
+[h:groupLeaders=getLibProperty("GroupLeaders")]
+[h:groupLeaders=if(json.type(groupLeaders)=="UNKNOWN","[]",groupLeaders)]
+[h:existing=json.contains(groupLeaders, leaderId)]
+[h,if(existing): assert(0,getName(leaderid)+" already exists as a group leader")]
+
+!!
+@@ @isLeader
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=1.1 - Group Checks ; tooltip= ; minWidth= ; 
+[h:id=arg(0)]
+[h:leaders=GetLeaders()]
+[r,if(json.contains(leaders,id)): 1;0]
+
+!!
+@@ @FindTokensOnVehicle
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=true ; applyToSelected=false ; group=2 - Selects ; tooltip= ; minWidth= ; 
+[h:tokenId=arg(0)]
+
+[r:height=floor(getTokenHeight()/2)]
+[r:width=floor(getTokenWidth()/2)]
+[r:range=json.set("","upto",max(height,width),"distancePerCell",0,"metric","NO_DIAGONALS")]
+[r: cond = json.set("","range",range,"npc",1, "unsetStates",json.append("","Dead","Incapacitated"))]
+[h: ids = getTokens("json", cond)]
+[r,foreach(id,ids,"<br>"), code:{
+  [r:getName(id)]
+}]
+
+[h:junk="seems to be working. Now use the selected ids above to add to a group with the vehicle as the leader"]
+
+!!
+@@ @GetGroupLeader
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=2 - Selects ; tooltip= ; minWidth= ; 
+[h:groupLeader=arg(0)]
+[h:rtn=""]
+[h:groupLeaders=getLibProperty("GroupLeaders")]
+[h:groupLeaders=if(json.type(groupLeaders)=="UNKNOWN","[]",groupLeaders)]
+[h:there=json.contains(groupLeaders, groupLeader)]
+[h:assert(there,getName(groupLeader)+" does not exist as a group leader:"+getMacroName())]
+[r:rtn=groupLeader]
+
+!!
+@@ @GetGroupMembers
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=2 - Selects ; tooltip= ; minWidth= ; 
+[h:groupLeader=arg(0)]
+
+[h:groupMembers=GetMembers()]
+
+[r:members=json.get(groupMembers,groupLeader)]
+
+!!
+@@ @GetLeaderNames
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=2 - Selects ; tooltip= ; minWidth= ; 
+[h:groupLeaderNames=getLibProperty("GroupLeaderNames")]
+[h:type=json.type(groupLeaderNames)]
+[h:groupLeaderNames=if(type=="UNKNOWN","[]",groupLeaderNames)]
+[r:rtn=groupLeaderNames]
+
+!!
+@@ @GetLeaders
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=2 - Selects ; tooltip= ; minWidth= ; 
+[h:groupLeaders=getLibProperty("GroupLeaders")]
+[h:type=json.type(groupLeaders)]
+[h:groupLeaders=if(type=="UNKNOWN","[]",groupLeaders)]
+[r:rtn=groupLeaders]
+
+!!
+@@ @GetMemberNames
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=2 - Selects ; tooltip= ; minWidth= ; 
+[h:groupMembers=getLibProperty("GroupMemberNames")]
+[r:groupMembers=if(json.type(groupMembers)=="UNKNOWN","{}",groupMembers)]
+
+!!
+@@ @GetMembers
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=2 - Selects ; tooltip= ; minWidth= ; 
+[h:groupMembers=getLibProperty("Groups")]
+[r:groupMembers=if(json.type(groupMembers)=="UNKNOWN","{}",groupMembers)]
+
+!!
+@@ @SelectMooks
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=true ; applyToSelected=false ; group=2 - Selects ; tooltip= ; minWidth= ; 
+[h:cond = json.set("{}","npc",1)]
+[h:ids = getTokens("json", cond)]
+[h:deselectTokens()]
 [h:selected=""]
-[h:tokenId=""]
-[h:tokenId=if(tokenId=="",currentToken(),"")]
-[h:abortit=if(tokenId=="",0,1)]
-[h:assert(abortit,"no token id available")]
-
-[h: class = "oddRow"]
-[h:class2=FlipClass(class)]
-[h:td1="<th>"]
-[h:td2="<td>"]
-
-[h:OKMacro="argCheck@Lib:GM"]
-[h:OKMacro="UpdateGearDialogOK@this"]
-
-[h:varsFromStrProp(macro.args)]
-
-[h:types=getLibProperty("GearTypes")]
-[h:numOnLine=3]
-
-[h:selected=if(selected=="",json.get(types,0),selected)]
-[h:lables = getLibProperty("GearTypes")]
-
-[dialog("GearUpdate", "width=610; height=650"): {
-  <html>
-    <head>
-      <title>Select Gear</title>
-      <meta name="input" content="true">
-      <link rel="stylesheet" type="text/css" href="CharSheet_css@Lib:GM">     
-    </head>
-    <body>
-      [h:linkit=macroLinkText(OKMacro,"gm","",tokenId)]
-      <form name="PC Gear"  method='json' action="[r:linkit]">
-      <table width="100%" border=1>
-        <tr >
-          [foreach(l,lables,""), code:{
-            [h: linkit=macroLinkText(macroName, "gm","selected="+l+";returnMacro="+returnMacro,tokenId)]
-            [r:td=if(l==selected,td1,td2)]  
-            <a href="[r:linkit]">[r:l]</a></td>
-          }]
-        </tr>
-       </table>
-       <table width="100%">
-           [macro("UpdateDialogFormByType@this"): "gType="+selected+";numOnLine="+numOnLine]
-         <tr>
-         <th colspan="[r:numOnLine*3]">
-          <input type="submit" name="Submit" value="Submit">
-         </th>
-       </tr>
-     </table>
-    <input type="hidden" name="returnMacro" value="[r:returnMacro]">
-    <input type="hidden" name="gType" value="[r:selected]">
-    </form>
-    </body>
-  </html>
+[h,foreach(id,ids,""), code:{
+  [h:id] 
+  [r:add=getProperty("WildDie",id)]
+  [h:add=if(add=="",0,add)]
+  [h:add=if(add!=0,1,0)]
+  [h,if(!add):selected=json.append(selected,id)]
 }]
-[h:abort(0)]
+
+[r:selected]
+[h:selectTokens(selected, 0, "json")]
 
 !!
-@@ @UpdateGearDialogOK
-@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=CharacterSheet ; tooltip= ; minWidth= ; 
-[h:tokenId=""]
-[h:returnMacro="argCheck@Lib:GM"]
-[h:props=macro.args]
-[h:tokenId=if(tokenId=="",currentToken(),"")]
-[h:abortit=if(tokenId=="",0,1)]
-[h:assert(abortit,"no token id available")]
-
-[h:returnMacro=json.get(props,"returnMacro")]
-[h:gearType=json.get(props,"gType")]
-
-[h:junk="<!-- Get Setting Gear -->"]
-[h:gVar=getLibProperty("GearVar")]
-[h:g=getLibProperty("Gear")]
-
-[h:junk="<!-- Save off old gear that is not of the submitted type -->"]
-[h:switchToken(tokenId)]
-[h:oldGear=getProperty("Gear")]
-[h:oldGear=if(json.type(oldGear)=="UNKNOWN","{}",oldGear)]
-[h:gearSave="{}"]
-[h:ogList = json.fields(oldGear, 'json')]
-[foreach(og,ogList,""), code:{
-  [h:gearDetail=json.get(oldGear,og)]
-  [h:ogType=json.get(gearDetail,"Type")]
-  [h:exists=json.contains(json.get(g,ogType),og)]
-  [h,if(ogType!=gearType&&exists==1): gearSave=json.set(gearSave,og,gearDetail)]
+@@ @SelectNPCWildcards
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=true ; applyToSelected=false ; group=2 - Selects ; tooltip= ; minWidth= ; 
+[h:cond = json.set("{}","npc",1)]
+[h:ids = getTokens("json", cond)]
+[h:deselectTokens()]
+[h:selected=""]
+[h,foreach(id,ids,""), code:{
+  [h:id] 
+  [r:add=getProperty("WildDie",id)]
+  [h:add=if(add=="",0,add)]
+  [h:add=if(add!=0,1,0)]
+  [h,if(add):selected=json.append(selected,id)]
 }]
 
-[h:newGear="{}"]
-[h:junk="<!-- now create entries for the type submitted -->"]
-[foreach(prop,props,""), code:{
-  [if(matches(prop, "^gear_.*")),code:{
-    [h:id=strfind(prop, "(\\S+)_(\\S+)_(\\S+)")]
-    [h:type=getGroup(id, 1, 2)]
-    [h:name=getGroup(id, 1, 3)]
-    [h:num=json.get(props,"gearNum_"+type+"_"+name)]
-    [h:num=if(num=="",1,num)]
-    [h:gJSON=json.get(newGear,name)]
-    [h:gJSON=if(gJSON=="","{}",gJSON)]
-    [h:gJSON=json.set(gJSON,"Num",num)]
-    [h:gJSON=json.set(gJSON,"Type",type)]
-    [h:newGear=json.set(newGear,name,gJSON)]
-  };{
-  }]
-}]
-
-[h:newGear = json.merge(newGear,gearSave)]
-
-[h:gearKeys=json.fields(newGear)]
-
-[h:thisWeight=0]
-[h:thisArmor=0]
-[h:thisParry=0]
-
-[foreach(key,gearKeys,""), code:{
-  [h:newG=json.get(newGear,key)]
-  [h:newGType=json.get(newG,"Type")]
-  [h:newGNum=json.get(newG,"Num")]
-
-  [h:junk="<!-- update weight -->"]
-  [h:g1=json.get(g,newGType)]
-  [h:w=json.get(json.get(json.get(g,newGType),key),"Weight")]
-  [h:w=if(w=="",0,w*newGNum)]
-  [h:thisWeight=thisWeight+w]
-
-  [if(newGType=="Weapons"), code:{
-    [h:oldG=json.get(json.get(json.get(gVar,newGType),key),0)]
-    [h:oldG=if(json.contains(oldGear,key),json.get(oldGear,key),oldG)]
-    [h:shotsUsed=if(json.contains(oldG,"ShotsUsed"),json.get(oldG,"ShotsUsed"),0)]
-    [h:newG=json.set(newG,"ShotsUsed",shotsUsed)]
-    [h:ReloadRnd=if(json.contains(oldG,"ReloadRnd"),json.get(oldG,"ReloadRnd"),0)]
-    [h:newG=json.set(newG,"ReloadRnd",ReloadRnd)]
-    [h:newGear=json.set(newGear,key,newG)]
-  };{}]
-  [if(newGType=="Armor"), code:{
-    [h:oldG=json.get(json.get(json.get(gVar,newGType),key),0)]
-    [h:torso=json.get(oldG,"Torso")]
-    [h:torso=if(torso!=0,1,0)]
-    [h:av=json.get(oldG,"Armor")]
-    [h:thisArmor=thisArmor+if(isNumber(torso),torso,0)*if(isNumber(av),av,0)]
-  };{}]
-}]
-    
-
-<b>[getName()]</b> updated Gear <br><b>FROM: </b> <br>
-[if(json.isEmpty(oldGear)): "<b> No Gear </b>"]
-[h:keys=json.fields(oldGear)]
-[foreach(k,keys,"<br>"), code:{
-  <b>[r:k]</b> :
-  [h:gEntry=json.get(oldGear,k)]
-  [h:gKeys=json.fields(gEntry)]
-  [foreach(gK,gKeys,", "):   gK + ":" + json.get(gEntry,gK)]
-}]<br>
-<b>TO: </b><br>
-[h:keys=json.fields(newGear)]
-[foreach(k,keys,"<br>"), code:{
-  <b>[r:k]</b> :
-  [h:gEntry=json.get(newGear,k)]
-  [h:gKeys=json.fields(gEntry)]
-  [foreach(gK,gKeys,", "):   gK + ":" + json.get(gEntry,gK)]
-}]<br>
-
-[basic=if(getPropertyType(tokenId)!="Basic",0,1)]
-[if(basic==1), code:{
-  Weight Carried = [r:thisWeight]<br>
-  <!-- not an editible property -->
-  [h:setProperty("WeightCarried",thisWeight)]
-
-  Strx5 = [r:GetTraitNum(getProperty("Strength"))*5]<br>
-
-  Armor Value is [r:thisArmor]
-};{}]
-[h:setProperty("Gear",newGear)]
-
-[macro(returnMacro):""]
+[r:selected]
+[h:selectTokens(selected, 0, "json")]
 
 !!
-@@ @UpdateGearDialogOKSave
-@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=CharacterSheet ; tooltip= ; minWidth= ; 
+@@ @SelectPCs
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=true ; applyToSelected=false ; group=2 - Selects ; tooltip= ; minWidth= ; 
+[r: ids = getPC("json")]
+[h:selectTokens(ids, 0, "json")]
+
+!!
+@@ @SelectTokens
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=2 - Selects ; tooltip= ; minWidth= ; 
+[h:junk="This macro is used to select a group of tokens based on passed args. This will likely grow as time goes on. The result of the different case statement sections will be a group to token ids that are selected"]
+
+[h:junk="
+tokenId - tokenId used is distance calculations.
+distance - select tokens with this distance of tokenId
+addTo - whether to add it to the current selection or start a new selection. 1 = adds to current select, 0 = start new selection. defaults to 0
+pcOrNpc values are pc, npc, or both. If empty assumes both
+Wildcards(Wildcard implied by PC) values are wildcard, nonwildcard, or both. Empty assumes both
+tokentypes (default is basic) json array
+"]
+
+[h:tokenId="000000008832782C8C22000000000000"]
 [h:tokenId=""]
-[h:returnMacro="argCheck@Lib:GM"]
-[h:props=macro.args]
-[h:tokenId=if(tokenId=="",currentToken(),"")]
-[h:abortit=if(tokenId=="",0,1)]
-[h:assert(abortit,"no token id available")]
+[h:distance=""]
+[h:addTo=0]
+[h:pcOrNpc = ""]
+[h:wildcards=""]
+[h:tokentypes=""]
 
-[h:returnMacro=json.get(props,"returnMacro")]
-[h:gearType=json.get(props,"gType")]
+[h:tokenId=arg(0)]
+[h:distance=arg(1)]
+[h:addTo=arg(2)]
+[h:pcOrNpc = arg(3)]
+[h:wildcards=arg(4)]
+[h:tokentypes=arg(5)]
 
-<!-- Save off old gear that is not of the submitted type -->
-[h:switchToken(tokenId)]
-[h:oldGear=getProperty("Gear")]
-[h:oldGear=if(json.type(oldGear)=="UNKNOWN","{}",oldGear)]
-[h:gearSave="{}"]
-[h:ogList = json.fields(oldGear, 'json')]
-[foreach(og,ogList,""), code:{
-  [h:gearDetail=json.get(oldGear,og)]
-  [h:ogType=json.get(gearDetail,"Type")]
-  [h,if(ogType!=gearType): gearSave=json.set(gearSave,og,gearDetail)]
-}]
+[h:cond=""]
+[h:layer=json.append("[]","TOKEN","HIDDEN")]
+[h:cond=json.set("","layer",layer)]
 
-[h:newGear="{}"]
-<!-- now create entries for the type submitted -->
-[foreach(prop,props,""), code:{
-  [if(matches(prop, "^gear_.*")),code:{
-    [h:id=strfind(prop, "(\\S+)_(\\S+)_(\\S+)")]
-    [h:type=getGroup(id, 1, 2)]
-    [h:name=getGroup(id, 1, 3)]
-    [h:num=json.get(props,"gearNum_"+type+"_"+name)]
-    [h:num=if(num=="",1,num)]
-    [h:gJSON=json.get(newGear,name)]
-    [h:gJSON=if(gJSON=="","{}",gJSON)]
-    [h:gJSON=json.set(gJSON,"Num",num)]
-    [h:gJSON=json.set(gJSON,"Type",type)]
-    [h:newGear=json.set(newGear,name,gJSON)]
-  };{
-  }]
-}]
-
-<!-- update armor -->
-
-<!-- update weapons -->
-
-<!-- update weight -->
-
-[h:newGear = json.merge(newGear,gearSave)]
-
-[h:gearKeys=json.fields(newGear)]
-
-[h:gVar=getLibProperty("GearVar")]
-[h:g=getLibProperty("Gear")]
-[h:thisWeight=0]
-[h:thisArmor=0]
-[h:thisParry=0]
-
-[foreach(key,gearKeys,""), code:{
-  [h:newG=json.get(newGear,key)]
-  [h:newGType=json.get(newG,"Type")]
-  <!-- update weight -->
-  [h:g1=json.get(g,newGType)]
-  [h:w=json.get(json.get(json.get(g,newGType),key),"Weight")]
-  [h:w=if(w=="",0,w)]
-  [h:thisWeight=thisWeight+w]
-
-  [if(newGType=="Weapons"), code:{
-    [h:oldG=json.get(json.get(json.get(gVar,newGType),key),0)]
-    [h:oldG=if(json.contains(oldGear,key),json.get(oldGear,key),oldG)]
-    [h:shotsUsed=if(json.contains(oldG,"ShotsUsed"),json.get(oldG,"ShotsUsed"),0)]
-    [h:newG=json.set(newG,"ShotsUsed",shotsUsed)]
-    [h:ReloadRnd=if(json.contains(oldG,"ReloadRnd"),json.get(oldG,"ReloadRnd"),0)]
-    [h:newG=json.set(newG,"ReloadRnd",ReloadRnd)]
-    [h:newGear=json.set(newGear,key,newG)]
-  };{}]
-  [if(newGType=="Armor"), code:{
-    [h:oldG=json.get(json.get(json.get(gVar,newGType),key),0)]
-    [h:torso=json.get(oldG,"Torso")]
-    [h:torso=if(torso!=0,1,0)]
-    [h:av=json.get(oldG,"Armor")]
-    [h:thisArmor=thisArmor+if(isNumber(torso),torso,0)*if(isNumber(av),av,0)]
-  };{}]
-}]
-    
-
-<b>[getName()]</b> updated Gear <br><b>FROM: </b> <br>
-[if(json.isEmpty(oldGear)): "<b> No Gear </b>"]
-[h:keys=json.fields(oldGear)]
-[foreach(k,keys,"<br>"), code:{
-  <b>[r:k]</b> :
-  [h:gEntry=json.get(oldGear,k)]
-  [h:gKeys=json.fields(gEntry)]
-  [foreach(gK,gKeys,", "):   gK + ":" + json.get(gEntry,gK)]
-}]<br>
-<b>TO: </b><br>
-[h:keys=json.fields(newGear)]
-[foreach(k,keys,"<br>"), code:{
-  <b>[r:k]</b> :
-  [h:gEntry=json.get(newGear,k)]
-  [h:gKeys=json.fields(gEntry)]
-  [foreach(gK,gKeys,", "):   gK + ":" + json.get(gEntry,gK)]
-}]<br>
-
-[basic=if(getPropertyType(tokenId)!="Basic",0,1)]
-[if(basic==1), code:{
-  Weight Carried = [r:thisWeight]<br>
-  <!-- not an editible property -->
-  [h:setProperty("WeightCarried",thisWeight)]
-
-  Strx5 = [r:GetTraitNum(getProperty("Strength"))*5]<br>
-
-  Armor Value is [r:thisArmor]
+[h,if(json.type(tokentypes)!="ARRAY"), code:{
+  [h:tokentypes=json.append("","Basic","Vehicles")]
 };{}]
 
-[h:setProperty("Gear",newGear)]
-
-[macro(returnMacro):""]
-
-!!
-@@ @UseAmmo
-@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=CharacterSheet ; tooltip= ; minWidth= ; 
-[h:weaponName=arg(0)]
-[h:ammoType=arg(1)]
-[h:RoF=arg(2)]
-[h:weaponCapacity=arg(3)]
-
-[h:tType=getPropertyType()]
-[h,if(tType!="Basic"&&tType!="Vehicle"): assert(0,"You must have a non-Lib token selected in order to use ammo")]
-[h:g=getProperty("Gear")]
-[h:thisG=json.get(g,weaponName)]
-[h:thisGNum=json.get(thisG,"Num")]
-[h:shotsUsed=json.get(thisG,"ShotsUsed")]
-[h:shotsUsed=if(shotsUsed=="",0,shotsUsed)]
-[if((shotsUsed+RoF>weaponCapacity*thisGNum)&&(ammoType!="None")), code:{
-  [assert(0,"You don't have enough ammo to use this weapon way")]
+[h,if(tokenId!=""), code:{
+  [h:cond=json.set(cond,"token",tokenId)]
+  [h:distance=if(isNumber(distance),distance,0)]
+  [h:tokenSize=getSize(tokenId)]
+  [if(tokenSize==""), code:{
+    [h:width=getTokenWidth(tokenId)/2]
+    [h:height=getTokenWidth(tokenId)/2]
+    [h:mapGridInfo=json.get(getInfo("map"),"grid")]
+    [h:unitsPerCell=json.get(mapGridInfo,"units per cell")]
+    [h:gridSize=json.get(mapGridInfo,"size")] 
+    [h:distance=distance+floor(max(width,height)/gridSize)*unitsPerCell]
+  };{}]
+  [h:range=json.set("","upto",distance, "distancePerCell",0, "metric","NO_DIAGONALS")]
+  [h:cond=json.set(cond,"range",range)]
 };{}]
   
-[SWITCH(ammoType), CODE:
-  case "Self": {
-    [h:thisGNum=thisGNum-1]
-    [if(thisGNum<1), code:{
-      [h:g=json.remove(g,weaponName)]
-      [h:setProperty("RoundInfo","thrown1 "+thisGNum)]
-    };{
-      [h:thisG=json.set(thisG,"Num",thisGNum)]
-      [r:g=json.set(g,weaponName,thisG)]
-      [h:setProperty("RoundInfo","thrown 2 "+thisGNum)]
-    }]
-   
+
+[h,switch(pcOrNpc),code:
+  case "pc": {
+    [cond=json.set(cond,"pc",1)]
   };
-  case "None": {
-     [h:setProperty("RoundInfo","none")]
+  case "npc": {
+    [cond=json.set(cond,"npc",1)]
   };
   default: {
-      [h:thisG=json.set(thisG,"ShotsUsed",shotsUsed+RoF)]
-      [r:g=json.set(g,weaponName,thisG)] 
-      [h:setProperty("RoundInfo","other")]
-  }
-]
-[r:g]
-
-!!
-@@ @UseWeapon
-@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=CharacterSheet ; tooltip= ; minWidth= ; 
-[h:tokenId=""]
-[h:wd=""]
-[h:name="Axe"]
-[h:type="Weapons"]
-
-[h:wList=("")]
-[h:gs=getProperty("Gear")]
-[h:gs=if(json.type(gs)=="UNKNOWN","{}",gs)]
-[h:gList=json.fields(gs)]
-
-[h,foreach(gName,gList,""), code:{
-  [h:g=json.get(gs,gName)]
-  [h:gType=json.get(g,"Type")]
-  [h:wList=if(gType=="Weapons",listAppend(wList,gName),wList)]
 }]
 
-[h:assert(listCount(wList),getName() + " has no weapons")]
+[h:ids=getTokens("json",cond)]
 
-[h:lastWeaponUsed=FindLastEvent(getName(),"Weapon")]
-[h,if(lastWeaponUsed!=""), code:{
-  [h:idx=listFind(wList, lastWeaponUsed)]
-  [h,if(idx!=-1): wList=listDelete(wList,idx)]
-  [h,if(idx!=-1): wList=listAppend(lastWeaponUsed,wList)]
-};{}]
-
-[h:status=input("weapon|"+wList+"|"+getName()+"'s Weapons|LIST")]
-[h:abort(status)]
-
-[h:wList=json.fromList(wList)]
-[h:name=json.get(wList,weapon)]
-
-[dialog("UseWeapn_"+getName()): {
-  <html>
-    <head>
-      <title>[r:getName()] Attacks!</title>
-      <meta name="input" content="true">
-      <link rel="stylesheet" type="text/css" href="CharSheet_css@Lib:GM">     
-    </head>
-    <body>
-      [macro("GearUse@Lib:Gear"): "name="+name+"; type="+type+";returnMacro=argCheck@Lib:GM"]
-    </body>
-  </html>
+[h,switch(Wildcards),code:
+  case "wildcard": {
+    [h:selected=""]
+    [h,foreach(id,ids,""), code:{
+      [h:id] 
+      [r:add=getProperty("WildDie",id)]
+      [h:add=if(add=="",0,add)]
+      [h:add=if(add!=0,1,0)]
+      [h,if(add):selected=json.append(selected,id)]
+    }]  
+  };
+  case "nonwildcard": {
+    [h:selected=""]
+    [h,foreach(id,ids,""), code:{
+      [h:id] 
+      [r:add=getProperty("WildDie",id)]
+      [h:add=if(add=="",0,add)]
+      [h:add=if(add==0,1,0)]
+      [h,if(add):selected=json.append(selected,id)]
+    }]  
+  };
+  default: {
+    [selected=ids]
 }]
 
-!!
-@@ @Debug
-@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=true ; applyToSelected=false ; group=Utility ; tooltip= ; minWidth= ; 
-[h:label=arg(0)]
-[h:value=arg(1)]
-[H: hasInput = input("junk|"+value+"|"+label)]
-[h:abort(hasInput)]
+[h:ids=selected]
 
-!!
-@@ @Sort Gear Entries
-@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Utility ; tooltip= ; minWidth= ; 
-[h:gts=getLibProperty("GearTypes")]
-[h:gs=getLibProperty("Gear")]
-[foreach(gt,gts,"<br>"), code:{
-  [h:g=json.get(gs,gt)]
-  [h:keys=json.fromList(json.fields(g))]
-  [keys=json.sort(keys)]
-  [h:newG="{}"]
-  [foreach(key,keys,""), code:{
-    [h:newG=json.set(newG,key,json.get(g,key))]
+[h,if(json.type(tokentypes)=="ARRAY"), code:{
+  [h:selected=""]
+  [foreach(id,ids,""), code:{
+    [type=getPropertyType(id)]
+    [if(json.contains(tokentypes,type)): selected = json.append(selected,id)]
   }]
-  [h:gs=json.set(gs,gt,newG)]
-}]
-[setLibProperty("Gear",gs)]
-
-!!
-@@ @GearField
-@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=true ; applyToSelected=false ; group=Edit ; tooltip= ; minWidth= ; 
-[h:tokenId=""]
-[h:key=""]
-[h:gearArg=""]
-[h:value=""]
-[h:gType=""]
-[h:index=""]
-
-[h:varsFromStrProp(macro.args)]
-
-[h:gAttrs=getLibProperty("GearAttrTypes")]
-[h:attrs=json.get(gAttrs,key)]
-[h:size=json.get(attrs,"Size")]
-[h:type=json.get(attrs,"Type")]
-
-[if(type=="Text"), code:{
-  <input type="text" size="[r:size]" name="[r:gearArg]_[r:key][r:index]" value="[r:value]"></input>
-};{}]
-
-[if(type=="Dropdown"), code:{
-  [h:attrValues=json.get(attrs,"Values")]
-  <select name="[r:gearArg]_[r:key][r:index]">
-  [foreach(listValue,attrValues,""),code:{
-    [h:selected=if(listValue==value,"selected","")]  
-    <option [r:selected] value="[r:listValue]">[r:decode(listValue)]</option>
-  }]
-  </select>
-};{}]
-
-[if(type=="Checkbox"), code:{
-  [h:value=if(value=="",0,1)]
-  [h:checked=if(value==1,"CHECKED","")]
-  <input type=CHECKBOX NAME="[r:gearArg]_[r:key][r:index]" [r:checked] value="X">
-};{}]
-
-!!
-@@ @GearFieldTabbed
-@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=true ; applyToSelected=false ; group=Edit ; tooltip= ; minWidth= ; 
-[h:tokenId=""]
-[h:key=""]
-[h:gearArg=""]
-[h:value=""]
-[h:gType=""]
-[h:index=""]
-
-[h:varsFromStrProp(macro.args)]
-
-[h:gAttrs=getLibProperty("GearAttrTypes")]
-[h:attrs=json.get(gAttrs,key)]
-[h:size=json.get(attrs,"Size")]
-[h:type=json.get(attrs,"Type")]
-
-[if(type=="Text"), code:{
-  <input type="text" size="[r:size]" name="[r:gearArg]_[r:key][r:index]" value="[r:value]"></input>
-};{}]
-
-[if(type=="Dropdown"), code:{
-  [h:attrValues=json.get(attrs,"Values")]
-  <select name="[r:gearArg]_[r:key][r:index]">
-  [foreach(listValue,attrValues,""),code:{
-    [h:selected=if(listValue==value,"selected","")]  
-    <option [r:selected] value="[r:listValue]">[r:decode(listValue)]</option>
-  }]
-  </select>
-};{}]
-
-[if(type=="Checkbox"), code:{
-  [h:value=if(value=="",0,1)]
-  [h:checked=if(value==1,"CHECKED","")]
-  <input type=CHECKBOX NAME="[r:gearArg]_[r:key][r:index]" [r:checked] value="X">
-};{}]
-
-!!
-@@ @GearLine
-@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=true ; applyToSelected=false ; group=Edit ; tooltip= ; minWidth= ; 
-[h:tokenId=""]
-[h:empty=""]
-[h:new="No"]
-[h:values=""]
-[h:gVars="{}"]
-
-[h:varsFromStrProp(macro.args)]
-[h:gearName=gearArg]
-[h:gearType=gType]
-
-[h:junk="<!-- get lib properties that will be used in this macro --><!-- GearTypes Gear GearAttrs GearAttrTypes GearVarAttrs GearVar -->"]
-
-[h:gears=getLibProperty("Gear")]
-[h:gearAttributes=getLibProperty("GearAttrs")]
-[h:gearAttributes=json.get(gearAttributes,gearType)]
-[h:gearVariationAttributes=getLibProperty("GearVarAttrs")]
-[h:gearVariationAttributes=json.get(gearVariationAttributes,gearType)]
-[h:gearVariations=getLibProperty("GearVar")]
-[h:gVars=if(json.contains(gearVariations,gearType),json.get(gearVariations,gearType),"{}")]
-
-[h:junk="<!-- get the columns to be used in the form -->"]
-[h:gearColumns=gearAttributes]
-[h:gVarColumns=gearVariationAttributes]
-
-[h:junk="<!-- get the gear in question -->"]
-[h:g=json.get(gears,gearType)]
-[h:g=json.get(g,gearName)]
-[h:gVars=if(json.isEmpty(gVars),"{}",json.get(gVars,gearName))]
-[h:keys=gearAttributes]
-
-[h:UpdateGearArgs="returnMacro=EditGear@this;gearArg="+gearArg+";gearType="+gearType]
-[h:UpdateGearArgs=json.set("","returnMacro","EditGear@this","gearArg",gearArg,"gearType",gearType)]
-
-[h:AddGearArgs="returnMacro=EditGear@this;gearArg="+empty+";edit=Yes;new=Yes"]
-[h:AddGearArgs=json.set("","returnMacro","EditGear@this","gearArg",empty,"edit","Yes","new","Yes","gearType",gearType)]
-
-[h:gearArgLinkText=if(gearArg=="","New Gear",decode(gearArg))]
-
-[h:branch="edit"]
-[h:branch=if(edit=="No"&&new=="No","display",branch)]
-[h:branch=if(edit=="No"&&new=="Yes","new",branch)]
-[h:branch=if(edit=="Yes"&&new=="Yes","editNew",branch)]
-
-[if(branch=="new"), code:{
-    [h: linkit=macroLinkText("UpdateGear@this", "gm",AddGearArgs)]
-    <td>
-      <a href="[r:linkit]"><b>[r:gearArgLinkText]</b></a> 
-    </td>
-    [foreach(key,keys,""),code:{
-        <td></td>
-    }]
-  };{}]
-
-[if(branch=="display"), code:{
-    <td>
-      [h: linkit=macroLinkText("argCheck@this", "gm",UpdateGearArgs)]
-      [h: linkit=macroLinkText("UpdateGear@this", "gm",UpdateGearArgs)]
-      [h: linkit=macroLinkText("UpdateGearTabbed@this", "gm",UpdateGearArgs)]
-      <a href="[r:linkit]"><b>[r:gearArgLinkText]</b></a> 
-    </td>
-    <td><center>
-    [foreach(key,keys,"</center></td><td><center>"),code:{
-        [r:json.get(g,key)]
-    }]
-    </center></td>
-  };{}]
-
-[if(branch=="edit"), code:{
-    [foreach(key,keys,""),code:{
-      <td><center>
-               [h:values=json.get(g,key)]
-               [macro("GearField@this"): "key="+key+" ;gearArg= "+gearArg+";value="+values+ ";gType="+gearType]
-      </center></td>
-    }]
-};{}]
-
-[if(branch=="editNew"), code:{
-    [foreach(key,keys,""),code:{
-      <td><center>
-               [macro("GearField@this"): "key="+key+" ;gearArg= NewGear;value="+empty+";new=Yes"+ ";gType="+gearType]
-      </center></td>
-    }]
-};{}]
-
-!!
-@@ @GearLineTabbed
-@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=true ; applyToSelected=false ; group=Edit ; tooltip= ; minWidth= ; 
-[h:tokenId=""]
-[h:empty=""]
-[h:new="No"]
-[h:values=""]
-[h:gVars="{}"]
-
-[h:varsFromStrProp(macro.args)]
-[h:gearName=gearArg]
-[h:gearType=gType]
-
-[h:junk = "<!-- get lib properties that will be used in this macro --><!-- GearTypes Gear GearAttrs GearAttrTypes GearVarAttrs GearVar -->"]
-
-[h:gears=getLibProperty("Gear")]
-[h:gearAttributes=getLibProperty("GearAttrs")]
-[h:gearAttributes=json.get(gearAttributes,gearType)]
-[h:gearVariationAttributes=getLibProperty("GearVarAttrs")]
-[h:gearVariationAttributes=json.get(gearVariationAttributes,gearType)]
-[h:gearVariations=getLibProperty("GearVar")]
-[h:gVars=if(json.contains(gearVariations,gearType),json.get(gearVariations,gearType),"{}")]
-
-[h:junk = "<!-- get the columns to be used in the form -->"]
-[h:gearColumns=gearAttributes]
-[h:gVarColumns=gearVariationAttributes]
-
-[h:junk = "<!-- get the gear in question -->"]
-[h:g=json.get(gears,gearType)]
-[h:g=json.get(g,gearName)]
-[h:gVars=if(json.isEmpty(gVars),"{}",json.get(gVars,gearName))]
-[h:keys=gearAttributes]
-
-[h:UpdateGearArgs="returnMacro=EditGear@this;gearArg="+gearArg+";gearType="+gearType]
-[h:UpdateGearArgs=json.set("","returnMacro","EditGear@this","gearArg",gearArg,"gearType",gearType)]
-
-[h:AddGearArgs="returnMacro=EditGear@this;gearArg="+empty+";edit=Yes;new=Yes"]
-[h:AddGearArgs=json.set("","returnMacro","EditGear@this","gearArg",empty,"edit","Yes","new","Yes","gearType",gearType)]
-
-[h:gearArgLinkText=if(gearArg=="","New Gear",decode(gearArg))]
-
-[h:branch="edit"]
-[h:branch=if(edit=="No"&&new=="No","display",branch)]
-[h:branch=if(edit=="No"&&new=="Yes","new",branch)]
-[h:branch=if(edit=="Yes"&&new=="Yes","editNew",branch)]
-
-[if(branch=="new"), code:{
-    [h: linkit=macroLinkText("UpdateGearTabbed@this", "gm",AddGearArgs)]
-    <td>
-      <a href="[r:linkit]"><b>[r:gearArgLinkText]</b></a> 
-    </td>
-    [foreach(key,keys,""),code:{
-        <td></td>
-    }]
-  };{}]
-
-[if(branch=="display"), code:{
-    <td>
-      [h: linkit=macroLinkText("argCheck@this", "gm",UpdateGearArgs)]
-      [h: linkit=macroLinkText("UpdateGearTabbed@this", "gm",UpdateGearArgs)]
-      <a href="[r:linkit]"><b>[r:gearArgLinkText]</b></a> 
-    </td>
-    <td><center>
-    [foreach(key,keys,"</center></td><td><center>"),code:{
-        [r:json.get(g,key)]
-    }]
-    </center></td>
-  };{}]
-
-[if(branch=="edit"), code:{
-    [foreach(key,keys,""),code:{
-      <td><center>
-               [h:values=json.get(g,key)]
-               [macro("GearField@this"): "key="+key+" ;gearArg= "+gearArg+";value="+values+ ";gType="+gearType]
-      </center></td>
-    }]
-};{}]
-
-[if(branch=="editNew"), code:{
-    [foreach(key,keys,""),code:{
-      <td><center>
-               [macro("GearField@this"): "key="+key+" ;gearArg= NewGear;value="+empty+";new=Yes"+ ";gType="+gearType]
-      </center></td>
-    }]
-};{}]
-
-!!
-@@ @GearTable
-@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=true ; applyToSelected=false ; group=Edit ; tooltip= ; minWidth= ; 
-[h:type=""]
-
-[h:varsFromStrProp(macro.args)]
-
-<table id="[r:type]" bgcolor=#aaaaaa width="100%">
-  <tr width="100%">
-    [h:GearColumns=json.get(getLibProperty("GearAttrs"),type)]
-    [h:gearList=json.fields(json.get(getLibProperty("Gear"),type))]
-    <th>Name</th><th>
-    [r,foreach(header,GearColumns,"</th><th>"): header]
-    </th><th></th>
-  </tr>
-  [foreach(g,gearList,""), code:{
-  <tr class="[r:class]">
-    [macro("GearLine@this"): "gearArg="+g+";gType="+type+";edit=No"]
-    [h: class = if(class=="oddRow", "evenRow", "oddRow")]
-  </tr>
-  }]
-  [h:g=""]
-  <tr class="[r:class]">
-    [macro("GearLine@this"): "gearArg="+g+";gType="+type+";edit=No;new=Yes"]
-    [h: class = if(class=="oddRow", "evenRow", "oddRow")]
-  </tr>
-
-</table>
-
-!!
-@@ @GearTableTabbed
-@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=true ; applyToSelected=false ; group=Edit ; tooltip= ; minWidth= ; 
-[h:type=""]
-
-[h:varsFromStrProp(macro.args)]
-
-<table id="[r:type]" bgcolor=#aaaaaa width="100%">
-  <tr width="100%">
-    [h:GearColumns=json.get(getLibProperty("GearAttrs"),type)]
-    [h:gearList=json.fields(json.get(getLibProperty("Gear"),type))]
-    <th>Name</th><th>
-    [r,foreach(header,GearColumns,"</th><th>"): header]
-    </th><th></th>
-  </tr>
-  [foreach(g,gearList,""), code:{
-  <tr class="[r:class]">
-    [macro("GearLineTabbed@this"): "gearArg="+g+";gType="+type+";edit=No"]
-    [h: class = if(class=="oddRow", "evenRow", "oddRow")]
-  </tr>
-  }]
-  [h:g=""]
-  <tr class="[r:class]">
-    [macro("GearLineTabbed@this"): "gearArg="+g+";gType="+type+";edit=No;new=Yes"]
-    [h: class = if(class=="oddRow", "evenRow", "oddRow")]
-  </tr>
-
-</table>
-
-!!
-@@ @GetInputName
-@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Edit ; tooltip= ; minWidth= ; 
-[h:gearName=decode(arg(0))]
-[h:tag=arg(1)]
-[h:status=input("newGearName|"+gearName+"_copy|"+tag)]
-[h:assert(status,"aborting get new name")]
-[r:encode(newGearName)]
-
-!!
-@@ @UpdateGear
-@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=true ; applyToSelected=false ; group=Edit ; tooltip= ; minWidth= ; 
-[h:tokenId=""]
-[h:gearArg=""]
-[h:count=0]
-[h:newGear=0]
-[values=""]
-[new="No"]
-
-[h:refreshMacro="UpdateGear@this"]
-[h:returnMacro="EditGear@this"]
-[h:tokenId = getMacroLocation()]
-
-[h:gearArg=json.get(macro.args,"gearArg")]
-[h:gearType=json.get(macro.args,"gearType")]
-[h:returnMacro=json.get(macro.args,"returnMacro")]
-
-[h:gAttrs=getLibProperty("GearAttrs")]
-[h:gAttrs=json.get(gAttrs,gearType)]
-[h:gvAttrs=getLibProperty("GearVarAttrs")]
-[h:gvAttrs=json.get(gvAttrs,gearType)]
-[h:gVar=getLibProperty("GearVar")]
-[h:gVar=json.get(gVar,gearType)]
-
-[h:status=input("junkVar|"+gearArg+"|Selected Gear|LABEL",
-"junkVar2|"+gearType+"|Selected Gear Type|LABEL"
-,"junkVar3|"+returnMacro+"|Return Macro|LABEL")]
-[abort(status)]
-<br>
-[keys=json.fields(gAttrs)]
-<br>
-[gVarKeys=json.fields(gvAttrs)]
-[h:gearColumns=keys]
-[h:gVarColumns=gVarKeys]
-
-[h:newGear=if(gearArg=="",1,newGear) ]
-
-<!-- take this out later -->
-[h:okMacro="argCheck@Lib:GM"]
-[h:okMacro="UpdatePowerOK@this"]
-
-<!-- check to see if this power currently has any power point variations associated with it, if not make a new dialog box -->
-[h:there=json.contains(gVar,gearArg)]
-[if(there==0), code:{
-  [h:newGear=if(there==0,1,newGear)]
-  [h:varCount=0]
+  [h:ids=selected]
 };{
-  [h:gearVars=json.get(gVar,gearArg)]
-  [h:varCount=json.length(gearVars)]
+  [h:selected=ids]
 }]
 
-[h:status=input("junkVar|varcount="+varCount+"| Var Count|LABEL")]
-[assert(status,gearColumns+"<br>"+gVarColumns)]
-
-[h: class = "oddRow"]
-
-[h:newGear=if(new=="Yes",1,newGear)]
-[dialog("GearUpdate"): {
-  <html>
-    <head>
-      <title>Update Gear</title>
-      <meta name="input" content="true">
-      <link rel="stylesheet" type="text/css" href="CharSheet_css@Lib:GM">     
-    </head>
-    <body>
-      <form name="Gear Properties" action="[r:macroLinkText(okMacro,"gm","",tokenId)]">
-        <table width="100%">
-          <tr>
-            <th>Gear Name</th></tr><tr class="[r:class]"><td><center>
-              [if(newGear), code:{
-                [macro("GearField@this"): "key=gearName ;gearArg=NewGear;value="+values]
-              };{
-               [r:gearArg]
-              }]
-           </td></center></tr>
-        </table>
-
-        <table id="Gear" bgcolor=#aaaaaa width="100%">
-          <tr><th>
-            [r,foreach(header,gearColumns,"</th><th>"): header]
-          </th></tr>
-          <tr class="[r:class]">
-            [macro("GearLine@this"): "gType="+gearType+";gearArg="+gearArg+";edit=Yes;new="+new]
-          </tr>
-            [h: class = if(class=="oddRow", "evenRow", "oddRow")]
-        </table>
-
-      </form>
-    </body>
-  </html>
-}]
+[h:tokens=selectTokens(ids, addTo, "json")]
 
 !!
-@@ @UpdateGearOK
-@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=true ; applyToSelected=false ; group=Edit ; tooltip= ; minWidth= ; 
-[h:Submit="Submit"]
-[h:gearName=""]
-[h:gearType=""]
-[h:numPPVs=0]
-[h:newGear=0]
-[h:returnMacro="argCheck@Lib:GM"]
-[h:refreshMacro="argCheck@Lib:GM"]
-[macro.args]<br>****<br>
-
-[h:action=json.get(macro.args,"Submit")]
-<!--
-"Submit"
-"Refresh"
-"Add Variation"
-"Delete All Variations"
--->
-[actionMacro=if(action=="Submit"||action=="Delete Gear", json.get(macro.args,"returnMacro"), json.get(macro.args,"refreshMacro"))]
-
-[h:gearType=json.get(macro.args,"gearType")]
-[h:gearName=json.get(macro.args,"gearName")]
-[h:returnMacro=json.get(macro.args,"returnMacro")]
-[h:new=if(json.contains(macro.args,"newGear"),json.get(macro.args,"newGear"),newGear)]
-
-[actionArgs=if(action=="Submit","",json.set("","returnMacro",returnMacro,"gearArg",gearName,"gearType",gearType))]
-
-[h:attrs=getLibProperty("GearAttrs")]
-[h:attrs=json.get(attrs,gearType)]
-
-[h:varAttrs=getLibProperty("GearVarAttrs")]
-[h:varAttrs=json.get(varAttrs,gearType)]
-[h:varAttrs=if(json.type(varAttrs)=="UNKNOWN","[]",varAttrs)]
-[h:g=getLibProperty("Gear")]
-[h:gv=getLibProperty("GearVar")]
-
-[if(new==1), code: {
-  [h:ng="NewGear_"]
-  [h:gearName=encode(json.get(macro.args,"NewGear_Name"))]
-  [h:newEntry="{}"]
-  [h,foreach(attr,attrs,"<br>"): newEntry=json.set(newEntry,attr,json.get(macro.args,ng+attr))]
-  [h:newGear=json.set("",gearName,newEntry)]
-  [h:oldType=json.get(g,gearType)]
-  [h:newType=oldType]
-  [h:newType=json.set(newType,gearName,newEntry)]
-  [h:g=json.set(g,gearType,newType)]
-  [h:setLibProperty("Gear",g)]
-
-  [if(gearType=="Armor"||gearType=="Weapons"), code:{
-    [h:newVarEntry="{}"]
-    [h,foreach(attr,varAttrs,"<br>"): newVarEntry = json.set(newVarEntry, attr, json.get(macro.args,ng+attr))]
-
-    [h:newVarArray=json.append("",newVarEntry)]
-<!--  take out? -->
-    [h:newGearVar=json.set("",gearName,newVarArray)]
-<!-- take out?-->
-    [h:oldVarType=json.get(gv,gearType)]
-    [h:newVarType=oldVarType]
-    [h:newVarType=json.set(newVarType,gearName,newVarArray)]
-    [h:gv=json.set(gv,gearType,newVarType)]
-    [h: setLibProperty("GearVar",gv)]
-  };{}]
-};{}]
-
-[if(action=="Delete Gear"), code: {
-  [h:oldGearType=json.get(g,gearType)]
-  [h:newGearType=json.remove(oldGearType,gearName)]
-  [h:newG=json.set(g,gearType,newGearType)]
-  [if(gearType=="Armor"||gearType=="Weapons"), code:{
-    [h:oldGearVarType=json.get(gv,gearType)]
-    [h:newGearVarType=json.remove(oldGearVarType,gearName)]
-    [h:gvNew=json.set(gv,gearType,newGearVarType)]
-    [h:setLibProperty("GearVar",gvNew)]
-  };{}]
-  [h:setLibProperty("Gear",newG)]
-  [h:new=1]
-};{}]
-
-[if(action=="Duplicate Gear"), code: {
-  [h:newGearName=NameBox(gearName,"Name for Copy of "+gearName)]
-  [h:oldGearType=json.get(g,gearType)]
-
-  <!-- check to see if gear name already exists -->
-  [h:there=json.contains(oldGearType,newGearName)]
-  [h:abortit=if(there==1,0,1)]
-  [h:assert(abortit,"aborting gear duplication.  gear already exists")]
-
-  [h:oldGearEntry=json.get(oldGearType,gearName)]
-  [h:newGearType=json.set(oldGearType,newGearName,oldGearEntry)]
-  [h:newG=json.set(g,gearType,newGearType)]
-
-  [if(gearType=="Armor"||gearType=="Weapons"), code:{
-    [h:oldGearVarType=json.get(gv,gearType)]
-    [oldGvEntry=json.get(oldGearVarType,gearName)]
-    [h:newGearVarType=json.set(oldGearVarType,newGearName,oldGvEntry)]
-    [h:gvNew=json.set(gv,gearType,newGearVarType)]
-    [h:setLibProperty("GearVar",gvNew)]
-  };{}]
-  [h:setLibProperty("Gear",newG)]
-  [actionArgs=json.set(actionArgs,"gearArg",newGearName)]
-  [h:new=1]
-};{}]
-
-[if(action=="Rename Gear"), code: {
-  [h:newGearName=NameBox(gearName,"New Name for "+gearName)]
-  [h:oldGearType=json.get(g,gearType)]
-
-  <!-- check to see if gear name already exists -->
-  [h:there=json.contains(oldGearType,newGearName)]
-  [h:abortit=if(there==1,0,1)]
-  [h:assert(abortit,"aborting gear duplication.  gear already exists")]
-
-  [h:oldGearEntry=json.get(oldGearType,gearName)]
-  [h:newGearType=json.set(oldGearType,newGearName,oldGearEntry)]
-  [h:newGearType=json.remove(newGearType,gearName)]
-
-  [h:newG=json.set(g,gearType,newGearType)]
-
-  [if(gearType=="Armor"||gearType=="Weapons"), code:{
-    [h:oldGearVarType=json.get(gv,gearType)]
-    [oldGvEntry=json.get(oldGearVarType,gearName)]
-    [h:newGearVarType=json.set(oldGearVarType,newGearName,oldGvEntry)]
-    [h:gvNew=json.set(gv,gearType,newGearVarType)]
-    [h:setLibProperty("GearVar",gvNew)]
-  };{}]
-  [h:setLibProperty("Gear",newG)]
-  [actionArgs=json.set(actionArgs,"gearArg",newGearName)]
-  [h:new=1]
-};{}]
-
-[if(action=="Add Variation"), code: {
-  [h:gvNew=gv]
-  [h:oldGvType=json.get(gv,gearType)]
-  [h:oldGvType=if(json.type(oldGvType)=="UNKNOWN","{}",oldGvType)]
-  [h:newGvType=oldGvType]
-
-  [h:oldGvName=json.get(oldGvType,gearName)]
-  [h:oldGvName=if(json.type(oldGvName)=="UNKNOWN","[]",oldGvName)]
-  [h:newGvName=oldGvName]
-  [h:varcount=json.length(newGvName)]
-  <!-- duplicate last entry unless its empty -->
-  [h:newVarEntry=if(varcount!=0,json.get(newGvName,varcount-1),"{}")]
-  [h:newGvName=json.append(newGvName,newVarEntry)]
-  [h:newGvType=json.set(newGvType,gearName,newGvName)]
-  [h:gvNew=json.set(gvNew,gearType,newGvType)]
-  [h:setLibProperty("GearVar",gvNew)]
-  [h:new=1]
-};{}]
-
-[if(action=="Delete Variation"), code: {
-  [h:gvNew=gv]
-  [h:oldGvType=json.get(gv,gearType)]
-  [h:oldGvType=if(json.type(oldGvType)=="UNKNOWN","{}",oldGvType)]
-  [h:newGvType=oldGvType]
-  [h:oldGvName=json.get(oldGvType,gearName)]
-  [h:oldGvName=if(json.type(oldGvName)=="UNKNOWN","[]",oldGvName)]
-<br><br> before deleting
-  [newGvName=oldGvName]
-  [h:varcount=json.length(newGvName)]
-<br><br> deleting
-  [newGvName=if(varcount>1,json.remove(newGvName,varcount-1),newGvName)]
-<br><br>
-  [h:newGvType=json.set(newGvType,gearName,newGvName)]
-  [h:gvNew=json.set(gvNew,gearType,newGvType)]
-  [h:setLibProperty("GearVar",gvNew)]
-  [h:new=1]
-};{}]
-
-<!-- Now save changes -->
-
-[h:oldGearType=json.get(g,gearType)]
-[h:oldGearEntry=json.get(oldGearType,gearName)]
-[h:newGearEntry=oldGearEntry]
-[foreach(attr,attrs,""), code:{
-   [h:evalString=gearName+"_"+attr]
-   [h:newGearEntry=json.set(newGearEntry,attr,json.get(macro.args,evalString))]
-}]
-[h:newGearType=json.set(oldGearType,gearName,newGearEntry)]
-[h:newG=json.set(g,gearType,newGearType)]
-
-<!-- now do gear variations -->
-[h:gvNew=gv]
-[h:oldGvType=json.get(gv,gearType)]
-[h:oldGvType=if(json.type(oldGvType)=="UNKNOWN","{}",oldGvType)]
-[h:newGvType=oldGvType]
-
-[h:oldGvName=json.get(oldGvType,gearName)]
-[h:oldGvName=if(json.type(oldGvName)=="UNKNOWN","[]",oldGvName)]
-[h:newGvName=oldGvName]
-[h:varcount=json.length(newGvName)]
-[c(varcount,""), code:{
-  [h:index=roll.count]
-  [h:newEntry=json.get(oldGvName,index)]
-  [foreach(attr,varAttrs,""), code:{
-       [h:evalString=gearName+"_"+attr+index]
-       [h:newEntry=json.set(newEntry,attr,json.get(macro.args,evalString))]
-       [h:newGvName=json.set(newGvName,index,newEntry)]
+@@ @onTokenMove
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=true ; applyToSelected=false ; group=X ; tooltip= ; minWidth= ; 
+[h:id=currentToken()]
+[h:name=getName(id)]
+[h:lastPath = getLastPath(1)]
+[h:usedMov = getMoveCount()]
+[h:leader=isLeader(id)]
+[h,if(isLeader(id)), code:{
+  [h:path=getLastPath(1)]
+  [h:length=json.length(path)]
+  [h:start=json.get(path,0)]
+  [h:end=json.get(path,length-1)]
+  [h:deltax=json.get(start,"x")-json.get(end,"x")]
+  [h:deltay=json.get(start,"y")-json.get(end,"y")]
+  [h:members=GetGroupMembers(id)]
+  [h,foreach(m,members,""), code:{
+    [h: CurrentX = getTokenX(1,m)]
+    [h: CurrentY = getTokenY(1,m)]
+    [h: NewX = CurrentX - deltax]
+    [h: NewY = CurrentY - deltay]
+    [h: moveToken(NewX, NewY,1,m)]
   }]
-}]
-[h:newGvType=json.set(newGvType,gearName,newGvName)]
-[h:gvNew=json.set(gv,gearType,newGvType)]
-
-[if(new!=1), code: {
-  [h:setLibProperty("Gear",newG)]
-  [h,if(varcount>0): setLibProperty("GearVar",gvNew)]
-}]
-
-<!-- if gear type == ammo then update ammo list -->
-[if(gearType=="Ammo"), code:{
-<br>
-  [gAttrTypes=getLibProperty("GearAttrTypes")]
-<br>
-  [ammoList=listAppend("None,Self",json.fields(json.get(getLibProperty("Gear"),"Ammo")))]
-<br>
-  [types=json.get(gAttrTypes,"AmmoType")]
-<br>
-  [foreach(x,ammoList,"<br>"): "x"+x+"x"]
-<br>
-  [newtypes=json.set(types,"Values",ammoList)]
-<br>
-  [newGattrTypes=json.set(gAttrTypes,"AmmoType",newtypes)]
-<br>
-  [h:setLibProperty("GearAttrTypes",newGattrTypes)]
 };{}]
-
-[macro(actionMacro):actionArgs]
-
-!!
-@@ @UpdateGearTabbed
-@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Edit ; tooltip= ; minWidth= ; 
-[h:tokenId=""]
-[h:gearArg=""]
-[h:count=0]
-[h:newGear=0]
-[h:values=""]
-[h:new="No"]
-
-[h:refreshMacro="UpdateGearTabbed@this"]
-[h:returnMacro="EditGearTabbed@this"]
-
-[h:varsFromStrProp(macro.args)]
-
-[h:gearName=json.get(macro.args,"gearArg")]
-[h:gearType=json.get(macro.args,"gearType")]
-[h:returnMacro=json.get(macro.args,"returnMacro")]
-[h:new=json.get(macro.args,"new")]
-[h:edit=json.get(macro.args,"edit")]
-
-[h:abortIt=if(gearType=="",0,1)]
-[h:assert(abortit,"Invalid gear type")]
-
-<!-- get lib properties that will be used in this macro -->
-<!-- GearTypes Gear GearAttrs GearAttrTypes GearVarAttrs GearVar -->
-
-[h:gears=getLibProperty("Gear")]
-[h:gearAttributes=getLibProperty("GearAttrs")]
-[h:gearAttributes=json.get(gearAttributes,gearType)]
-
-[h:gearVariationAttributes=getLibProperty("GearVarAttrs")]
-
-[h:gearVariationAttributes=json.get(gearVariationAttributes,gearType)]
-[h:gearVariationAttributes=if(json.type(gearVariationAttributes)=="UNKNOWN","{}",gearVariationAttributes)]
-[h:gearVariations=getLibProperty("GearVar")]
-[h:gearVariations=json.get(gearVariations,gearType)]
-[h:gearVariations=if(json.type(gearVariations)=="UNKNOWN","{}",gearVariations)]
-
-<!-- get the columns to be used in the form -->
-[h:gearColumns=gearAttributes]
-[h:gVarColumns=gearVariationAttributes]
-
-[h:newGear=if(gearName=="",1,newGear) ]
-
-<!-- take this out later -->
-[h:okMacro="argCheck@Lib:GM"]
-[h:okMacro="UpdateGearTabbedOK@this"]
-
-<!-- get the gear in question -->
-[h:g=json.get(gears,gearType)]
-[h:g=json.get(g,gearName)]
-[h:gVars=json.get(gearVariations,gearName)]
-[h:gVars=if(json.type(gVars)=="UNKNOWN","[]",gVars)]
-
-<!-- check to see if this gear currently has any power point variations associated with it, if not make a new dialog box 
-h:there=json.contains(gearVariations,gearName)
-h:newGear=if(there==0,1,newGear)
--->
-[h:varCount=json.length(gVars)]
-[h: class = "oddRow"]
-
-[h:newGear=if(new=="Yes",1,newGear)]
-
-[dialog("GearUpdate"): {
-  <html>
-    <head>
-      <title>Update Gear Tabbed</title>
-      <meta name="input" content="true">
-      <link rel="stylesheet" type="text/css" href="CharSheet_css@Lib:GM">     
-    </head>
-    <body>
-      <form name="Gear Properties" method="json" action="[r:macroLinkText(okMacro,"gm","",tokenId)]">
-        <table width="100%">
-          <tr>
-            <th>Gear Name</th></tr>
-          <tr class="[r:class]"><td><center>
-            [if(newGear), code:{
-              [h:gearName=NewGear]
-              [macro("GearField@this"): "key=Name ;gearArg=NewGear;value="+values]
-             };{
-               [r:decode(gearName)]
-             }]
-             </td></center></tr>
-        </table>
-        <table id="Gear" bgcolor=#aaaaaa width="100%">
-          <tr><th> [r,foreach(header,gearColumns,"</th><th>"): header] </th><th></th></tr>
-          <tr class="[r:class]"> [macro("GearLine@this"): "gearArg="+gearName+";edit=Yes;new="+new+";gType="+gearType] </tr>
-
-          <tr class="[r:class]"> </tr>
-          [h: class = if(class=="oddRow", "evenRow", "oddRow")]
-        </table>
-
-        <table width="100%">
-           <tr><th> 
-           [r,foreach(header,gVarColumns,"</th><th>"): header] </th></tr>
-           [h:index=0]
-           [foreach(gVarLine,gVars,""), code:{
-            <tr class="[r:class]">
-              [macro("VarLine@this"):  "gearArg="+gearName+";edit=Yes;new="+new+";gType="+gearType + ";index="+index]
-              [h: class = if(class=="oddRow", "evenRow", "oddRow")]
-              [h:index=index+1]
-            </tr>
-          }]
-
-          [if(newGear==1&&(gearType=="Armor"||gearType=="Weapons")), code:{
-            <tr class="[r:class]">
-            [macro("VarLine@this"): "gearArg="+gearName+";edit=Yes;new="+new+";gType="+gearType + ";index="+index]
-            [h: class = if(class=="oddRow", "evenRow", "oddRow")]
-            [h: index=index+1]
-            </tr>
-         };{}]
-       </table>
-       <table width="100%">
-         <tr>
-            <th colspan=1><input type="submit" name="Submit" value="Submit"> </input></th>
-            <th colspan=1><input type="submit" name="Submit" value="Refresh"> </input></th>
-            <th colspan=1><input type="submit" name="Submit" value="Rename Gear"> </input></th>
-            <th colspan=1><input type="submit" name="Submit" value="Delete Gear"> </input></th>
-            <th colspan=1><input type="submit" name="Submit" value="Duplicate Gear"> </input></th>
-[if(gearType=="Weapons"), code:{
-            <th colspan=1><input type="submit" name="Submit" value="Add Variation"> </input></th>
-            <th colspan=1><input type="submit" name="Submit" value="Delete Variation"> </input> </th>
-};{}]
-          </tr>
-        </table>
-        <!-- hidden input with the weapon number -->
-        <input type="hidden" name="gearName" value="[r:gearName]"> </input>
-        <input type="hidden" name="gearType" value="[r:gearType]"> </input>
-        <input type="hidden" name="numVars" value="[r:count]"> </input>
-        <input type="hidden" name="returnMacro" value="[r:returnMacro]"> </input>
-        <input type="hidden" name="refreshMacro" value="[r:refreshMacro]"> </input>
-        <input type="hidden" name="newGear" value="[r:newGear]"> </input>
-      </form>
-    </body>
-  </html>
-}]
-
-[abort(0)]
-
-!!
-@@ @UpdateGearTabbedOK
-@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=true ; applyToSelected=false ; group=Edit ; tooltip= ; minWidth= ; 
-[h:Submit="Submit"]
-[h:gearName=""]
-[h:gearType=""]
-[h:numPPVs=0]
-[h:newGear=0]
-[h:returnMacro="argCheck@Lib:GM"]
-[h:refreshMacro="argCheck@Lib:GM"]
-[macro.args]<br>****<br>
-
-[h:action=json.get(macro.args,"Submit")]
-<!--
-"Submit"
-"Refresh"
-"Add Variation"
-"Delete All Variations"
--->
-[actionMacro=if(action=="Submit"||action=="Delete Gear", json.get(macro.args,"returnMacro"), json.get(macro.args,"refreshMacro"))]
-
-[h:gearType=json.get(macro.args,"gearType")]
-[h:gearName=json.get(macro.args,"gearName")]
-[h:returnMacro=json.get(macro.args,"returnMacro")]
-[h:new=if(json.contains(macro.args,"newGear"),json.get(macro.args,"newGear"),newGear)]
-
-[actionArgs=if(action=="Submit"||action=="Delete Gear",gearType,json.set("","returnMacro",returnMacro,"gearArg",gearName,"gearType",gearType))]
-
-[h:attrs=getLibProperty("GearAttrs")]
-[h:attrs=json.get(attrs,gearType)]
-
-[h:varAttrs=getLibProperty("GearVarAttrs")]
-[h:varAttrs=json.get(varAttrs,gearType)]
-[h:varAttrs=if(json.type(varAttrs)=="UNKNOWN","[]",varAttrs)]
-[h:g=getLibProperty("Gear")]
-[h:gv=getLibProperty("GearVar")]
-
-[if(new==1), code: {
-  [h:ng="NewGear_"]
-  [h:gearName=encode(json.get(macro.args,"NewGear_Name"))]
-  [h:newEntry="{}"]
-  [h,foreach(attr,attrs,"<br>"): newEntry=json.set(newEntry,attr,json.get(macro.args,ng+attr))]
-  [h:newGear=json.set("",gearName,newEntry)]
-  [h:oldType=json.get(g,gearType)]
-  [h:newType=oldType]
-  [h:newType=json.set(newType,gearName,newEntry)]
-  [h:g=json.set(g,gearType,newType)]
-  [h:setLibProperty("Gear",g)]
-
-  [if(gearType=="Armor"||gearType=="Weapons"), code:{
-    [h:newVarEntry="{}"]
-    [h,foreach(attr,varAttrs,"<br>"): newVarEntry = json.set(newVarEntry, attr, json.get(macro.args,ng+attr))]
-
-    [h:newVarArray=json.append("",newVarEntry)]
-<!--  take out? -->
-    [h:newGearVar=json.set("",gearName,newVarArray)]
-<!-- take out?-->
-    [h:oldVarType=json.get(gv,gearType)]
-    [h:newVarType=oldVarType]
-    [h:newVarType=json.set(newVarType,gearName,newVarArray)]
-    [h:gv=json.set(gv,gearType,newVarType)]
-    [h: setLibProperty("GearVar",gv)]
-  };{}]
-};{}]
-
-[if(action=="Duplicate Gear"), code: {
-  [h:newGearName=NameBox(gearName,"Name for Copy of "+gearName)]
-  [h:oldGearType=json.get(g,gearType)]
-
-  <!-- check to see if gear name already exists -->
-  [h:there=json.contains(oldGearType,newGearName)]
-  [h:abortit=if(there==1,0,1)]
-  [h:assert(abortit,"aborting gear duplication.  gear already exists")]
-
-  [h:oldGearEntry=json.get(oldGearType,gearName)]
-  [h:newGearType=json.set(oldGearType,newGearName,oldGearEntry)]
-  [h:newG=json.set(g,gearType,newGearType)]
-
-  [if(gearType=="Armor"||gearType=="Weapons"), code:{
-    [h:oldGearVarType=json.get(gv,gearType)]
-    [oldGvEntry=json.get(oldGearVarType,gearName)]
-    [h:newGearVarType=json.set(oldGearVarType,newGearName,oldGvEntry)]
-    [h:gvNew=json.set(gv,gearType,newGearVarType)]
-    [h:setLibProperty("GearVar",gvNew)]
-  };{}]
-  [h:setLibProperty("Gear",newG)]
-  [actionArgs=json.set(actionArgs,"gearArg",newGearName)]
-  [h:new=1]
-};{}]
-
-[if(action=="Rename Gear"), code: {
-  [h:newGearName=NameBox(gearName,"New Name for "+gearName)]
-  [h:oldGearType=json.get(g,gearType)]
-
-  <!-- check to see if gear name already exists -->
-  [h:there=json.contains(oldGearType,newGearName)]
-  [h:abortit=if(there==1,0,1)]
-  [h:assert(abortit,"aborting gear duplication.  gear already exists")]
-
-  [h:oldGearEntry=json.get(oldGearType,gearName)]
-  [h:newGearType=json.set(oldGearType,newGearName,oldGearEntry)]
-  [h:newGearType=json.remove(newGearType,gearName)]
-
-  [h:newG=json.set(g,gearType,newGearType)]
-
-  [if(gearType=="Armor"||gearType=="Weapons"), code:{
-    [h:oldGearVarType=json.get(gv,gearType)]
-    [oldGvEntry=json.get(oldGearVarType,gearName)]
-    [h:newGearVarType=json.set(oldGearVarType,newGearName,oldGvEntry)]
-    [h:gvNew=json.set(gv,gearType,newGearVarType)]
-    [h:setLibProperty("GearVar",gvNew)]
-  };{}]
-  [h:setLibProperty("Gear",newG)]
-  [actionArgs=json.set(actionArgs,"gearArg",newGearName)]
-  [h:new=1]
-};{}]
-
-[if(action=="Add Variation"), code: {
-  [h:gvNew=gv]
-  [h:oldGvType=json.get(gv,gearType)]
-  [h:oldGvType=if(json.type(oldGvType)=="UNKNOWN","{}",oldGvType)]
-  [h:newGvType=oldGvType]
-
-  [h:oldGvName=json.get(oldGvType,gearName)]
-  [h:oldGvName=if(json.type(oldGvName)=="UNKNOWN","[]",oldGvName)]
-  [h:newGvName=oldGvName]
-  [h:varcount=json.length(newGvName)]
-  <!-- duplicate last entry unless its empty -->
-  [h:newVarEntry=if(varcount!=0,json.get(newGvName,varcount-1),"{}")]
-  [h:newGvName=json.append(newGvName,newVarEntry)]
-  [h:newGvType=json.set(newGvType,gearName,newGvName)]
-  [h:gvNew=json.set(gvNew,gearType,newGvType)]
-  [h:setLibProperty("GearVar",gvNew)]
-  [h:new=1]
-};{}]
-
-[if(action=="Delete Variation"), code: {
-  [h:gvNew=gv]
-  [h:oldGvType=json.get(gv,gearType)]
-  [h:oldGvType=if(json.type(oldGvType)=="UNKNOWN","{}",oldGvType)]
-  [h:newGvType=oldGvType]
-  [h:oldGvName=json.get(oldGvType,gearName)]
-  [h:oldGvName=if(json.type(oldGvName)=="UNKNOWN","[]",oldGvName)]
-<br><br> before deleting
-  [newGvName=oldGvName]
-  [h:varcount=json.length(newGvName)]
-<br><br> deleting
-  [newGvName=if(varcount>1,json.remove(newGvName,varcount-1),newGvName)]
-<br><br>
-  [h:newGvType=json.set(newGvType,gearName,newGvName)]
-  [h:gvNew=json.set(gvNew,gearType,newGvType)]
-  [h:setLibProperty("GearVar",gvNew)]
-  [h:new=1]
-};{}]
-
-[if(action=="Delete Gear"), code: {
-  [h:oldGearType=json.get(g,gearType)]
-  [h:newGearType=json.remove(oldGearType,gearName)]
-  [h:newG=json.set(g,gearType,newGearType)]
-  [if(gearType=="Armor"||gearType=="Weapons"), code:{
-    [h:oldGearVarType=json.get(gv,gearType)]
-    [h:newGearVarType=json.remove(oldGearVarType,gearName)]
-    [h:gvNew=json.set(gv,gearType,newGearVarType)]
-    [h:setLibProperty("GearVar",gvNew)]
-    [h:gv=gvNew]
-  };{}]
-  [h:setLibProperty("Gear",newG)]
-  [h:g=newG]
-  [h:new=1]
-};{}]
-
-<!-- Now save changes -->
-[h:oldGearType=json.get(g,gearType)]
-[h:oldGearEntry=json.get(oldGearType,gearName)]
-[h:newGearEntry=oldGearEntry]
-[foreach(attr,attrs,""), code:{
-   [h:evalString=gearName+"_"+attr]
-   [h:newGearEntry=json.set(newGearEntry,attr,json.get(macro.args,evalString))]
-}]
-[h:newGearType=json.set(oldGearType,gearName,newGearEntry)]
-[h:newG=json.set(g,gearType,newGearType)]
-
-<!-- now do gear variations -->
-[h:gvNew=gv]
-[h:oldGvType=json.get(gv,gearType)]
-[h:oldGvType=if(json.type(oldGvType)=="UNKNOWN","{}",oldGvType)]
-[h:newGvType=oldGvType]
-
-[h:oldGvName=json.get(oldGvType,gearName)]
-[h:oldGvName=if(json.type(oldGvName)=="UNKNOWN","[]",oldGvName)]
-[h:newGvName=oldGvName]
-[h:varcount=json.length(newGvName)]
-[c(varcount,""), code:{
-  [h:index=roll.count]
-  [h:newEntry=json.get(oldGvName,index)]
-  [foreach(attr,varAttrs,""), code:{
-       [h:evalString=gearName+"_"+attr+index]
-       [h:newEntry=json.set(newEntry,attr,json.get(macro.args,evalString))]
-       [h:newGvName=json.set(newGvName,index,newEntry)]
-  }]
-}]
-[h:newGvType=json.set(newGvType,gearName,newGvName)]
-[h:gvNew=json.set(gv,gearType,newGvType)]
-
-[if(new!=1), code: {
-  [h:setLibProperty("Gear",newG)]
-  [h,if(varcount>0): setLibProperty("GearVar",gvNew)]
-}]
-<!-- if gear type == ammo then update ammo list -->
-[if(gearType=="Ammo"), code:{
-  [h:gAttrTypes=getLibProperty("GearAttrTypes")]
-  [h:ammoList=listAppend("None,Self",json.fields(json.get(getLibProperty("Gear"),"Ammo")))]
-  [h:types=json.get(gAttrTypes,"AmmoType")]
-  [h:newtypes=json.set(types,"Values",ammoList)]
-  [h:newGattrTypes=json.set(gAttrTypes,"AmmoType",newtypes)]
-  [h:setLibProperty("GearAttrTypes",newGattrTypes)]
-};{}]
-
-[macro(actionMacro):actionArgs]
-
-!!
-@@ @VarField
-@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=true ; applyToSelected=false ; group=Edit ; tooltip= ; minWidth= ; 
-[h:tokenId=""]
-[h:key=""]
-[h:gvArg="{}"]
-
-[h:tokenId = getMacroLocation()]
-[h:switchToken(tokenId)]
-[h:varsFromStrProp(macro.args)]
-
-[h:attrs=json.get(GearAttrTypes,key)]
-[h:size=json.get(attrs,"Size")]
-[h:type=json.get(attrs,"Type")]
-
-[h:new=if(json.length(decode(gvArg))==0,1,0)]
-[if(new==1), code:{
-  [h:currValue=""]
-};{
-  [h:gJSON=decode(gvArg)]
-  [h:currValue=json.get(gJSON,key)]
-}]
-
-[if(type=="Text"), code:{
-  <input type="text" size="[r:size]" name="[r:key]_[r:index]" value="[r:decode(currValue)]">
-};{}]
-
-[if(type=="Dropdown"), code:{
-
-  [h:attrValues=json.get(attrs,"Values")]
-  <select name="[r:key]_[r:index]">
-  [foreach(value,attrValues,""),code:{
-    [h:selected=if(value==currValue,"selected","")]  
-    <option [r:selected] value="[r:value]"> [r:decode(value)]</option>
-  }]
-  </select>
-};{}]
-
-!!
-@@ @VarLine
-@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=true ; applyToSelected=false ; group=Edit ; tooltip= ; minWidth= ; 
-[h:tokenId=""]
-[h:empty=""]
-[h:new="No"]
-[h:values=""]
-[h:gVars="{}"]
-[h:index=0]
-
-[h:varsFromStrProp(macro.args)]
-[h:gearName=gearArg]
-[h:gearType=gType]
-
-[h:junk="<!-- get lib properties that will be used in this macro --><!-- GearTypes Gear GearAttrs GearAttrTypes GearVarAttrs GearVar -->"]
-
-[h:gears=getLibProperty("GearVar")]
-[h:gearAttributes=getLibProperty("GearVarAttrs")]
-[h:gearAttributes=json.get(gearAttributes,gearType)]
-[h:gearAttributes=if(json.type(gearAttributes)=="UNKNOWN","{}",gearAttributes)]
-
-[h:junk="<!-- get the columns to be used in the form -->"]
-[h:gearColumns=gearAttributes]
-
-<!-- get the gear in question -->
-[h:g=json.get(gears,gearType)]
-[h:g=json.get(g,gearName)]
-
-[h:keys=gearAttributes]
-
-[h:UpdateGearArgs="returnMacro=EditGear@this;gearArg="+gearArg]
-[h:AddGearArgs="returnMacro=EditGear@this;gearArg="+empty+";edit=Yes;new=Yes"]
-
-[h:gearArgLinkText=if(gearArg=="","New Gear",gearArg)]
-[h:branch="edit"]
-[h:branch=if(edit=="No"&&new=="No","display",branch)]
-[h:branch=if(edit=="No"&&new=="Yes","new",branch)]
-[h:branch=if(edit=="Yes"&&new=="Yes","editNew",branch)]
-
-[if(branch=="new"), code:{
-    [h: linkit=macroLinkText("UpdateGear@this", "gm",AddGearArgs)]
-    <td>
-      <a href="[r:linkit]"><b>[r:gearArgLinkText]</b></a> 
-    </td>
-    [foreach(key,keys,""),code:{
-        <td></td>
-    }]
-  };{}]
-
-[if(branch=="display"), code:{
-    <td>
-      [h: linkit=macroLinkText("argCheck@this", "gm",UpdateGearArgs)]
-      [h: linkit=macroLinkText("UpdateGear@this", "gm",UpdateGearArgs)]
-      <a href="[r:linkit]"><b>[r:gearArgLinkText]</b></a> 
-    </td>
-    <td><center>
-    [foreach(key,keys,"</center></td><td><center>"),code:{
-        [r:json.get(g,key)]
-    }]
-    </center></td>
-  };{}]
-
-[if(branch=="edit"), code:{
-    [foreach(key,keys,""),code:{
-      <td><center>
-               [h:line=json.get(g,index)]
-               [h:values=json.get(line,key)]
-               [macro("GearField@this"): "key="+key+" ;gearArg= "+gearArg+";value="+values+ ";gType="+gearType+";index="+index]
-      </center></td>
-    }]
-};{}]
-
-[if(branch=="editNew"), code:{
-    [foreach(key,keys,""),code:{
-      <td><center>
-               [macro("GearField@this"): "key="+key+" ;gearArg= NewGear;value="+empty+";new=Yes"+ ";gType="+gearType]
-      </center></td>
-    }]
-};{}]
-
-!!
-@@ @GearJSON
-@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=true ; group=X ; tooltip= ; minWidth= ; 
-[h:gear1=""]
-[h:rtn=""]
-[h:id = findToken("Lib:Gear")]
-[h:switchToken(id)]
-
-[h:gear1=getProperty("Ammo")]
-[h:keys=json.fields(gear1)]
-[foreach(key,keys,""), code:{
-  [h:rtn=json.set(rtn,key,json.get(gear1,key))]
-}]
-
-[h:gear1=getProperty("Armor")]
-[h:keys=json.fields(gear1)]
-[foreach(key,keys,""), code:{
-  [h:rtn=json.set(rtn,key,json.get(gear1,key))]
-}]
-
-[h:gear1=getProperty("Other")]
-[h:keys=json.fields(gear1)]
-[foreach(key,keys,""), code:{
-  [h:rtn=json.set(rtn,key,json.get(gear1,key))]
-}]
-
-[h:gear1=getProperty("Weapons")]
-[h:keys=json.fields(gear1)]
-[foreach(key,keys,""), code:{
-  [h:rtn=json.set(rtn,key,json.get(gear1,key))]
-}]
-
-[h:macro.return=rtn]
-
-!!
-@@ @GetGearDamageJSON
-@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=true ; applyToSelected=false ; group=X ; tooltip= ; minWidth= ; 
-[h:gearName=""]
-[h:damages=""]
-[h:props=macro.args]
-[h:varsFromStrProp(props)]
-[h:callStr="WeaponDamageJSON@Lib:Gear"]
-[macro(callStr): ""]
-[h:t=macro.return]
-[foreach(damageType,t,""), code: {
-  [h:tName=json.get(damageType,"Name")]
-  [if(json.get(damageType,"Name")==gearName), code: {
-    [h:damages=json.append(damages,damageType)]
-  };{}]
-}]
-
-[h:macro.return=damages]
-
-!!
-@@ @GetGearExists
-@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=true ; applyToSelected=false ; group=X ; tooltip= ; minWidth= ; 
-[h:gearName=""]
-[h:gearType=""]
-[h:props=macro.args]
-[h:varsFromStrProp(props)]
-[h:id = findToken("Lib:Gear")]
-[h:switchToken(id)]
-
-[h:tempJSON=getProperty(gearType)]
-[h:macro.return=json.contains(tempJSON,gearName)]
-
-!!
-@@ @GetGearJSON
-@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=true ; applyToSelected=false ; group=X ; tooltip= ; minWidth= ; 
-[gearName=""]
-[gearType=""]
-[props=macro.args]
-[h:varsFromStrProp(props)]
-[h:id = findToken("Lib:Gear")]
-[h:switchToken(id)]
-
-[h:tempJSON=getProperty(gearType)]
-[h:macro.return=json.get(tempJSON,gearName)]
-
-!!
-@@ @GetGearJSON2
-@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=true ; applyToSelected=false ; group=X ; tooltip= ; minWidth= ; 
-[gearName=""]
-[gearType=""]
-[props=macro.args]
-[h:varsFromStrProp(props)]
-[h:id = findToken("Lib:Gear")]
-[h:switchToken(id)]
-
-[h:tempJSON=getProperty(gearType)]
-[h:macro.return=json.get(tempJSON,gearName)]
-
-!!
-@@ @GetGearNames
-@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=true ; group=X ; tooltip= ; minWidth= ; 
-[h:gear1=""]
-[h:id = findToken("Lib:Gear")]
-[h:switchToken(id)]
-
-[h:gear1=getProperty("Ammo")]
-[h:keys=json.fields(gear1)]
-
-[h:gear1=getProperty("Armor")]
-[h:keys=listAppend(keys,json.fields(gear1))]
-
-[h:gear1=getProperty("Other")]
-[h:keys=listAppend(keys,json.fields(gear1))]
-
-[h:gear1=getProperty("Weapons")]
-[h:keys=listAppend(keys,json.fields(gear1))]
-
-[h:macro.return=keys]
-
-!!
-@@ @GetGearType
-@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=true ; applyToSelected=false ; group=X ; tooltip= ; minWidth= ; 
-[h:rtnType=""]
-[h:gearType=""]
-[h:gearName="PistolBattery"]
-[h:props=macro.args]
-[h:varsFromStrProp(props)]
-
-  [h:geartype="Armor"]
-  [macro("GetGearExists@Lib:Gear"): "gearType="+gearType+";gearName="+gearName]
-  [h:armorType=macro.return]
-  [h:rtnType=if(armorType,gearType,rtnType)]
-
-  [h:geartype="Weapons"]
-  [macro("GetGearExists@Lib:Gear"): "gearType="+gearType+";gearName="+gearName]
-  [h:weaponType=macro.return]
-  [h:rtnType=if(weaponType==1,gearType,rtnType)]
-
-  [h:geartype="Other"]
-  [macro("GetGearExists@Lib:Gear"): "gearType="+gearType+";gearName="+gearName]
-  [h:otherType=macro.return]
-  [h:rtnType=if(otherType==1,gearType,rtnType)]
-
-  [h:geartype="Ammo"]
-  [macro("GetGearExists@Lib:Gear"): "gearType="+gearType+";gearName="+gearName]
-  [h:ammoType=macro.return]
-  [h:rtnType=if(ammoType==1,gearType,rtnType)]
-
-[h:macro.return=rtnType]
-
-!!
-@@ @aaaCSS
-@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=X ; tooltip= ; minWidth= ; 
-.oddRow { background-color: #c4d9ea }
-.evenRow { background-color: #e7eced }
-body {background-color: b0c7cf}
-th { background-color: #5c8b9f; color: #23325f }
-h1 { text-align: center } 
-input.radio { background : #b0c7cf; color: #000000; }
-
-!!
-@@ @argCheck
-@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=X ; tooltip= ; minWidth= ; 
-[macro.args]
-
-!!
-@@ @GetGearTypebyName
-@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Gets ; tooltip= ; minWidth= ; 
-[h:gearName=arg(0)]
-[h:rtn="Unknown"]
-[h:lookFor="Leather"]
-[h:g=getLibProperty("Gear")]
-[h:keys=json.fields(g)]
-[foreach(key,keys,""), code:{
-  [h:subGear=json.get(g,key)]
-  [r,if(json.contains(subGear,gearName)): rtn=key]
-}]
-
-!!
-@@ @GetTokenWeapons
-@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Gets ; tooltip= ; minWidth= ; 
-[h:weapons=getLibProperty("Gear")]
-[h:weapons=json.get(weapons,"Weapons")]
-[weapons=json.fields(weapons)]
-
-!!
-@@ @GetVisibleTokensByDistance
-@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Gets ; tooltip= ; minWidth= ; 
-[h:tokens = getVisibleTokens("json")]
-[h:exposedTokens=getExposedTokens("json")]
-[h:tokens=json.intersection(tokens,exposedTokens)]
-[h:distanceJSON="[]"]
-
-[h,foreach(token,tokens,"<br>-"), code:{
-  [tokenType=getPropertyType(token)]
-  [if((tokenType=="Basic" || tokenType=="Vehicle") && token != currentToken()), code:{
-    [h:targetDistance=getDistance(token)-1]
-    [h:stuff=json.set("","Name",getName(token),"Distance",targetDistance)]
-    [h:distanceJSON=json.append(distanceJSON,stuff)]
-  };{
-  }]
-}]
-[h:distanceJSON=json.sort(distanceJSON,"a","Distance","Name")]
-[r:distanceJSON]
 
 !!

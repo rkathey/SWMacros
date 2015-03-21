@@ -1,0 +1,4 @@
+20150320 - fixed reload issue that broke when trying to fix a reload issue :)
+	Added isCurrentMap function to Lib:Marker
+	Added save of token names to Lib:Group/SaveGroup. Now need to add to other functions like Disband group
+20150321 - first attempt to make groups work off names rather than asset ids, which don't persist across campaign reloads.

@@ -17,6 +17,10 @@
 [defineFunction("AddToExistingGroup","AddToExistingGroup@Lib:Groups")]
 [defineFunction("GroupTraitRoll","GroupTraitRoll@Lib:Groups")]
 [defineFunction("GroupAttack","GroupAttack@Lib:Groups")]
+[defineFunction("GetLeaderNames","GetLeaderNames@Lib:Groups")]
+[defineFunction("GetMemberNames","GetMemberNames@Lib:Groups")]
+[defineFunction("GetGroupMemberNames","GetGroupMemberNames@Lib:Groups")]
+[defineFunction("GetGroupLeaderName","GetGroupLeaderName@Lib:Groups")]
 
 !!
 @@ @AddToExistingGroup
@@ -57,19 +61,31 @@
 @@ @DisbandGroup
 @PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=1 - Groups ; tooltip= ; minWidth= ; 
 [h:groupLeader=arg(0)]
+[h:groupLeaderName=getName(groupLeader)]
 
 [h:groupMembers=GetMembers()]
+[h:groupMembersByName=GetMemberNames()]
+
 [h:groupLeader=GetGroupLeader(groupLeader)]
+[h:groupLeaderName=GetGroupLeaderName(groupLeaderName)]
 
 [h:members=GetGroupMembers(groupLeader)]
+[h:memberNames=GetGroupMemberNames(groupLeaderName)]
 
 [h:setState("Group Leader", 0,groupLeader)]
 [h,foreach(member,members,""): setState("Group Member", 0,member)]
+
+[h,foreach(mn,memberNames,""): setState("Group Member", 0,findToken(mn))]
 
 [h:groupMembers=json.remove(groupMembers, groupLeader)]
 [h:groupLeaders=json.fields(groupMembers,"json")]
 [h:setLibProperty("GroupLeaders",groupLeaders)]
 [h:setLibProperty("Groups",groupMembers)]
+
+[h:groupMembersByName=json.remove(groupMembersByName,groupLeaderName)]
+[h:groupLeadersByName=json.fields(groupMembersByName,"json")]
+[h:setLibProperty("GroupLeaderNames",groupLeadersByName)]
+[h:setLibProperty("GroupMemberNames",groupMembersByName)]
 
 !!
 @@ @GroupTraitRoll
@@ -135,11 +151,24 @@
 
 [h:setLibProperty("Groups",groupMembers)]
 [h:setLibProperty("GroupLeaders",groupLeaders)]
+[h:currentMap=getCurrentMapName()]
+[h,if(isCurrentMap(currentMap)==1), code:{
+  [h:leaderName=getName(leader)]
+  [h:namesInGroup=""];
+  [h,foreach(m,members):namesInGroup=json.append(namesInGroup,getName(m))]
+  [h:leaderNames=GetLeaderNames()]
+  [h:memberNames=GetMemberNames()]
+  [h:there=json.contains(leaderNames,leaderName)]
+  [h,if(!there): leaderNames=json.append(leaderNames,leaderName)]
+  [h:memberNames=json.set(memberNames,leaderName,namesInGroup)]
+  [h:setLibProperty("GroupLeaderNames",leaderNames)]
+  [h:setLibProperty("GroupMemberNames",memberNames)]
+}]
 
 !!
 @@ @CheckGroupMembers
 @PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=1.1 - Group Checks ; tooltip= ; minWidth= ; 
-[h:members=arg(0)]
+[h:groupIds=arg(0)]
 
 !!
 @@ @CheckLeader
@@ -154,8 +183,13 @@
 @@ @isLeader
 @PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=1.1 - Group Checks ; tooltip= ; minWidth= ; 
 [h:id=arg(0)]
-[h:leaders=GetLeaders()]
-[r,if(json.contains(leaders,id)): 1;0]
+[h:name=getName(id)]
+[h:leaderIds=GetLeaders()]
+[h:idThere=json.contains(leaderIds,id)]
+[h:leaderNames=GetLeaderNames()]
+[h:nameThere=json.contains(leaderNames,name)]
+
+[r:idThere OR nameThere]
 
 !!
 @@ @FindTokensOnVehicle
@@ -185,6 +219,26 @@
 [r:rtn=groupLeader]
 
 !!
+@@ @GetGroupLeaderName
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=2 - Selects ; tooltip= ; minWidth= ; 
+[h:groupLeader=arg(0)]
+[h:rtn=""]
+[h:groupLeaders=getLibProperty("GroupLeaderNames")]
+[h:groupLeaders=if(json.type(groupLeaders)=="UNKNOWN","[]",groupLeaders)]
+[h:there=json.contains(groupLeaders, groupLeader)]
+[h:assert(there,groupLeader+" does not exist as a group leader:"+getMacroName())]
+[r:rtn=groupLeader]
+
+!!
+@@ @GetGroupMemberNames
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=2 - Selects ; tooltip= ; minWidth= ; 
+[h:groupLeader=arg(0)]
+
+[h:groupMembers=GetMemberNames()]
+
+[r:members=json.get(groupMembers,groupLeader)]
+
+!!
 @@ @GetGroupMembers
 @PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=2 - Selects ; tooltip= ; minWidth= ; 
 [h:groupLeader=arg(0)]
@@ -194,12 +248,26 @@
 [r:members=json.get(groupMembers,groupLeader)]
 
 !!
+@@ @GetLeaderNames
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=2 - Selects ; tooltip= ; minWidth= ; 
+[h:groupLeaderNames=getLibProperty("GroupLeaderNames")]
+[h:type=json.type(groupLeaderNames)]
+[h:groupLeaderNames=if(type=="UNKNOWN","[]",groupLeaderNames)]
+[r:rtn=groupLeaderNames]
+
+!!
 @@ @GetLeaders
 @PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=2 - Selects ; tooltip= ; minWidth= ; 
 [h:groupLeaders=getLibProperty("GroupLeaders")]
 [h:type=json.type(groupLeaders)]
 [h:groupLeaders=if(type=="UNKNOWN","[]",groupLeaders)]
 [r:rtn=groupLeaders]
+
+!!
+@@ @GetMemberNames
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=2 - Selects ; tooltip= ; minWidth= ; 
+[h:groupMembers=getLibProperty("GroupMemberNames")]
+[r:groupMembers=if(json.type(groupMembers)=="UNKNOWN","{}",groupMembers)]
 
 !!
 @@ @GetMembers
@@ -370,8 +438,9 @@ tokentypes (default is basic) json array
   [h:end=json.get(path,length-1)]
   [h:deltax=json.get(start,"x")-json.get(end,"x")]
   [h:deltay=json.get(start,"y")-json.get(end,"y")]
-  [h:members=GetGroupMembers(id)]
-  [h,foreach(m,members,""), code:{
+  [h:members=GetGroupMemberNames(name)]
+  [h,foreach(name,members,""), code:{
+    [h:m=findToken(name)]
     [h: CurrentX = getTokenX(1,m)]
     [h: CurrentY = getTokenY(1,m)]
     [h: NewX = CurrentX - deltax]
