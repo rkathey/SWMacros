@@ -47,98 +47,21 @@
 [h:junk="Will check markers to see if they still exist on the map and try to fix them"]
 [h:currentMap=getCurrentMapName()]
 [h:mapMarkers=GetMapMarkers(currentMap)]
-[h:mapMarkersSave=mapMarkers]
-
-[h:ids=json.fields(mapMarkers)]
-[h:reprocess=""]
-[h,foreach(id,ids), code:{
-  [markerStuff=json.get(mapMarkers,id)]
-  [t=findToken(id)]
-  [if(t==""), code:{
-    [name=json.get(markerStuff,"name")]
-    [newId=findToken(name)]
-    [reprocess=json.append(reprocess,json.set("","oldId",id,"newId",newId,"name",name))]
-  };{
-    [x=getTokenX(0,id)]
-    [y=getTokenY(0,id)]
-    [markerStuff=json.set(markerStuff,"x",x,"y",y)]
-  }]
-}]
-[h:Debug("Reprocess List",reprocess)]
-
-[h,foreach(rep,reprocess), code:{
-  [name=json.get(rep,"name")]
-  [oldId=json.get(rep,"name")]
-  [newId=json.get(rep,"name")] 
-  [if(newId==""), code:{
-    [mapMarkers=json.remove(mapMarkers,oldId)]
-  };{
-    [markerStuff=json.get(mapMarkers,oldId)]
-    [mapMarkers=json.remove(mapMarkers,oldId)]
-    [x=getTokenX(0,newId)]
-    [y=getTokenY(0,newId)]
-    [markerStuff=json.set(markerStuff,"x",x,"y",y)]
-    [mapMarkers=json.set(mapMarkers,newId,markerStuff)]    
-  }]
-}]
-
-[h:allMarkers=GetAllMarkers()]
-[h:allMarkersSave=allMarkers]
-[h:allMarkers=json.set(allMarkers,currentMap,mapMarkers)]
-
-Old Marers = [r:allMarkersSave]<br>
-New Markers = [r:allMarkers]<br>
-[Debug("old",allMarkersSave)]
-[Debug("new",allMarkers)]
-[h:assert(0,"ending for now")]
+[h:junk="Switching from ids to names so this will now return names"]
+[h:junk="This would seem to make this unneeded"]
 
 [h:junk = "now build partner list to see if those partners are still in existence"]
-[h:partners=""]
-[h:maps=json.fields(allMarkers)]
-[h,foreach(map,maps), code:{
-  [mapMarkers=json.get(allMarkers,map)]
-  [ids=json.fields(mapMarkers)]
-[Debug("ids",ids)]
-  [foreach(id,ids), code:{
-    [markerStuff=json.get(mapMarkers,id)]
-    [partner=json.get(markerStuff,"partner")]
-    [pid=json.get(partner,"pid")]
-[h:Debug("pid",pid)]
-    [if(pid!=""): partners=json.append(partners,json.set(partner,"map",map,"id",id))]
-  }]
-}]
-
-[h:junk="now twizzle partners into something matching the markers json object"]
-[h:allPartners=""]
-[h,foreach(partner,partners), code:{
-  [pmap=json.get(partner,"pmap")]
-  [pid=json.get(partner,"pid")]
-  [map=json.get(partner,"map")]
-  [id=json.get(partner,"id")]
-  [pname=json.get(partner,"pname")]
-  [pobj=json.set("","pname",pname,"id",id,"map",map)]
-  [mapPartners=json.get(allPartners,pmap)]
-  [mapPartners=json.set(mapPartners,pid,pobj)]
-  [allPartners=json.set(allPartners,pmap,mapPartners)]
-}]
-
-[h:junk="now now go through partners to make sure they still exist. Need to finish"]
-[h:pmaps=json.fields(allPartners)]
-[h:dropPartners=""]
-[h,foreach(pmap,pmaps), code:{
-  [mapMarkers=json.get(allMarkers(pmap)]
-  [ids=json.fields(mapMarkers,"json")]
-  [mapPartners=json.get(allPartners,pmap)]
-  [pids=json.fields(mapPartners,"json")]
-  [inBoth=json.intersection(ids,pids)]
-}]
+[h:junk = "since this just returns names, we can use the find function"]
 
 !!
 @@ @EditMarker
 @PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=true ; group= ; tooltip= ; minWidth= ; 
 [h:map=arg(0)]
 [h:id=arg(1)]
-[h:marker=GetMarker(map,id)]
+[h:name=getName(id)]
+
+[h:t="calling by name now")]
+[h:marker=GetMarker(map,name)]
 [h:markerType=json.get(marker,"type")]
 
 [h:types=getLibProperty("MarkerTypes")]
@@ -161,9 +84,9 @@ Blast stuff
 case "Teleport1WayAuto": {
 Teleport 1 Way Auto Stuff
   [h:marker=json.set(marker,"type",newType)]
-  [h:partner=PartnerDialog(map,id)]
+  [h:partner=PartnerDialog(map,name)]
   [h:marker=json.set(marker,"partner",partner)]
-  [h:SaveMarkerJSON(map,id,marker)]
+  [h:SaveMarkerJSON(map,name,marker)]
 };
 case "Teleport2WayAuto": {
 Teleport 2 Way Auto Stuff
@@ -202,6 +125,7 @@ Generic stuff
 @@ @MakeMarker
 @PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group= ; tooltip= ; minWidth= ; 
 [h:id=arg(0)]
+[h:name=getName(id)]
 [tokenType=getPropertyType(id)]
 
 [h:abortit=if(getPropertyType(id)!="Basic"&&getPropertyType(id)!="Vehicle"&&getPropertyType(id)!="Marker",0,1)]
@@ -211,13 +135,13 @@ Generic stuff
 [h,if(argLength>1): makerType=arg(1)]
 
 [h:tokenType="Marker"]
-[setPropertyType(tokenType, id)]
+[h:setPropertyType(tokenType, id)]
 
-[h:SaveMarker(getCurrentMapName(),id,"Generic",getName(id))]
+[h:SaveMarker(getCurrentMapName(),name,"Generic")]
 
 [h:setState("Marker", 1,id)]
 
-[h:macros=json.append("","Activate Macro","Remove","Set Type","Pick Partner","Got To Partner")]
+[h:macros=json.append("","Activate Macro","Remove","Set Type","Pick Partner","Go To Partner")]
 [foreach(m,macros,""), code:{
   [h:idx=getMacroIndexes(m)]
   [if(idx!=""):removeMacro(idx)]
@@ -292,7 +216,8 @@ Generic stuff
 @@ @RemoveMarker
 @PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group= ; tooltip= ; minWidth= ; 
 [h:id=arg(0)]
-[h:pid=checkPartner(id)]
+[h:name=getName(id)]
+[h:pname=checkPartner(name)]
 
 !!
 @@ @SaveMarker
@@ -300,18 +225,19 @@ Generic stuff
 [h:argLength=json.length(macro.args)]
 
 [h:map=arg(0)]
-[h:id=arg(1)]
+[h:name=arg(1)]
 [h:type=arg(2)]
 [h:markerStuff=""]
 [h:i=3]
-[h,if(argLength>i): name=arg(i);name=getName(id)]
-[h:i=i+1]
 [h,if(argLength>i): macro=arg(i);macro=""]
 [h:i=i+1]
 [h,if(argLength>i): partner=arg(i);partner="{}"]
 
 [h:currentMap=getCurrentMapName()]
 [h:currentMap=if(map=="",currentMap,map)]
+[h:id=findToken(name)]
+
+[h,if(id==""): assert(0,"unable to find "+name+" in "+getMacroName()]
 
 [h,if(currentMap==map), code:{
   [x=getTokenX(0, id)]
@@ -323,24 +249,23 @@ Generic stuff
 }]
 
 [h:partner=""]
-[h:markerStuff=json.set(markerStuff,"type",type,"name",name)]
+[h:markerStuff=json.set(markerStuff,"type",type)]
 [h,if(macro!=""): markerStuff=json.set(markerStuff,"macro",macro)]
 [h,if(partner!=""): markerStuff=json.set(markerStuff,"partner",partner)]
 
-[h:SaveMarkerJSON(map,id,markerStuff)]
+[h:SaveMarkerJSON(map,name,markerStuff)]
 
 !!
 @@ @SaveMarkerJSON
 @PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group= ; tooltip= ; minWidth= ; 
 [h:Debug("in","SaveMarkerJSON")]
 [h:map=arg(0)]
-[h:id=arg(1)]
+[h:name=arg(1)]
 [h:markerStuff=arg(2)]
-[h:name=json.get(markerStuff,"name")]
 [h:Debug("args",macro.args)]
 [h:mapMarkers=GetMapMarkers(map)]
 [h:Debug("mapMarkers",mapMarkers)]
-[h:mapMarkers=json.set(mapMarkers,id,markerStuff)]
+[h:mapMarkers=json.set(mapMarkers,name,markerStuff)]
 [h:allMarkers=GetAllMarkers()]
 [h:allMarkers=json.set(allMarkers,map,mapMarkers)]
 [h:setLibProperty("Markers",allMarkers)]
@@ -352,17 +277,17 @@ Generic stuff
 
 [h:currentMap=getCurrentMapName()]
 [h:mapMarkers=GetMapMarkers(currentMap)]
-[h:ids=json.fields(mapMarkers)]
-[h,foreach(id,ids), code:{
-  [test=findToken(id)]
-  [if(test==""), code:{
-    [mapMarkers=json.remove(mapMarkers,id)]
+[h:names=json.fields(mapMarkers)]
+[h,foreach(name,names), code:{
+  [id=findToken(name)]
+  [if(id==""), code:{
+    [mapMarkers=json.remove(mapMarkers,name)]
   };{
-    [markerStuff=json.get(mapMarkers,id)]
+    [markerStuff=json.get(mapMarkers,name)]
     [x=getTokenX(0,id)]
     [y=getTokenY(0,id)]
     [markerStuff=json.set(markerStuff,"x",x,"y",y)]
-    [mapMarkers=json.set(mapMarkers,id,markerStuff)]
+    [mapMarkers=json.set(mapMarkers,name,markerStuff)]
   }]
 }]
 [h:allMarkers=json.set(allMarkers,currentMap,mapMarkers)]
@@ -392,10 +317,11 @@ h:setLibProperty("Markers",allMarkers)
 @@ @CheckMarkerPartner
 @PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=2 - Partners ; tooltip= ; minWidth= ; 
 [h:id=arg(0)]
-[h:pid=GetMarkerPartner(id)]
+[h:name=getName(id)]
+[h:pid=GetMarkerPartner(name)]
 [h:startMap=getCurrentMapName()]
 [h:maps=getAllMapNames()]
-[h:partner=GetMarkerPartner(id)]
+[h:partner=GetMarkerPartner(name)]
 
 [h:pmap=json.get(partner,"map")]
 [h:pid=json.get(partner,"id")]
@@ -405,18 +331,15 @@ h:setLibProperty("Markers",allMarkers)
 
 [h,if(partnerName==""): assert(0,"Cannot find partner token")]
 
-[h:setCurrentMap(startMap)
-[r:
-
 !!
 @@ @GetMarkerPartner
 @PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=2 - Partners ; tooltip= ; minWidth= ; 
-[h:id=arg(0)]
-[h:partner=getProperty("Partner",id)]
+[h:name=arg(0)]
+[h:partner=getProperty("Partner",name)]
 [h,if(json.type(partner)=="OBJECT"), code:{
   [h:rtn=partner]
 };{
-  [h:rtn=json.set("","pid","","map",getCurrentMapName())]
+  [h:rtn=json.set("","pname","","map",getCurrentMapName())]
 }]
 [r:rtn]
 
@@ -438,9 +361,9 @@ h:setLibProperty("Markers",allMarkers)
 @@ @GetMarker
 @PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=1 - Gets and Sets ; tooltip= ; minWidth= ; 
 [h:map=arg(0)]
-[h:id=arg(1)]
+[h:name=arg(1)]
 [h:mapMarkers=GetMapMarkers(map)]
-[h:marker=json.get(mapMarkers,id)]
+[h:marker=json.get(mapMarkers,name)]
 [h:marker=if(json.type(marker)!="OBJECT","{}",marker)]
 [r:marker]
 
@@ -448,8 +371,8 @@ h:setLibProperty("Markers",allMarkers)
 @@ @GetPartner
 @PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=1 - Gets and Sets ; tooltip= ; minWidth= ; 
 [h:reqmap=arg(0)]
-[h:reqid=arg(1)]
-[h:reqMarker=GetMarker(reqmap,reqid)]
+[h:reqname=arg(1)]
+[h:reqMarker=GetMarker(reqmap,reqname)]
 [h:reqPartner=json.get(reqMarker,"partner")]
 [h,if(json.type(reqPartner)!="OBJECT"): reqPartner="{}"]
 [r:reqPartner]
@@ -458,10 +381,10 @@ h:setLibProperty("Markers",allMarkers)
 @@ @PartnerDialog
 @PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=1 - Gets and Sets ; tooltip= ; minWidth= ; 
 [h:reqmap=arg(0)]
-[h:reqid=arg(1)]
-[h:reqPartner=GetPartner(reqmap,reqid)]
+[h:reqname=arg(1)]
+[h:reqPartner=GetPartner(reqmap,reqname)]
 [h:reqPartnerStr=""]
-[h,if(!json.isEmpty(reqPartner)): reqPartnerStr=json.get(reqPartner,"pmap")+":"+json.get(reqPartner,"pname")+":"+json.get(reqPartner,"pid")]
+[h,if(!json.isEmpty(reqPartner)): reqPartnerStr=json.get(reqPartner,"pmap")+":"+json.get(reqPartner,"pname")]
 
 [h:partnerList="[' ']"]
 [h:index=0]
@@ -469,13 +392,13 @@ h:setLibProperty("Markers",allMarkers)
 
 [h:allMarkers=GetAllMarkers()]
 [h:maps=json.fields(allMarkers,"json")]
+[h:req=reqmap+":"+reqname]
 [h,foreach(map,maps,""), code:{
   [mapMarkers=GetMapMarkers(map)]
-  [marks=json.fields(mapMarkers)]
-  [foreach(m,marks,""), code:{
-    [stuff=GetMarker(map,m)]
-    [name=json.get(stuff,"name")]
-    [if(reqid!=m): partnerList=json.append(partnerList,map+":"+name+":"+m)]
+  [names=json.fields(mapMarkers)]
+  [foreach(m,names,""), code:{
+  [h:partnerMatch=map+":"+m]
+    [if(req!=partnerMatch): partnerList=json.append(partnerList,partnerMatch)]
   }]
 }]
 [h:partnerList=json.sort(partnerList)]
@@ -489,24 +412,21 @@ h:setLibProperty("Markers",allMarkers)
 
 [h: map=listGet(partnerString, 0, ":")]
 [h: name=listGet(partnerString, 1, ":")]
-[h: id=listGet(partnerString, 2, ":")]
-[r:rtn=json.set("","pmap",map,"pid",id,"pname",name)]
+[r:rtn=json.set("","pmap",map,"pname",name)]
 
 !!
 @@ @GetPartnerCoords
 @PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Teleports And Traps ; tooltip= ; minWidth= ; 
 [h:dest=arg(0)]
 [h:pmap=json.get(dest,"pmap")]
-[h:pid=json.get(dest,"pid")]
+[h:pname=json.get(dest,"pname")]
 [h:there=if(pid=="",0,1)]
 [h:assert(there,"Invalid id passed as destination for teleport")]
-
-[h:pname=json.get(dest,"pname")]
 
 [h:mapMarkers=GetMapMarkers(pmap)]
 [h,if(json.type(mapMarkers)!="OBJECT"): mapMarkers="{}"]
 
-[h:marker=json.get(mapMarkers,pid)]
+[h:marker=json.get(mapMarkers,pname)]
 [h,if(json.type(marker)!="OBJECT"): marker="{}"]
 
 [h:ptype=json.get(marker,"type")]
@@ -526,7 +446,7 @@ h:setLibProperty("Markers",allMarkers)
 [h:y=json.get(marker,"y")]
 [h,if(y==""): y=0]
 
-[r:dest=json.set(dest,"pmap",pmap,"pid",pid,"pname",pname,"ptype",ptype,"x",x,"y",y)]
+[r:dest=json.set(dest,"pmap",pmap,"pname",pname,"ptype",ptype,"x",x,"y",y)]
 
 !!
 @@ @Teleport
@@ -542,14 +462,16 @@ h:setLibProperty("Markers",allMarkers)
 @PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Teleports And Traps ; tooltip= ; minWidth= ; 
 [h:junk="This macro recieves a json array of token id's and teleports them to coordinates on another map")]
 [h:triggerId=arg(0)]
+[h:triggerName=getName(triggerId)]
+
 [h:triggerX=getTokenX(0, triggerId)]
 [h:triggerY=getTokenY(0, triggerId)]
 [h:ids=arg(1)]
 
-[h:destination=GetMarkerPartner(triggerId)]
+[h:destination=GetMarkerPartner(triggerName)]
 [h:destination=GetPartnerCoords(destination)]
 [h:tripMap=json.get(destination,"pmap")]
-[h:tripId=json.get(destination,"pid")]
+[h:tripName=json.get(destination,"pname")]
 [h:tripX=json.get(destination,"x")]
 [h:tripY=json.get(destination,"y")]
 [h:Debug("destination",destination)]

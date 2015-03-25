@@ -1,4 +1,13 @@
-20150320 - fixed reload issue that broke when trying to fix a reload issue :)
+20150320
+	fixed reload issue that broke when trying to fix a reload issue :)
 	Added isCurrentMap function to Lib:Marker
 	Added save of token names to Lib:Group/SaveGroup. Now need to add to other functions like Disband group
-20150321 - first attempt to make groups work off names rather than asset ids, which don't persist across campaign reloads.
+
+20150321
+	first attempt to make groups work off names rather than asset ids, which don't persist across campaign reloads.
+
+20150324
+	Initial Marker rework to use names rather than ids. Create marker works. Edit Marker is having a problem with the partner list dropdown.
+
+20150325 
+	Added tokens.moveCount>1 check in onTokenMove on Lib:Groups

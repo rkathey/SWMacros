@@ -432,6 +432,7 @@ tokentypes (default is basic) json array
 [h:usedMov = getMoveCount()]
 [h:leader=isLeader(id)]
 [h,if(isLeader(id)), code:{
+  [h,if(tokens.moveCount>1): abort(0)]
   [h:path=getLastPath(1)]
   [h:length=json.length(path)]
   [h:start=json.get(path,0)]
