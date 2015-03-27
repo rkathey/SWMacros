@@ -424,10 +424,73 @@ tokentypes (default is basic) json array
 [h:tokens=selectTokens(ids, addTo, "json")]
 
 !!
+@@ @Select Mooks
+@PROPS@ fontColor=white ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=green ; playerEditable=false ; applyToSelected=false ; group=1.1 Selects ; tooltip= ; minWidth= ; 
+[h:junk="
+tokenId - tokenId used is distance calculations.
+distance - select tokens with this distance of tokenId
+addTo - whether to add it to the current selection or start a new selection. 1 = adds to current select, 0 = start new selection. defaults to 0
+pcOrNpc values are pc, npc, or both. If empty assumes both
+Wildcards(Wildcard implied by PC) values are wildcard, nonwildcard, or both. Empty assumes both
+tokentypes (default is basic) json array
+"]
+[h:SelectTokenGroups("","",0,"npc","nonwildcard","")]
+
+!!
+@@ @Select PCs
+@PROPS@ fontColor=white ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=green ; playerEditable=false ; applyToSelected=false ; group=1.1 Selects ; tooltip= ; minWidth= ; 
+[h:junk="
+tokenId - tokenId used is distance calculations.
+distance - select tokens with this distance of tokenId
+addTo - whether to add it to the current selection or start a new selection. 1 = adds to current select, 0 = start new selection. defaults to 0
+pcOrNpc values are pc, npc, or both. If empty assumes both
+Wildcards(Wildcard implied by PC) values are wildcard, nonwildcard, or both. Empty assumes both
+tokentypes (default is basic) json array
+"]
+[h:msg=SelectTokenGroups("","",0,"pc","wildcard","")]
+
+!!
+@@ @Select Vehicles
+@PROPS@ fontColor=white ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=green ; playerEditable=false ; applyToSelected=false ; group=1.1 Selects ; tooltip= ; minWidth= ; 
+[h:junk="
+tokenId - tokenId used is distance calculations.
+distance - select tokens with this distance of tokenId
+addTo - whether to add it to the current selection or start a new selection. 1 = adds to current select, 0 = start new selection. defaults to 0
+pcOrNpc values are pc, npc, or both. If empty assumes both
+Wildcards(Wildcard implied by PC) values are wildcard, nonwildcard, or both. Empty assumes both
+tokentypes (default is basic) json array
+"]
+[h:types=json.append("","Vehicle")]
+[h:msg=SelectTokenGroups("","",0,"both","both",types)]
+
+!!
+@@ @Select WC NPCs
+@PROPS@ fontColor=white ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=green ; playerEditable=false ; applyToSelected=false ; group=1.1 Selects ; tooltip= ; minWidth= ; 
+[h:junk="
+tokenId - tokenId used is distance calculations.
+distance - select tokens with this distance of tokenId
+addTo - whether to add it to the current selection or start a new selection. 1 = adds to current select, 0 = start new selection. defaults to 0
+pcOrNpc values are pc, npc, or both. If empty assumes both
+Wildcards(Wildcard implied by PC) values are wildcard, nonwildcard, or both. Empty assumes both
+tokentypes (default is basic) json array
+"]
+[h:msg=SelectTokenGroups("","",0,"npc","wildcard","")]
+
+!!
 @@ @onTokenMove
 @PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=true ; applyToSelected=false ; group=X ; tooltip= ; minWidth= ; 
 [h:id=currentToken()]
 [h:name=getName(id)]
+[h:tokenType=getPropertyType()]
+[h:t=Debug("tokenType",tokenType)]
+[h,if(tokenType!="Basic" && tokenType!="Vehicle" && tokenType!="Marker"): abort(0)]
+
+[h,if(tokenType=="Marker"), code:{
+  [UpdateMarkerXY(name)]
+  [abort(0)]
+};{}]
+
+[h:msg=""]
 [h:lastPath = getLastPath(1)]
 [h:usedMov = getMoveCount()]
 [h:leader=isLeader(id)]
@@ -448,6 +511,11 @@ tokentypes (default is basic) json array
     [h: NewY = CurrentY - deltay]
     [h: moveToken(NewX, NewY,1,m)]
   }]
-};{}]
+};{
+  [h:markerName=CheckHitTrigger(lastPath)]
+[h:t=Debug(getMacroName()+":markerName",markerName)]
+  [msg=RunTriggerMacro(id,markerName)]
+}]
+[r,if(msg!=''): msg+"<br>"]
 
 !!

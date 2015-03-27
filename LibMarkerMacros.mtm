@@ -40,6 +40,20 @@
 [defineFunction(macro, macro+lib)]
 [r:macro="isCurrentMap"]
 [defineFunction(macro, macro+lib)]
+[r:macro="isTrigger"]
+[defineFunction(macro, macro+lib)]
+[r:macro="CheckHitTrigger"]
+[defineFunction(macro, macro+lib)]
+[r:macro="RunTriggerMacro"]
+[defineFunction(macro, macro+lib)]
+[r:macro="GetTriggerMacro"]
+[defineFunction(macro, macro+lib)]
+
+[r:macro="FindMinCoordIdx"]
+[defineFunction(macro, macro+lib)]
+
+[r:macro="UpdateMarkerXY"]
+[defineFunction(macro, macro+lib)]
 
 !!
 @@ @CheckMarkers
@@ -262,19 +276,13 @@ Generic stuff
 [h:map=arg(0)]
 [h:name=arg(1)]
 [h:markerStuff=arg(2)]
-[h:Debug("args",macro.args)]
 [h:mapMarkers=GetMapMarkers(map)]
-[h:Debug("mapMarkers",mapMarkers)]
 [h:mapMarkers=json.set(mapMarkers,name,markerStuff)]
 [h:allMarkers=GetAllMarkers()]
 [h:allMarkers=json.set(allMarkers,map,mapMarkers)]
 [h:setLibProperty("Markers",allMarkers)]
 
-[h:Debug("mapMarkers",mapMarkers)]
-
 [h:junk="sweep current map and remove dead entries"]
-[h:Debug("at",junk)]
-
 [h:currentMap=getCurrentMapName()]
 [h:mapMarkers=GetMapMarkers(currentMap)]
 [h:names=json.fields(mapMarkers)]
@@ -293,7 +301,6 @@ Generic stuff
 [h:allMarkers=json.set(allMarkers,currentMap,mapMarkers)]
 
 [h:junk="now clean dead maps"]
-[h:Debug("at",junk)]
 
 [h:allMaps=getAllMapNames("json")]
 [h:maps=json.fields(allMarkers)]
@@ -303,15 +310,179 @@ Generic stuff
 }]
 
 [h:junk="now fix or remove partners"]
-[h:Debug("at",junk)]
 
 [Debug("Markers",allMarkers)]
-h:setLibProperty("Markers",allMarkers)
+[h:setLibProperty("Markers",allMarkers)]
 
 !!
 @@ @T
 @PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group= ; tooltip= ; minWidth= ; 
 [r:msg="Hi"]
+
+!!
+@@ @UpdateMarkerXY
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group= ; tooltip= ; minWidth= ; 
+[h:junk="this assumes the marker is on the current map."]
+[h:name=arg(0)]
+[h:id=findToken(name)]
+[h:t=assert(id,"cannot find "+name+" on map")]
+[h:map=getCurrentMapName()]
+[h:marker=GetMarker(map,name)]
+[h:junk="this will update the xy (i hope)"]
+[h:t=SaveMarkerJSON(map,name,marker)]
+
+!!
+@@ @CheckHitTrigger
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Teleports And Traps ; tooltip= ; minWidth= ; 
+[h:lastPath=arg(0)]
+[h:lastPathSave=lastPath]
+[h:map=getCurrentMapName()]
+[h:markers=GetMapMarkers(map)]
+[h:markerNames=json.fields(markers)]
+[h:triggers=""]
+[h:names=""]
+
+[h,foreach(n,markerNames),code:{
+  [h:marker=json.get(markers,n)]
+  [h:isTrigger=isTrigger(marker)]
+  [h,if(isTrigger): names=json.append(names,n)]
+}]
+
+[h:minIndex=99999999]
+[h:firstTriggerHit='']
+[h:firstTriggerCoords='']
+
+[h,foreach(name,names), code:{
+  [h:triggerPoint= movedOverToken(name,lastPathSave)]
+  [h:empty=json.isEmpty(triggerPoint)]
+  [h,if(!empty), code:{
+    [idx=500]
+    [h:idx=FindMinCoordIdx(triggerPoint,lastPath)]
+    [h:minIndex=if(idx<minIndex,idx,minIndex)]
+    [h:firstTriggerHit=if(idx==minIndex,name,firstTriggerHit)]
+    [h:firstTriggerCoords=if(idx==minIndex,triggerPoint,firstTriggerCoords)]
+  };{}]
+}]
+
+[h:t=Debug(getMacroName()+":minIndex",minIndex)]
+[h:t=Debug(getMacroName()+":firstTriggerHit",firstTriggerHit)]
+[r:firstTriggerHit]
+
+!!
+@@ @GetPartnerCoords
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Teleports And Traps ; tooltip= ; minWidth= ; 
+[h:dest=arg(0)]
+[h:pmap=json.get(dest,"pmap")]
+[h:pname=json.get(dest,"pname")]
+[h:there=if(pname=="",0,1)]
+[h:assert(there,"Invalid name passed as destination for teleport")]
+
+[h:mapMarkers=GetMapMarkers(pmap)]
+[h,if(json.type(mapMarkers)!="OBJECT"): mapMarkers="{}"]
+
+[h:marker=json.get(mapMarkers,pname)]
+[h,if(json.type(marker)!="OBJECT"): marker="{}"]
+
+[h:ptype=json.get(marker,"type")]
+[h:there=if(ptype=="",0,1)]
+[h:assert(there,"Invalid type passed as destination for teleport")]
+
+[h:currentMap=getCurrentMapName()]
+[h:pmap=if(pmap=="",currentMap,pmap)]
+
+[h: maps = getAllMapNames("json")]
+[h:junk="check to see if map exists"]
+[h:there=json.contains(maps,pmap)]
+[h:assert(there,"destination map does not exist ")]
+
+[h:x=json.get(marker,"x")]
+[h,if(x==""): x=0]
+[h:y=json.get(marker,"y")]
+[h,if(y==""): y=0]
+
+[r:dest=json.set(dest,"pmap",pmap,"pname",pname,"ptype",ptype,"x",x,"y",y)]
+
+!!
+@@ @GetTriggerMacro
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Teleports And Traps ; tooltip= ; minWidth= ; 
+[h:name=arg(0)]
+[h:map=getCurrentMapName()]
+[h:markers=GetMapMarkers(map)]
+[h:marker=json.get(markers,name)]
+[h:macro=json.get(marker,"macro")]
+[r:macro]
+
+!!
+@@ @RunTriggerMacro
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Teleports And Traps ; tooltip= ; minWidth= ; 
+[h:id=arg(0)]
+[h:triggerName=arg(1)]
+[h:macro=GetTriggerMacro(triggerName)]
+[h:t=execMacro(macro)]
+[r:t]
+
+!!
+@@ @Teleport
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Teleports And Traps ; tooltip= ; minWidth= ; 
+[h:junk="This macro recieves a json array of token id's and teleports them to coordinates on another map")]
+[h:triggerName=arg(0)]
+[h:id=arg(1)]
+[h:ids=json.append("",id)]
+[h:TeleportList(triggerName,ids)]
+
+!!
+@@ @TeleportList
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Teleports And Traps ; tooltip= ; minWidth= ; 
+[h:junk="This macro recieves a json array of token id's and teleports them to coordinates on another map")]
+[h:triggerName=arg(0)]
+[h:triggerId=findToken(triggerName)]
+[h:t=assert(triggerId,"could not find token in "+getMacroName())]
+
+[h:triggerX=getTokenX(0, triggerId)]
+[h:triggerY=getTokenY(0, triggerId)]
+[h:ids=arg(1)]
+
+[h:destination=GetMarkerPartner(triggerName)]
+[h:destination=GetPartnerCoords(destination)]
+[h:tripMap=json.get(destination,"pmap")]
+[h:tripName=json.get(destination,"pname")]
+[h:tripX=json.get(destination,"x")]
+[h:tripY=json.get(destination,"y")]
+
+[h,foreach(id,ids), code:{
+  [h:test=findToken(id)]
+  [h,if(test==""): found=0;found=1]
+  [h:assert(found,"id not found")]
+}]
+
+[h:currentMap=getCurrentMapName()]
+[h,if(currentMap==tripMap): thisMap=1;thisMap=0]
+
+[h,foreach(id,ids), code:{
+  [idX=getTokenX(0, id)]
+  [idY=getTokenY(0, id)]
+  [deltaX=triggerX-idX]
+  [deltaY=triggerY-idY]
+  [if(thisMap), code:{
+    [newX=tripX-deltaX]
+    [newY=tripY-deltaY]
+    [moveToken(newX,newY,0,id)]
+  };{
+    [moveTokenToMap(id, tripMap, tripX+deltaX,tripY+deltaY, 10)]
+  }]
+}]
+
+!!
+@@ @isTrigger
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Teleports And Traps ; tooltip= ; minWidth= ; 
+[h:marker=arg(0)]
+[h:markerType=json.get(marker,"type")]
+[h:triggerTypes="Teleport1WayAuto, Teleport2WayAuto, Teleport1Way, Teleport2Way. Trap, TrapPcOnly, Terrain"]
+[h:rtn=0]
+[h,foreach(t,triggerTypes), code:{
+  [if(markerType==t): rtn=1]
+}]
+[r:rtn]
 
 !!
 @@ @CheckMarkerPartner
@@ -341,6 +512,32 @@ h:setLibProperty("Markers",allMarkers)
 };{
   [h:rtn=json.set("","pname","","map",getCurrentMapName())]
 }]
+[r:rtn]
+
+!!
+@@ @FindMinCoordIdx
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=X ; tooltip= ; minWidth= ; 
+[h:array1=arg(0)]
+[h:array2=arg(1)]
+
+[h:minIdx=5000]
+[h,foreach(a1,array1), code:{
+  [h:cnt2=0]
+  [foreach(a2,array2), code:{
+    [equals=json.equals(a1,a2)]
+    [if(equals): minIdx=min(cnt2,minIdx)]
+    [cnt2=cnt2+1]
+  }]
+}]
+[h:minIdx=if(minIdx==5000,-1,minIdx)]
+[r:minIdx]
+
+!!
+@@ @isCurrentMap
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=X ; tooltip= ; minWidth= ; 
+[h:map=arg(0)]
+[h:currentMap=getCurrentMapName()]
+[h:rtn=if(currentMap==map,1,0)]
 [r:rtn]
 
 !!
@@ -408,120 +605,10 @@ h:setLibProperty("Markers",allMarkers)
 
 [h:partnerList=json.toList(partnerList)]
 
-[h:status=input("partnerString|"+partnerList+"|Select Partner Token|LIST|SELECT="+index+" VALUE=STRING")]
+[h:status=input(strformat("partnerString|%{partnerList}|Select Partner Token|LIST|SELECT=%{index} VALUE=STRING"))] 
 
 [h: map=listGet(partnerString, 0, ":")]
 [h: name=listGet(partnerString, 1, ":")]
 [r:rtn=json.set("","pmap",map,"pname",name)]
-
-!!
-@@ @GetPartnerCoords
-@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Teleports And Traps ; tooltip= ; minWidth= ; 
-[h:dest=arg(0)]
-[h:pmap=json.get(dest,"pmap")]
-[h:pname=json.get(dest,"pname")]
-[h:there=if(pid=="",0,1)]
-[h:assert(there,"Invalid id passed as destination for teleport")]
-
-[h:mapMarkers=GetMapMarkers(pmap)]
-[h,if(json.type(mapMarkers)!="OBJECT"): mapMarkers="{}"]
-
-[h:marker=json.get(mapMarkers,pname)]
-[h,if(json.type(marker)!="OBJECT"): marker="{}"]
-
-[h:ptype=json.get(marker,"type")]
-[h:there=if(ptype=="",0,1)]
-[h:assert(there,"Invalid type passed as destination for teleport")]
-
-[h:currentMap=getCurrentMapName()]
-[h:pmap=if(pmap=="",currentMap,pmap)]
-
-[h: maps = getAllMapNames("json")]
-[h:junk="check to see if map exists"]
-[h:there=json.contains(maps,pmap)]
-[h:assert(there,"destination map does not exist ")]
-
-[h:x=json.get(marker,"x")]
-[h,if(x==""): x=0]
-[h:y=json.get(marker,"y")]
-[h,if(y==""): y=0]
-
-[r:dest=json.set(dest,"pmap",pmap,"pname",pname,"ptype",ptype,"x",x,"y",y)]
-
-!!
-@@ @Teleport
-@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Teleports And Traps ; tooltip= ; minWidth= ; 
-[h:junk="This macro recieves a json array of token id's and teleports them to coordinates on another map")]
-[h:triggerId=arg(0)]
-[h:id=arg(1)]
-[h:ids=json.append("",id)]
-[h:TeleportList(triggerId,ids)]
-
-!!
-@@ @TeleportList
-@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Teleports And Traps ; tooltip= ; minWidth= ; 
-[h:junk="This macro recieves a json array of token id's and teleports them to coordinates on another map")]
-[h:triggerId=arg(0)]
-[h:triggerName=getName(triggerId)]
-
-[h:triggerX=getTokenX(0, triggerId)]
-[h:triggerY=getTokenY(0, triggerId)]
-[h:ids=arg(1)]
-
-[h:destination=GetMarkerPartner(triggerName)]
-[h:destination=GetPartnerCoords(destination)]
-[h:tripMap=json.get(destination,"pmap")]
-[h:tripName=json.get(destination,"pname")]
-[h:tripX=json.get(destination,"x")]
-[h:tripY=json.get(destination,"y")]
-[h:Debug("destination",destination)]
-
-[h,foreach(id,ids), code:{
-  [h:test=findToken(id)]
-  [h,if(test==""): found=0;found=1]
-  [h:assert(found,"id not found")]
-}]
-
-[h:currentMap=getCurrentMapName()]
-[h,if(currentMap==tripMap): thisMap=1;thisMap=0]
-
-[Debug("diving in","to foreach")]
-
-[h,foreach(id,ids), code:{
-[Debug("id",id)]
-  [idX=getTokenX(0, id)]
-  [idY=getTokenY(0, id)]
-  [deltaX=triggerX-idX]
-  [deltaY=triggerY-idY]
-  [if(thisMap), code:{
-[Debug("tripId",tripId)]
-    [tripX=getTokenX(0, tripId)]
-    [tripY=getTokenY(0, tripId)]
-    [newX=tripX-deltaX]
-    [newY=tripY-deltaY]
-[h:Debug("triggerX",triggerX)]
-[h:Debug("tripX",tripX)]
-[h:Debug("idX",idX)]
-[h:Debug("deltaX",deltaX)]
-[h:Debug("newX",newX)]
-[h:Debug("triggerY",triggerY)]
-[h:Debug("tripY",tripY)]
-[h:Debug("idY",idY)]
-[h:Debug("deltaY",deltaY)]
-[h:Debug("newY",newY)]
-    [moveToken(newX,newY,0,id)]
-[h:Debug("after","moveToken 1")]
-  };{
-    [moveTokenToMap(id, tripMap, ,tripY+deltaY, 10)]
-  }]
-}]
-
-!!
-@@ @isCurrentMap
-@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=X ; tooltip= ; minWidth= ; 
-[h:map=arg(0)]
-[h:currentMap=getCurrentMapName()]
-[h:rtn=if(currentMap==map,1,0)]
-[r:rtn]
 
 !!
