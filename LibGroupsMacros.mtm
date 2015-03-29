@@ -482,7 +482,6 @@ tokentypes (default is basic) json array
 [h:id=currentToken()]
 [h:name=getName(id)]
 [h:tokenType=getPropertyType()]
-[h:t=Debug("tokenType",tokenType)]
 [h,if(tokenType!="Basic" && tokenType!="Vehicle" && tokenType!="Marker"): abort(0)]
 
 [h,if(tokenType=="Marker"), code:{
@@ -513,8 +512,7 @@ tokentypes (default is basic) json array
   }]
 };{
   [h:markerName=CheckHitTrigger(lastPath)]
-[h:t=Debug(getMacroName()+":markerName",markerName)]
-  [msg=RunTriggerMacro(id,markerName)]
+  [h,if(markerName!=""): RunTriggerMacro(id,markerName)]
 }]
 [r,if(msg!=''): msg+"<br>"]
 
