@@ -511,8 +511,11 @@ tokentypes (default is basic) json array
     [h: moveToken(NewX, NewY,1,m)]
   }]
 };{
-  [h:markerName=CheckHitTrigger(lastPath)]
-  [h,if(markerName!=""): RunTriggerMacro(id,markerName)]
+  [h:triggerHitInfo=CheckHitTrigger(lastPath)]
+  [h:stepOrder=json.get(triggerHitInfo,"stepOrder")]
+  [h:triggersHit=json.get(triggerHitInfo,"triggersHit")]
+  [h:stepLength=json.length(stepOrder)]
+  [h,if(stepLength!=0): RunTriggerMacro(id,stepOrder,triggersHit,lastPath)]
 }]
 [r,if(msg!=''): msg+"<br>"]
 

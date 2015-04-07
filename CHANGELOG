@@ -11,3 +11,13 @@
 
 20150325 
 	Added tokens.moveCount>1 check in onTokenMove on Lib:Groups
+20150328
+	Initial teleport working but also fires when token leaves
+20150329
+	Wrote macro to figure out what sort of movement occurs over token (moved in, moved over, started in, never moved over, etc.). Now need to plug that into the trigger types somehow.
+20150330
+	One way teleport finally working well with all the new stuff. Still need to put in stopping code - detecting it but need to act. Also need to not run an auto trigger if the first=last.
+20150402
+	Need to add remove marker
+20150406
+	Added remove. Added step to stop teleports to non-visible maps for non-GMs
