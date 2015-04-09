@@ -21,6 +21,11 @@
 [defineFunction("GetSettingLists","GetSettingLists@Lib:GM")]
 [defineFunction("RollTokenTrait","RollTokenTrait@Lib:GM")]
 [defineFunction("GetTraits","GetTraits@Lib:GM")]
+[defineFunction("GetMovements","GetMovements@Lib:GM")]
+[defineFunction("GetWoundModifier","GetWoundModifier@Lib:GM")]
+[defineFunction("GetEdgeList","GetEdgeList@Lib:GM")]
+[defineFunction("GetRunRoll","GetRunRoll@Lib:GM")]
+[defineFunction("Run","Run@Lib:GM")]
 
 !!
 @@ @CharacterSheet
@@ -61,6 +66,7 @@
 [macro("Get Powers@Lib:GM"):""][h:p=macro.return]
 [h:g=""]
 [macro("Get Gear@Lib:Gear"):thisMacro][h:g=macro.return]
+[h:mvs=GetMovements()]
 
 [macro("GetAttributeNames@Lib:GM"):""]
 [h:attList=macro.return]
@@ -281,6 +287,16 @@
                    </td>
                    <td>
                       [r:d]
+                   </td>
+                </tr>
+                [h: class = if(class=="oddRow", "evenRow", "oddRow")]
+                <tr class="[r:class]">
+                   [h: linkit=macroLinkText("UpdateDerivedDialog@Lib:GM", "gm","returnMacro=CharacterSheet@Lib:GM",tokenId)]
+                   <td valign="top">
+                      <a style="font-weight:bold;color:maroon" href="[r:linkit]">Movements</a>:
+                   </td>
+                   <td>
+                      [r:mvs]
                    </td>
                 </tr>
                 [h: class = if(class=="oddRow", "evenRow", "oddRow")]
@@ -2824,6 +2840,14 @@ Extra Token Updated <br>
 [r:d+mod]
 
 !!
+@@ @Roll
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Traits ; tooltip= ; minWidth= ; 
+[h:die=macro.args]
+[h:msg=getName()+" rolls "+die+" with result of :"]
+[h:msg=msg+eval(die)]
+[r:msg]
+
+!!
 @@ @RollTokenTrait
 @PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Traits ; tooltip= ; minWidth= ; 
 [h:traitNames=""]
@@ -2996,7 +3020,7 @@ Extra Token Updated <br>
 
 [h:roll2Adjusted=0]
 
-[h:w=getProperty("Wounds")]
+[h:w=GetWoundModifier()]
 [h:w=if(w=="",0,w)]
 
 [h:f=getProperty("Fatigue")]
@@ -3004,6 +3028,10 @@ Extra Token Updated <br>
 
 [h:modString=if(w!=0,modString+" Wounds=-"+w ,modString)]
 [h:modString=if(f!=0,modString+" Fatigue=-"+f  ,modString)]
+[h,if(state.JokerRed || state.JokerBlack), code:{
+  [h:modString=modString+" Joker=+2")]
+  [h:dieMod=dieMod+2]
+};{}] 
 
 [r,if(state.Shaken==1), code:{
 <span style="color:red;background-color:white">[r:getName()] is <b>Shaken</b> and can only perform free actions such as opposed rolls. </span>
@@ -3758,6 +3786,15 @@ Saving [r:lists] to Lib:GM SettingLists
 [h:macro.return=propNames]
 
 !!
+@@ @GetEdgeList
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Get Trait ; tooltip= ; minWidth= ; 
+[h:rtn=""]
+[h:ed=getProperty("Edges")]
+[h:raceAbility=RaceAbilityLine(getProperty("Race"))]
+[h:ed=listAppend(ed,raceAbility)]
+[r:ed]
+
+!!
 @@ @GetEdgeNames
 @PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Get Trait ; tooltip= ; minWidth= ; 
 [h:propNames = getLibProperty("Edges")]
@@ -3836,6 +3873,70 @@ Saving [r:lists] to Lib:GM SettingLists
 [h,if(getLibProperty("SettingSkills")!=""): rtn=listAppend(rtn,getLibProperty("SettingSkills"))]
 [h,if(getLibProperty("SettingKnowledgeSkills")!=""): rtn=listAppend(rtn,getLibProperty("SettingKnowledgeSkills"))]
 [r:rtn]
+
+!!
+@@ @GetWoundModifier
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Get Trait ; tooltip= ; minWidth= ; 
+[h:id=currentToken()]
+[h:w=getProperty("Wounds")]
+[h:w=if(w=="",0,w)]
+
+[h:eds=GetEdgeList()]
+[h:wmod=w]
+
+[h,if(listContains(eds,"NervesOfSteel")): wmod=wmod-1] 
+[h,if(listContains(eds,"ImpNervesOfSteel")  && listContains(eds,"NervesOfSteel")): wmod=wmod-1; wmod=wmod-2] 
+[h,if(listContains(eds, "Berserk") && getState("Berserk")): wmod=0]
+
+[h,if(wmod<0): wmod=0]
+
+[r:wmod]
+
+!!
+@@ @GetMovements
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Movements ; tooltip= ; minWidth= ; 
+[h:tokenId=currentToken()]
+[h:wmod=GetWoundModifier()]
+[h:wmodStr=if(wmod,"-"+wmod,"")]
+[h:rtnLine="Pace("+getProperty("Pace")+wmodStr+"), "]
+
+[h:run=getProperty("Run")]
+[h:runStr=GetRunRoll()]
+[h: linkit=macroLinkText("Run@Lib:GM", "all","",tokenId)]
+[h:rtnLine=rtnLine + "Run(<a href='"+linkit+"'>"+ runStr + "</a>)"]
+
+[h:race=getProperty("Race")]
+[h,if(race!="Human"), code:{
+  [h:raceAbility=RaceAbilityLine(getProperty("Race"))]
+  [h,foreach(ra,raceAbility), code:{
+    [if(startsWith(ra,"Fly")): rtnLine=listAppend(rtnLine,ra)]
+    [if(startsWith(ra,"Burrow")): rtnLine=listAppend(rtnLine,ra)]
+  }]
+}]
+
+[r:rtnLine]
+
+!!
+@@ @GetRunRoll
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Movements ; tooltip= ; minWidth= ; 
+[h:tokenId=currentToken()]
+[h:wmod=GetWoundModifier()]
+[h:wmodStr=if(wmod,"-"+wmod,"")]
+[h:pace=getProperty("Pace")]
+[h:run=getProperty("Run")]
+
+[h:runStr=pace+"+"+run+wmodStr]
+[r:runStr]
+
+!!
+@@ @Run
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Movements ; tooltip= ; minWidth= ; 
+[h:runStr=GetRunRoll()]
+[h:result=eval(runStr)]
+[h:msg=json.set("","Trait","Run","Roll",result)]
+[h:LogEvent(msg)]
+
+[r:"<b>"+getName()+" runs at a speed of <span style='color:maroon;background-color:white'>"+result+"</span> on Round "+CurrentRound()+"</b>"]
 
 !!
 @@ @LoadRaces

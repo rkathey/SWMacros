@@ -23,3 +23,4 @@
 	Added remove. Added step to stop teleports to non-visible maps for non-GMs
 20150408
 	Added initial version of traps. Now have image showing up when the 'ask' function is called.
+	Added Movements to you can click to run now. It takes into account wound penalties. Also created Wound Mod macro to take into account for berserk and nerves of steel. Also added joker modifier to trait roll macro
