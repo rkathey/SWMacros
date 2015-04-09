@@ -66,6 +66,27 @@
 [r:macro="GetInterceptedTriggerInfo"]
 [defineFunction(macro, macro+lib)]
 
+[r:macro="RemoveMarker"]
+[defineFunction(macro, macro+lib)]
+
+[r:macro="GetMacroTemplate"]
+[defineFunction(macro, macro+lib)]
+
+[r:macro="GetTriggerPicAndNotes"]
+[defineFunction(macro, macro+lib)]
+
+[r:macro="GetTrap"]
+[defineFunction(macro, macro+lib)]
+
+[r:macro="TrapDialog"]
+[defineFunction(macro, macro+lib)]
+
+[r:macro="Trap"]
+[defineFunction(macro, macro+lib)]
+
+[r:macro="AskToContinue"]
+[defineFunction(macro, macro+lib)]
+
 !!
 @@ @CheckMarkers
 @PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group= ; tooltip= ; minWidth= ; 
@@ -93,6 +114,11 @@
 [h:index=listFind(types,markerType)]
 [h:index=if(index==-1,0,index)]
 
+[h:junk="set default values"]
+[h:partner="{}"]
+[h:macro=""]
+[h:affect="nonstopping"]
+
 [h:status=input(
 "newType|"+types+"|Marker Type|LIST|SELECT="+index+" VALUE=STRING"
 )]
@@ -113,7 +139,7 @@ Teleport 1 Way Auto Stuff
   [h:marker=json.set(marker,"type",newType)]
   [h:partner=PartnerDialog(map,name)]
   [h:marker=json.set(marker,"partner",partner)]
-  [h:macro=encode("[Teleport(markerName,id)]")]
+  [h:macro=GetMacroTemplate(newType)]
   [h:t=CreateTriggerButton(macroName,macro)]
   [h:marker=json.set(marker,"macro",macroName)]
   [h:marker=json.set(marker,"affect","stopping")]
@@ -126,6 +152,13 @@ Teleport 2 Way Auto Stuff
 case "Teleport1Way": {
 Teleport 1 Way Stuff
   [h:marker=json.set(marker,"type",newType)]
+  [h:partner=PartnerDialog(map,name)]
+  [h:marker=json.set(marker,"partner",partner)]
+  [h:macro=GetMacroTemplate(newType)]
+  [h:t=CreateTriggerButton(macroName,macro)]
+  [h:marker=json.set(marker,"macro",macroName)]
+  [h:marker=json.set(marker,"affect","asking")]
+  [h:SaveMarkerJSON(map,name,marker)]
 };
 case "Teleport2Way": {
 Teleport 2 Way Stuff
@@ -134,6 +167,14 @@ Teleport 2 Way Stuff
 case "Trap": {
 Trap Stuff
   [h:marker=json.set(marker,"type",newType)]
+  [h:trap=TrapDialog(map,name)]
+  [h:marker=json.set(marker,"trap",trap)]
+  [h:macro=GetMacroTemplate(newType)]
+  [h:t=CreateTriggerButton(macroName,macro)]
+  [h:marker=json.set(marker,"macro",macroName)]
+  [h:marker=json.set(marker,"affect","stopping")]
+  [h:t=Debug("trap json",marker)]
+  [h:SaveMarkerJSON(map,name,marker)]
 };
 case "TrapPcOnly": {
 Trap for pcs only stuff
@@ -142,14 +183,26 @@ Trap for pcs only stuff
 case "Terrain": {
 Terrain stuff
   [h:marker=json.set(marker,"type",newType)]
+  [h,if(json.contains(marker,"macro")): marker=json.remove(marker,"macro")]
+  [h,if(json.contains(marker,"affect")): marker=json.remove(marker,"affect")]
+  [h,if(json.contains(marker,"partner")): marker=json.remove(marker,"partner")]
+  [h:SaveMarkerJSON(map,name,marker)]
 };
 case "LandingPad": {
 Landing Pad stuff
   [h:marker=json.set(marker,"type",newType)]
+  [h,if(json.contains(marker,"macro")): marker=json.remove(marker,"macro")]
+  [h,if(json.contains(marker,"affect")): marker=json.remove(marker,"affect")]
+  [h,if(json.contains(marker,"partner")): marker=json.remove(marker,"partner")]
+  [h:SaveMarkerJSON(map,name,marker)]
 };
 default: {
 Generic stuff
   [h:marker=json.set(marker,"type",newType)]
+  [h,if(json.contains(marker,"macro")): marker=json.remove(marker,"macro")]
+  [h,if(json.contains(marker,"affect")): marker=json.remove(marker,"affect")]
+  [h,if(json.contains(marker,"partner")): marker=json.remove(marker,"partner")]
+  [h:SaveMarkerJSON(map,name,marker)]
 }]
 
 !!
@@ -172,7 +225,7 @@ Generic stuff
 
 [h:setState("Marker", 1,id)]
 
-[h:macros=json.append("","Activate Macro","Remove","Set Type","Pick Partner","Go To Partner")]
+[h:macros=json.append("","Activate Macro","Remove","Set Type","Pick Partner","Go To Partner","Remove","Edit Marker")]
 [foreach(m,macros,""), code:{
   [h:idx=getMacroIndexes(m)]
   [if(idx!=""):removeMacro(idx)]
@@ -192,10 +245,29 @@ Generic stuff
 };{}]
 
 [if(getPropertyType()==tokenType), code:{
-[h:macroName="Remove"]
-[h:command=encode("[macro('CharacterSheet@Lib:Marker'): 'Activate']")]
-[h:command = command + encode("[abort(0)]")]
+[h:macroName="Edit Marker"]
+[h:command=encode("[h:id=currentToken()]")]
+[h:command = command + encode("[h:type=getPropertyType()]")]
+[h:command = command + encode('[h,if(type!="Marker"): assert(0,"This macro can only be run on Markers. Use CreateTokenMarkers to create the marker first")]')]
+[h:command = command + encode("[h:map=getCurrentMapName()]")]
+[h:command = command + encode("[r:t=EditMarker(map,id)]")]
 [h:macroProps="autoexec=true;"]
+[h:macroProps="applyToSelected=true;"]
+[if(hasMacro(macroName)), code: {
+  [getName()] already has [macroName] on token
+};{
+  [h:createMacro(macroName, decode(command), macroProps)]
+  [macroName] Button added.
+}]
+};{}]
+
+[if(getPropertyType()==tokenType), code:{
+[h:macroName="Remove"]
+[h:command=encode("[h:name=getName()]")]
+[h:command = command + encode("[h:map=getCurrentMapName()]")]
+[h:command = command + encode("[r:t=RemoveMarker(map,name)]")]
+[h:macroProps="autoexec=true;"]
+[h:macroProps="applyToSelected=true;"]
 [if(hasMacro(macroName)), code: {
   [getName()] already has [macroName] on token
 };{
@@ -246,37 +318,46 @@ Generic stuff
 !!
 @@ @RemoveMarker
 @PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group= ; tooltip= ; minWidth= ; 
-[h:name=arg(0)]
-[h:map=arg(1)]
+[h:name=arg(1)]
+[h:map=arg(0)]
 [h:id=findToken(name)]
 [h,if(id==""): assert(0,"token "+name+" not found")]
 
 [h:junk="if its a partner, abort"]
+
 [h:allMarkers=GetAllMarkers()]
 [h:maps=json.fields(allMarkers)]
 [h,foreach(m,maps), code:{
   [markers=GetMapMarkers(m)]
   [h,foreach(marker,markers), code:{
     [partner=GetPartner(m,marker)]
-    [partner=json.get(partner,"partner")]
     [pmap=json.get(partner,"pmap")]
     [pname=json.get(partner,"pname")]
-    [if(pname==name && pmap=map): assert(0,"Cannot removed Marker "+pname+" because it is a partner to "+pmap+":"+pname)]
+    [if(pname==name && pmap==map): assert(0,"Cannot removed Marker "+pname+" because it is a partner to "+m+":"+marker)]
   }]
 }]
+
 [h:junk="remove macros"]
+
 [h:macros=json.append("","Activate Macro","Remove","Set Type","Pick Partner","Go To Partner")]
 [foreach(m,macros,""), code:{
   [h:idx=getMacroIndexes(m)]
   [if(idx!=""):removeMacro(idx)]
 }]
 [h:junk="remove state"]
+
 [h:setState("Marker", 0,id)]
+
+[h:junk="remove from lib properties"]
 
 [h:markers=GetMapMarkers(map)]
 [h:markers=json.remove(markers,name)]
-[h:allMarkers=json.set(markers,map)]
-[h:t=Debug("all markers from RemoveMarker",allMarkers)]
+[h:noMarkers=json.isEmpty(markers)]
+[h,if(noMarkers), code:{
+  [h:allMarkers=json.remove(allMarkers,map)]
+};{
+  [h:allMarkers=json.set(allMarkers,map,markers)]
+}]
 [h:setLibProperty("Markers",allMarkers)]
 [r:msg="Marker "+name+" removed"]
 
@@ -356,8 +437,6 @@ Generic stuff
 }]
 
 [h:junk="now fix or remove partners"]
-
-[Debug("SaveMarkerJSON:Markers",allMarkers)]
 [h:setLibProperty("Markers",allMarkers)]
 
 !!
@@ -373,271 +452,28 @@ Generic stuff
 [h:t=SaveMarkerJSON(map,name,marker)]
 
 !!
-@@ @Blast
-@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Macro Templates ; tooltip= ; minWidth= ; 
-[r:getName(id)]
-[r:msg=" takes "]
-[r:eval(damageRoll)]
-[r:msg=" from a "]
-[r:trapName]
-[r:msg=". Roll "]
-[r:trait]
-[r:msg=" to avoid"]
-
-!!
-@@ @Generic
-@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Macro Templates ; tooltip= ; minWidth= ; 
-,Teleport1WayAuto, Teleport2WayAuto, Teleport1Way, Teleport2Way. Trap, TrapPcOnly, Terrain, LandingPad, Generic
-
-!!
-@@ @GetTriggerPicAndNotes
-@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Macro Templates ; tooltip= ; minWidth= ; 
-<img src='[r:getTokenPortrait(100)]'></img>
-[r:getNotes()]
-
-!!
-@@ @LandingPad
-@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Macro Templates ; tooltip= ; minWidth= ; 
-,Teleport1WayAuto, Teleport2WayAuto, Teleport1Way, Teleport2Way. Trap, TrapPcOnly, Terrain, LandingPad, Generic
-
-!!
-@@ @Teleport1Way
-@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Macro Templates ; tooltip= ; minWidth= ; 
-[Teleport(markerName,id)]
-
-!!
-@@ @Teleport1WayAuto
-@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Macro Templates ; tooltip= ; minWidth= ; 
-[Teleport(markerName,id)]
-
-!!
-@@ @Teleport2Way
-@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Macro Templates ; tooltip= ; minWidth= ; 
-[Teleport(markerName,id)]
-
-!!
-@@ @Teleport2WayAuto
-@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Macro Templates ; tooltip= ; minWidth= ; 
-[Teleport(markerName,id)]
-
-!!
-@@ @Terrain
-@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Macro Templates ; tooltip= ; minWidth= ; 
-,Teleport1WayAuto, Teleport2WayAuto, Teleport1Way, Teleport2Way. Trap, TrapPcOnly, Terrain, LandingPad, Generic
-
-!!
-@@ @Trap
-@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Macro Templates ; tooltip= ; minWidth= ; 
-,, , Teleport1Way, Teleport2Way. Trap, TrapPcOnly, Terrain, LandingPad, Generic
-
-!!
-@@ @TrapPcOnly
-@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Macro Templates ; tooltip= ; minWidth= ; 
-
-
-!!
-@@ @CheckHitTrigger
-@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Teleports And Traps ; tooltip= ; minWidth= ; 
-[h:lastPath=arg(0)]
-[h:lastPathSave=lastPath]
-[h:map=getCurrentMapName()]
-[h:markers=GetMapMarkers(map)]
-[h:markerNames=json.fields(markers)]
-[h:triggers=""]
-[h:names=""]
-
-[h,foreach(n,markerNames),code:{
-  [h:marker=json.get(markers,n)]
-  [h:isTrigger=isTrigger(marker)]
-  [h,if(isTrigger): names=json.append(names,n)]
-}]
-
-[h:minIndex=99999999]
-[h:firstTriggerHit='']
-[h:firstTriggerCoords='']
-[h:hits="{}"]
-[h,foreach(name,names), code:{
-  [h:triggerPoint= movedOverToken(name,lastPathSave)]
-  [h:empty=json.isEmpty(triggerPoint)]
-  [h,if(!empty), code:{
-    [h:trigger=GetInterceptedTriggerInfo(name,lastPath)]
-    [h:marker=json.get(markers,name)]
-    [h:affect=json.get(marker,"affect")]
-    [h:affect=if(affect=="","stopping",affect)]
-    [h:trigger=json.set(trigger,"affect",affect)]
-    [h:entered=json.get(trigger,"neverEntered")]
-    [h:entered=if(entered,0,1)]
-    [h,if(entered): hits=json.set(hits,name,trigger)]
-  };{}]
-}]
-[h:hitTriggers=json.fields(hits)]
-[h:ordering="[]"]
-[h,foreach(ht,hitTriggers),code:{
-  [trigger=json.get(hits,ht)]
-  [firstHit=json.get(trigger,"firstEncounteredStep")]
-  [affect=json.get(trigger,"affect")]
-  [orderJSON=json.set("","name",ht,"step",firstHit,"affect",affect)]
-  [ordering=json.append(ordering,orderJSON)]
-}]
-[h:ordering=json.sort(ordering,"a","step")]
-[h:rtn=json.set("","stepOrder",ordering,"triggersHit",hits)]
-[r:rtn]
-
-!!
-@@ @CreateTriggerButton
-@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=true ; group=Teleports And Traps ; tooltip= ; minWidth= ; 
-[h:macroName=arg(0)]
-[h:macro=arg(1)]
-[h:macroProps="autoexec=true;"]
-[h,if(hasMacro(macroName)), code: {
-  [SetTriggerMacro(macroName,macro)]
-};{
-  [h:createMacro(macroName, decode(macro), macroProps)]
-  [macroName] Button added.
-}]
-
-!!
-@@ @RunTriggerMacro
-@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Teleports And Traps ; tooltip= ; minWidth= ; 
-[h:id=arg(0)]
-[h:stepOrder=arg(1)]
-[h:triggersHit=arg(2)]
-[h:junk="find first trigger point that's a stoppable"]
-[h:lastPath=arg(3)]
-[h:stoppingStep=9999]
-[h:affects="[]"]
-
-[h,foreach(so,stepOrder), code:{
-  [name=json.get(so,"name")]
-  [step=json.get(so,"step")]
-  [affect=json.get(so,"affect")]
-  [if(affect=="stopping"): stoppingStep=min(stoppingStep,step)]
-  [if(step<=stoppingStep):affects=json.append(affects,so)]
-}]
-
-[r,foreach(a,affects),code:{
-  [h:markerName=json.get(a,"name")]
-  [h:macro=GetTriggerMacro(markerName)]
-  [t=evalMacro(decode(macro))]
-}]
-
-!!
-@@ @Teleport
-@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Teleports And Traps ; tooltip= ; minWidth= ; 
-[h:junk="This macro recieves a json array of token id's and teleports them to coordinates on another map")]
-[h:triggerName=arg(0)]
+@@ @AskToContinue
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=cyan ; playerEditable=false ; applyToSelected=false ; group=1 - Gets and Sets ; tooltip= ; minWidth= ; 
+[h:markerName=arg(0)]
 [h:id=arg(1)]
-[h:ids=json.append("",id)]
-[h:TeleportList(triggerName,ids)]
-
-!!
-@@ @TeleportList
-@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Teleports And Traps ; tooltip= ; minWidth= ; 
-[h:junk="This macro recieves a json array of token id's and teleports them to coordinates on another map")]
-[h:triggerName=arg(0)]
-[h:triggerId=findToken(triggerName)]
-[h:t=assert(triggerId,"could not find token in "+getMacroName())]
-
-[h:triggerX=getTokenX(0, triggerId)]
-[h:triggerY=getTokenY(0, triggerId)]
-[h:ids=arg(1)]
-
-[h:destination=GetMarkerPartner(triggerName)]
-[h:destination=GetPartnerCoords(destination)]
-[h:tripMap=json.get(destination,"pmap")]
-[h:tripName=json.get(destination,"pname")]
-[h:tripX=json.get(destination,"x")]
-[h:tripY=json.get(destination,"y")]
-
-[h,foreach(id,ids), code:{
-  [h:test=findToken(id)]
-  [h,if(test==""): found=0;found=1]
-  [h:assert(found,"id not found")]
-}]
-
-[h:currentMap=getCurrentMapName()]
-[h,if(currentMap==tripMap): thisMap=1;thisMap=0]
-
-[h,foreach(id,ids), code:{
-  [idX=getTokenX(0, id)]
-  [idY=getTokenY(0, id)]
-  [deltaX=triggerX-idX]
-  [deltaY=triggerY-idY]
-  [if(thisMap), code:{
-    [newX=tripX-deltaX]
-    [newY=tripY-deltaY]
-    [moveToken(newX,newY,0,id)]
-  };{
-    [moveTokenToMap(id, tripMap, tripX+deltaX,tripY+deltaY, 10)]
-  }]
-}]
-
-!!
-@@ @isTrigger
-@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Teleports And Traps ; tooltip= ; minWidth= ; 
-[h:marker=arg(0)]
-[h:markerType=json.get(marker,"type")]
-[h:triggerTypes="Teleport1WayAuto, Teleport2WayAuto, Teleport1Way, Teleport2Way. Trap, TrapPcOnly, Terrain"]
+[h:junk="markerName is the variable containing the name of the triggering marker, id is the id of the token"]
+[h:markerId=findToken(markerName)]
 [h:rtn=0]
-[h,foreach(t,triggerTypes), code:{
-  [if(markerType==t): rtn=1]
+[h,token(markerName), code:{
+  [h:imageId=getTokenImage(100)]
+  [h:portraitId=getTokenPortrait(100)]
+  [h:handoutId=getTokenHandout(100)]
+  [h:useHandout=if(handoutId =="",0,1)]
+  [h:usePotrait=if(useHandout == 0 && portraitId !="",1,0)]
+  [h:useImage=if(useHandout==0 && usePotrait ==0,1,0)]
+  [h,if(useImage == 1): img=getTokenImage()]
+  [h,if(usePotrait == 1): img=getTokenPortrait()]
+  [h,if(useHandout == 1): img=getTokenHandout()]
+  [h:notes=getNotes()]
+  [h,if(notes==""): notes="Do you wish to use "+markerName]
+  [h:rtn=input("junk|<html><img src='"+replace(img, ":", "&#58;")+"' height=90 width=90></img></html>|-|LABEL|SPAN=TRUE",
+"junk|<html>"+notes+"</html>|-|LABEL|SPAN=TRUE")]
 }]
-[r:rtn]
-
-!!
-@@ @CheckMarkerPartner
-@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=2 - Partners ; tooltip= ; minWidth= ; 
-[h:id=arg(0)]
-[h:name=getName(id)]
-[h:pid=GetMarkerPartner(name)]
-[h:startMap=getCurrentMapName()]
-[h:maps=getAllMapNames()]
-[h:partner=GetMarkerPartner(name)]
-
-[h:pmap=json.get(partner,"map")]
-[h:pid=json.get(partner,"id")]
-
-[if(startMap!=pmap): setCurrentMap(pmap)]
-[r:partnerName=getName(pid)]
-
-[h,if(partnerName==""): assert(0,"Cannot find partner token")]
-
-!!
-@@ @GetMarkerPartner
-@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=2 - Partners ; tooltip= ; minWidth= ; 
-[h:name=arg(0)]
-[h:partner=getProperty("Partner",name)]
-[h,if(json.type(partner)=="OBJECT"), code:{
-  [h:rtn=partner]
-};{
-  [h:rtn=json.set("","pname","","map",getCurrentMapName())]
-}]
-[r:rtn]
-
-!!
-@@ @FindMinCoordIdx
-@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=X ; tooltip= ; minWidth= ; 
-[h:array1=arg(0)]
-[h:array2=arg(1)]
-
-[h:minIdx=5000]
-[h,foreach(a1,array1), code:{
-  [h:cnt2=0]
-  [foreach(a2,array2), code:{
-    [equals=json.equals(a1,a2)]
-    [if(equals): minIdx=min(cnt2,minIdx)]
-    [cnt2=cnt2+1]
-  }]
-}]
-[h:minIdx=if(minIdx==5000,-1,minIdx)]
-[r:minIdx]
-
-!!
-@@ @isCurrentMap
-@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=X ; tooltip= ; minWidth= ; 
-[h:map=arg(0)]
-[h:currentMap=getCurrentMapName()]
-[h:rtn=if(currentMap==map,1,0)]
 [r:rtn]
 
 !!
@@ -694,6 +530,45 @@ Generic stuff
   [h:cnt=cnt+1]
 }]
 [r:rtn=json.set("","startedIn",startedIn,"movedThrough",movedThrough,"entered",entered,"movedOut",movedOut,"stayedIn",stayedIn,"neverEntered",neverEntered,"endedIn",endedIn,"firstEncounteredStep",firstEncounteredStep,"lastEncounteredStep",lastEncounteredStep,"cnt",cnt)]
+
+!!
+@@ @GetMacroTemplate
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=1 - Gets and Sets ; tooltip= ; minWidth= ; 
+[h:newType=arg(0)]
+[h:junk="Blast,Teleport1WayAuto, Teleport2WayAuto, Teleport1Way, Teleport2Way. Trap, TrapPcOnly, Terrain, LandingPad, Generic"]
+[h:macro=""]
+[h,switch(newType),code:
+case "Blast": {
+};
+case "Teleport1WayAuto": {
+  [h:macro=macro+encode("[Teleport(markerName,id)]")]
+};
+case "Teleport2WayAuto": {
+  [h:macro=macro+encode("[Teleport(markerName,id)]")]
+};
+case "Teleport1Way": {
+  [h:macro=macro+encode("[h:continue=AskToContinue(markerName,id)]")]
+  [h:macro=macro+encode("[h:abort(continue)]")]
+  [h:macro=macro+encode("[Teleport(markerName,id)]")]
+[h:t=Debug("in Get Macro Template",macro)]
+};
+case "Teleport2Way": {
+  [h:macro=macro+encode("[h:continue=input('junk|do you wish to continue|-|LABEL|SPAN=TRUE')]")]
+  [h:macro=macro+encode("[h:abort(continue)]")]
+  [h:macro=macro+encode("[Teleport(markerName,id)]")]
+};
+case "Trap": {
+  [h:macro=macro+encode("[Trap(markerName,id)]")]
+};
+case "TrapPcOnly": {
+};
+case "Terrain": {
+};
+case "LandingPad": {
+};
+default: {
+}]
+[r:macro]
 
 !!
 @@ @GetMapMarkers
@@ -769,6 +644,31 @@ Generic stuff
 [r:macro]
 
 !!
+@@ @GetTriggerPicAndNotes
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=cyan ; playerEditable=false ; applyToSelected=false ; group=1 - Gets and Sets ; tooltip= ; minWidth= ; 
+[h:markerName=arg(0)]
+[h:id=arg(1)]
+[h:junk="markerName is the variable containing the name of the triggering marker, id is the id of the token"]
+
+[h:markerId=findToken(markerName)]
+[h:rtn=0]
+[h,token(markerName), code:{
+  [h:imageId=getTokenImage(100)]
+  [h:portraitId=getTokenPortrait(100)]
+  [h:handoutId=getTokenHandout(100)]
+  [h:useHandout=if(handoutId =="",0,1)]
+  [h:usePotrait=if(useHandout == 0 && portraitId !="",1,0)]
+  [h:useImage=if(useHandout==0 && usePotrait ==0,1,0)]
+  [h,if(useImage == 1): img=getTokenImage()]
+  [h,if(usePotrait == 1): img=getTokenPortrait()]
+  [h,if(useHandout == 1): img=getTokenHandout()]
+  [h:notes=getNotes()]
+  [h,if(notes==""): notes="Do you wish to use "+markerName]
+  [h:rtn="<table><tr><td><img src='"+img+"' height=90 width=90></img></td><td>"+notes+"</td></tr></table>"]
+}]
+[r:rtn]
+
+!!
 @@ @MacroDialog
 @PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=1 - Gets and Sets ; tooltip= ; minWidth= ; 
 [h:t=Debug("in","MacroDialog")]
@@ -827,5 +727,288 @@ Generic stuff
 [h:macroList=getMacroIndexes(macroName,"json")]
 [h:index=json.get(macroList,0)]
 [h:setMacroCommand(index,decode(macro))]
+
+!!
+@@ @CheckHitTrigger
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Teleports And Traps ; tooltip= ; minWidth= ; 
+[h:lastPath=arg(0)]
+[h:lastPathSave=lastPath]
+[h:map=getCurrentMapName()]
+[h:markers=GetMapMarkers(map)]
+[h:markerNames=json.fields(markers)]
+[h:triggers=""]
+[h:names=""]
+
+[h,foreach(n,markerNames),code:{
+  [h:marker=json.get(markers,n)]
+  [h:isTrigger=isTrigger(marker)]
+  [h,if(isTrigger): names=json.append(names,n)]
+}]
+
+[h:minIndex=99999999]
+[h:firstTriggerHit='']
+[h:firstTriggerCoords='']
+[h:hits="{}"]
+[h,foreach(name,names), code:{
+  [h:triggerPoint= movedOverToken(name,lastPathSave)]
+  [h:empty=json.isEmpty(triggerPoint)]
+  [h,if(!empty), code:{
+    [h:trigger=GetInterceptedTriggerInfo(name,lastPath)]
+    [h:marker=json.get(markers,name)]
+    [h:affect=json.get(marker,"affect")]
+    [h:affect=if(affect=="","stopping",affect)]
+    [h:trigger=json.set(trigger,"affect",affect)]
+    [h:entered=json.get(trigger,"neverEntered")]
+    [h:entered=if(entered,0,1)]
+    [h,if(entered): hits=json.set(hits,name,trigger)]
+  };{}]
+}]
+[h:hitTriggers=json.fields(hits)]
+[h:ordering="[]"]
+
+[h,foreach(ht,hitTriggers),code:{
+  [trigger=json.get(hits,ht)]
+  [firstHit=json.get(trigger,"firstEncounteredStep")]
+  [affect=json.get(trigger,"affect")]
+  [orderJSON=json.set("","name",ht,"step",firstHit,"affect",affect)]
+  [ordering=json.append(ordering,orderJSON)]
+}]
+[h:ordering=json.sort(ordering,"a","step")]
+[h:rtn=json.set("","stepOrder",ordering,"triggersHit",hits)]
+[r:rtn]
+
+!!
+@@ @CreateTriggerButton
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=true ; group=Teleports And Traps ; tooltip= ; minWidth= ; 
+[h:macroName=arg(0)]
+[h:macro=arg(1)]
+[h:macroProps="autoexec=true;"]
+[h,if(hasMacro(macroName)), code: {
+  [SetTriggerMacro(macroName,macro)]
+};{
+  [h:createMacro(macroName, decode(macro), macroProps)]
+  [macroName] Button added.
+}]
+
+!!
+@@ @GetTrap
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Teleports And Traps ; tooltip= ; minWidth= ; 
+[h:map=arg(0)]
+[h:markerName=arg(1)]
+[h:marker=GetMarker(map,markerName)]
+
+[h:trap=json.get(marker,"trap")]
+
+[h,if(json.isEmpty(trap)): trap=json.set("","trait","","effect","")]
+
+[h:rtn=trap]
+
+[r:rtn]
+
+!!
+@@ @RunTriggerMacro
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Teleports And Traps ; tooltip= ; minWidth= ; 
+[h:id=arg(0)]
+[h:stepOrder=arg(1)]
+[h:triggersHit=arg(2)]
+[h:junk="find first trigger point that's a stoppable"]
+
+[h:lastPath=arg(3)]
+
+[h:stoppingStep=json.length(lastPath)-1]
+[h:msg=""]
+[h:affects="[]"]
+
+[h,foreach(so,stepOrder), code:{
+  [name=json.get(so,"name")]
+  [step=json.get(so,"step")]
+  [affect=json.get(so,"affect")]
+  [if(affect=="stopping"): stoppingStep=min(stoppingStep,step)]
+  [if(step<=stoppingStep):affects=json.append(affects,so)]
+}]
+
+[h,if(step), code:{
+  [h:stoppingX=json.get(lastPath,stoppingStep)]
+  [h:stoppingX=json.get(stoppingX,"x"))]
+
+  [h:stoppingY=json.get(lastPath,stoppingStep)]
+  [h:stoppingY=json.get(stoppingY,"y"))]
+
+  [h:t=moveToken(stoppingX,stoppingY,1)]
+};{}]
+
+[h,foreach(a,affects),code:{
+  [h:markerName=json.get(a,"name")]
+  [h:step=json.get(a,"step")]
+  [h:macro=GetTriggerMacro(markerName)]
+  [if(step): msg=evalMacro(decode(macro))]
+}]
+[r:msg]
+
+!!
+@@ @Teleport
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Teleports And Traps ; tooltip= ; minWidth= ; 
+[h:junk="This macro recieves a json array of token id's and teleports them to coordinates on another map")]
+[h:triggerName=arg(0)]
+[h:id=arg(1)]
+[h:ids=json.append("",id)]
+[h:TeleportList(triggerName,ids)]
+
+!!
+@@ @TeleportList
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Teleports And Traps ; tooltip= ; minWidth= ; 
+[h:junk="This macro recieves a json array of token id's and teleports them to coordinates on another map")]
+[h:triggerName=arg(0)]
+[h:triggerId=findToken(triggerName)]
+[h:t=assert(triggerId,"could not find token in "+getMacroName())]
+
+[h:triggerX=getTokenX(0, triggerId)]
+[h:triggerY=getTokenY(0, triggerId)]
+[h:ids=arg(1)]
+
+[h:destination=GetMarkerPartner(triggerName)]
+[h:destination=GetPartnerCoords(destination)]
+[h:tripMap=json.get(destination,"pmap")]
+[h:tripName=json.get(destination,"pname")]
+[h:tripX=json.get(destination,"x")]
+[h:tripY=json.get(destination,"y")]
+
+[h,foreach(id,ids), code:{
+  [h:test=findToken(id)]
+  [h,if(test==""): found=0;found=1]
+  [h:assert(found,"id not found")]
+}]
+
+[h:visibleMaps=getVisibleMapNames("json")]
+[h:isVisible=json.contains(visibleMaps,tripMap)]
+[h:isGM=isGM()]
+[h,if(isVisible==0 && isGM==0): about(0)]
+
+[h:currentMap=getCurrentMapName()]
+[h,if(currentMap==tripMap): thisMap=1;thisMap=0]
+[h:cnt=0]
+[h,foreach(id,ids), code:{
+  [idX=getTokenX(0, id)]
+  [idY=getTokenY(0, id)]
+  [deltaX=triggerX-idX]
+  [deltaY=triggerY-idY]
+  [if(thisMap), code:{
+    [newX=tripX-deltaX]
+    [newY=tripY-deltaY]
+    [moveToken(newX,newY,0,id)]
+  };{
+    [moveTokenToMap(id, tripMap, tripX+deltaX,tripY+deltaY, 10)]
+  }]
+  [cnt=cnt+1]
+}]
+[h,if(!thisMap): setCurrentMap(tripMap)]
+[h,if(cnt>0): goto(tripName)]
+
+!!
+@@ @Trap
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Teleports And Traps ; tooltip= ; minWidth= ; 
+[h:junk="This macro recieves a json array of token id's and teleports them to coordinates on another map")]
+[h:triggerName=arg(0)]
+[h:id=arg(1)]
+[h:map=getCurrentMapName()]
+
+[h:trap=GetTrap(map,triggerName)]
+
+[h:effect=json.get(trap,"effect")]
+[h:trait=json.get(trap,"trait")]
+
+[r:msg=GetTriggerPicAndNotes(triggerName,id)+"<br>"]
+
+[r,token(id), code:{
+  [r:msg=TraitTestWithMod(trait,0,"")]
+}]
+
+[r:msg="<b>Trap effect is:<span style='color:maroon;background-color:white'>"+eval(decode(effect))+"</span> damage</b>"]
+
+!!
+@@ @TrapDialog
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Teleports And Traps ; tooltip= ; minWidth= ; 
+[h:map=arg(0)]
+[h:name=arg(1)]
+[h:trap=GetTrap(map,name)]
+
+[h:effect=decode(json.get(trap,"effect"))]
+[h:trait=json.get(trap,"trait")]
+[h:traitList=GetTraits()]
+[h:index=listFind(traitList,trait)]
+[h,if(index==-1): idx=0]
+
+[h:status=input(strformat("trait|%{traitList}|Select Trait Roll|LIST|SELECT=%{index} VALUE=STRING"),
+"effect|"+effect+"|Enter the effect (damage roll)")] 
+
+[r:rtn=json.set("","trait",trait,"effect",encode(effect))]
+
+!!
+@@ @isTrigger
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Teleports And Traps ; tooltip= ; minWidth= ; 
+[h:marker=arg(0)]
+[h:markerType=json.get(marker,"type")]
+[h:triggerTypes="Teleport1WayAuto, Teleport2WayAuto, Teleport1Way, Teleport2Way, Trap, TrapPcOnly, Terrain"]
+[h:rtn=0]
+[h,foreach(t,triggerTypes), code:{
+  [if(markerType==t): rtn=1]
+}]
+[r:rtn]
+
+!!
+@@ @CheckMarkerPartner
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=2 - Partners ; tooltip= ; minWidth= ; 
+[h:id=arg(0)]
+[h:name=getName(id)]
+[h:pid=GetMarkerPartner(name)]
+[h:startMap=getCurrentMapName()]
+[h:maps=getAllMapNames()]
+[h:partner=GetMarkerPartner(name)]
+
+[h:pmap=json.get(partner,"map")]
+[h:pid=json.get(partner,"id")]
+
+[if(startMap!=pmap): setCurrentMap(pmap)]
+[r:partnerName=getName(pid)]
+
+[h,if(partnerName==""): assert(0,"Cannot find partner token")]
+
+!!
+@@ @GetMarkerPartner
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=2 - Partners ; tooltip= ; minWidth= ; 
+[h:name=arg(0)]
+[h:partner=getProperty("Partner",name)]
+[h,if(json.type(partner)=="OBJECT"), code:{
+  [h:rtn=partner]
+};{
+  [h:rtn=json.set("","pname","","map",getCurrentMapName())]
+}]
+[r:rtn]
+
+!!
+@@ @FindMinCoordIdx
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=X ; tooltip= ; minWidth= ; 
+[h:array1=arg(0)]
+[h:array2=arg(1)]
+
+[h:minIdx=5000]
+[h,foreach(a1,array1), code:{
+  [h:cnt2=0]
+  [foreach(a2,array2), code:{
+    [equals=json.equals(a1,a2)]
+    [if(equals): minIdx=min(cnt2,minIdx)]
+    [cnt2=cnt2+1]
+  }]
+}]
+[h:minIdx=if(minIdx==5000,-1,minIdx)]
+[r:minIdx]
+
+!!
+@@ @isCurrentMap
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=X ; tooltip= ; minWidth= ; 
+[h:map=arg(0)]
+[h:currentMap=getCurrentMapName()]
+[h:rtn=if(currentMap==map,1,0)]
+[r:rtn]
 
 !!

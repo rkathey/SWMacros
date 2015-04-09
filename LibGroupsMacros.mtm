@@ -491,6 +491,11 @@ tokentypes (default is basic) json array
 
 [h:msg=""]
 [h:lastPath = getLastPath(1)]
+[h:drag=getLibProperty("DragDistance")]
+[h,if(drag==""): setLibProperty("DragDistance",50)]
+[h:lastPathLength=json.length(lastPath)]
+[h,if(lastPathLength>drag): abort(0)]
+
 [h:usedMov = getMoveCount()]
 [h:leader=isLeader(id)]
 [h,if(isLeader(id)), code:{
@@ -515,7 +520,9 @@ tokentypes (default is basic) json array
   [h:stepOrder=json.get(triggerHitInfo,"stepOrder")]
   [h:triggersHit=json.get(triggerHitInfo,"triggersHit")]
   [h:stepLength=json.length(stepOrder)]
-  [h,if(stepLength!=0): RunTriggerMacro(id,stepOrder,triggersHit,lastPath)]
+
+  [h,if(stepLength!=0): msg=RunTriggerMacro(id,stepOrder,triggersHit,lastPath)]
+  [h,if(msg==0): msg=""]
 }]
 [r,if(msg!=''): msg+"<br>"]
 

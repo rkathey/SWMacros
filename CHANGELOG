@@ -21,3 +21,5 @@
 	Need to add remove marker
 20150406
 	Added remove. Added step to stop teleports to non-visible maps for non-GMs
+20150408
+	Added initial version of traps. Now have image showing up when the 'ask' function is called.

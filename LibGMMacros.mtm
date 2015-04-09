@@ -20,6 +20,7 @@
 [defineFunction("Split","Split@Lib:GM")]
 [defineFunction("GetSettingLists","GetSettingLists@Lib:GM")]
 [defineFunction("RollTokenTrait","RollTokenTrait@Lib:GM")]
+[defineFunction("GetTraits","GetTraits@Lib:GM")]
 
 !!
 @@ @CharacterSheet
@@ -590,6 +591,7 @@ body {background-color: b0c7cf}
 th { background-color: #5c8b9f; color: #23325f }
 h1 { text-align: center } 
 input.radio { background : #b0c7cf; color: #000000; }
+.TextWrap { float: right; margin:10px; }
 
 !!
 @@ @DieDropdown
@@ -3825,6 +3827,15 @@ Saving [r:lists] to Lib:GM SettingLists
 [h:tokenId=macro.args]
 [h: switchToken(tokenId)]
 [h:macro.return=getName()]
+
+!!
+@@ @GetTraits
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Get Trait ; tooltip= ; minWidth= ; 
+[h:rtn =getLibProperty("Attributes")]
+[h:rtn=listAppend(rtn,getLibProperty("Skills"))]
+[h,if(getLibProperty("SettingSkills")!=""): rtn=listAppend(rtn,getLibProperty("SettingSkills"))]
+[h,if(getLibProperty("SettingKnowledgeSkills")!=""): rtn=listAppend(rtn,getLibProperty("SettingKnowledgeSkills"))]
+[r:rtn]
 
 !!
 @@ @LoadRaces
