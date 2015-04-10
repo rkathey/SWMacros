@@ -401,195 +401,9 @@
 ]
 
 !!
-@@ @AddBennieToList
-@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Bennies ; tooltip= ; minWidth= ; 
-[h:in=macro.args]
-[h:varsFromStrProp(in)]
+@@ @(new)
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Character Sheet ; tooltip= ; minWidth= ; 
 
-[h:a=json.fromStrProp(in)]
-
-[h:pcs2update=""]
-
-[FOR(i,1,PCCount), code: {
-  [h:var="PC"+I]
-  [h:there=json.contains(a,var)]
-  [h:tokenId=if(there==1,getStrProp(in, var),0)]
-  [h:pcs2update=if(there==1,listappend(pcs2update,tokenId),pcs2update)]
-}]
-
-[foreach(tokenId,pcs2update,""), code: {
-  [switchToken(tokenId)]
-  [getName()] Recieves a Bennie from the GM
-  [h:prop="BenniesUsed"]
-  [h:used = eval(prop)-1]
-  [h:setProperty(prop,used)]
-}]
-
-!!
-@@ @BurnBennie
-@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Bennies ; tooltip= ; minWidth= ; 
-[h:tokenId=CheckTokenId()]
-[h:tName=getName()]
-
-[h:starting=Bennies]
-[h:left=BenniesLeft]
-[h:left=left-1]
-[h:condition=if(left<0,0,1)]
-[h:assert(condition,"You don't have any bennies left to spend")]
-[h:BenniesLeft=left]
-<b>burns a bennie
-[for(i,0,left,1,""), code:{
-<span style="color:green; font-weight:bold"> &#9830;</span>
-}]
-
-!!
-@@ @BurnBennieDialog
-@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Bennies ; tooltip= ; minWidth= ; 
-[h:tokenId=CheckTokenId()]
-[h:tName=getName()]
-
-[h:varsFromStrProp(macro.args)]
-
-<!-- take this out later -->
-[h:okMacro="argCheck@Lib:GM"]
-[h:okMacro="BurnBennieOK@Lib:GM"]
-[h:myEvents=MyEvents()]
-
-[h:traitsText=""]
-
-[h:class=FlipClass("oddrow")]
-
-<!--- #################################### --->
-[h,foreach(event,myEvents,""), code:{
-
-[h,if(json.contains(event,"Roll")), code:{
-      [h:traitsText=traitsText+"<tr class=' " + class + " '>"]
-      [h:trait=json.get(event,"Trait")]
-      [h:roll=json.get(event,"Roll")]
-      [h:traitsText=traitsText+"<input TYPE=RADIO NAME='BennieUse' VALUE=' " + trait + " '> Reroll " + trait + " roll " + roll]
-      [h:class=FlipClass(class)]
-      [h:traitsText=traitsText+"</tr>"]
-
-};{}]
-
-}]
-<!--- #################################### --->
-
-[dialog("BurnBennie", "width=400; height=400"): {
-  <html>
-    <head>
-      <title>Burn Bennie</title>
-      <meta name="input" content="true">
-      <link rel="stylesheet" type="text/css" href="CharSheet_css@Lib:GM">     
-    </head>
-    <body>
-      <form name="BurnBennie" action="[r:macroLinkText(okMacro,"all","",tokenId)]">
-      <table width="100%">
-      <tr><th>Bennie Use</td></tr>
-
-<!--- #################################### --->
-{traitsText}
-<!--- #################################### --->
-
-      <tr class="[r:class]">
-         <input TYPE=RADIO NAME="BennieUse" VALUE="Soak"> Soak
-      </tr>
-
-<!--- ##################################### --->
-      <tr class="[r:class]">
-         <input TYPE=RADIO NAME="BennieUse" VALUE="JustBurn"> Just Burn
-      </tr>
-<!--- #################################### --->
-
-[if(isPC()==0), code:{
-      <tr><th>Select Bennie Pool to Use</th></tr>
-  [h:class=FlipClass(class)]
-      <tr class="[r:class]">
-         <input TYPE=RADIO NAME="BenniePool" VALUE="Token"> Token Bennie
-  [count(BenniesLeft,""): "<span style='color:green; font-weight:bold'> &#9733;</span>"]
-  [h:class=FlipClass(class)]
-      </tr>
-      <tr class="[r:class]">
-         <input TYPE=RADIO NAME="BenniePool" VALUE="GM"> GM Bennie
-  [count(getLibProperty("GMBenniesLeft"),""): "<span style='color:red; font-weight:bold'> &#9733;</span>"]
-      </tr>
-};{
-  [h:class=FlipClass(class)]
-      <tr class="[r:class]"> Bennies Left: 
-  [count(BenniesLeft,""): "<span style='color:green; font-weight:bold'> &#9830;</span>"]
-      </tr>
-}]
-
-          </tr><tr><th><input type="submit" name="Submit" value="Submit"> </input></th></tr>
-      </form>
-    </body>
-  </html>
-}]
-[abort(0)]
-
-!!
-@@ @BurnBennieOK
-@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Bennies ; tooltip= ; minWidth= ; 
-[h:BenniePool="Player"]
-[h:tokenId=CheckTokenId()]
-[h:tName=getName()]
-[h:props=macro.args]
-[h:varsFromStrProp(macro.args)]
-
-[if(BenniePool=="GM"), code:{
-  [macro("BurnGMBennie@this"):""]
-};{
-  [macro("BurnBennie@this"):""]
-}]
-
-[if(BennieUse=="Soak"), code:{
-  [h:trait="Vigor"]
-  [h:setState("Shaken",0)]
-};{
-  [h:trait=BennieUse]
-}]
-
-<!--- ######################### --->
-[if(BennieUse!="JustBurn"), code:{
-  [macro("TraitTest@Lib:GM"):trait]
-};{
-}]
-
-<!--- ######################## --->
-
-!!
-@@ @BurnGMBennie
-@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Bennies ; tooltip= ; minWidth= ; 
-[h:starting=getLibProperty("GMBennies")]
-[h:left=getLibProperty("GMBenniesLeft")]
-[h:left=left-1]
-[h:condition=if(left<0,0,1)]
-[h:assert(condition,"You don't have any bennies left to spend")]
-[h:setLibProperty("GMBenniesLeft",left)]
-<b>GM burns a bennie
-[for(i,0,left,1,""), code:{
-  <span style="color:red; font-weight:bold"> &#9830;</span>
-}]
-
-!!
-@@ @GiveBennie2PCs
-@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Bennies ; tooltip= ; minWidth= ; 
-[macro("SelectPCDialog@Lib:GM"): "AddBennieToList@Lib:GM"]
-
-!!
-@@ @Soak
-@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Bennies ; tooltip= ; minWidth= ; 
-attempts to SOAK an attack<br>
-[h:starting=Bennies]
-[h:left=BenniesLeft]
-[h:left=left-1]
-[h:condition=if(left<0,0,1)]
-[h:assert(condition,"You don't have any bennies left to spend")]
-[h:BenniesLeft=left]
-<b>burns a bennie
-[for(i,0,left,1,""), code:{
-<span style="color:green; font-weight:bold"> &#9733;</span>
-}][macro("TraitTest@Lib:GM"): "Vigor"]
 
 !!
 @@ @CharSheet2_css
@@ -826,7 +640,9 @@ input.radio { background : #b0c7cf; color: #000000; }
 @PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Character Sheet ; tooltip= ; minWidth= ; 
 [h:states=""]
 [h:stateList=getTokenStates()]
+
 [h:removeList="Bennie1,Bennie2,Bennie3,Bennie4,Bennie5,Bennie6"]
+
 [foreach(rml,removeList,""), code: {
   [h:idx=listFind(stateList, rml)]
   [if(idx!=-1), code: {
@@ -2104,6 +1920,9 @@ Major: </b> [MajorHindrances] <b>Minor:</b> [MinorHindrances]<br>
 
 [h:stateList=getTokenStates()]
 [h:removeList="Wound1,Wound2,Wound3,Wound,Fatigued,Fatigue1,Fatigue2,Bennie1,Bennie2,Bennie3,Bennie4,Bennie5,Bennie6"]
+[h:initStates=GetInitStates()]
+[h:removeList=listAppend(removeList,initStates)]
+
 [foreach(rml,removeList,""), code: {
   [h:idx=listFind(stateList, rml)]
   [if(idx!=-1), code: {
@@ -2258,6 +2077,197 @@ Major: </b> [MajorHindrances] <b>Minor:</b> [MinorHindrances]<br>
 }]
 [H: outputTo(toJ, wText)]
 [macro("CharacterSheet@Lib:GM"): "whisperers="+encode(toJ)]
+
+!!
+@@ @AddBennieToList
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Bennies ; tooltip= ; minWidth= ; 
+[h:in=macro.args]
+[h:varsFromStrProp(in)]
+
+[h:a=json.fromStrProp(in)]
+
+[h:pcs2update=""]
+
+[FOR(i,1,PCCount), code: {
+  [h:var="PC"+I]
+  [h:there=json.contains(a,var)]
+  [h:tokenId=if(there==1,getStrProp(in, var),0)]
+  [h:pcs2update=if(there==1,listappend(pcs2update,tokenId),pcs2update)]
+}]
+
+[foreach(tokenId,pcs2update,""), code: {
+  [switchToken(tokenId)]
+  [getName()] Recieves a Bennie from the GM
+  [h:prop="BenniesUsed"]
+  [h:used = eval(prop)-1]
+  [h:setProperty(prop,used)]
+}]
+
+!!
+@@ @BurnBennie
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Bennies ; tooltip= ; minWidth= ; 
+[h:tokenId=CheckTokenId()]
+[h:tName=getName()]
+
+[h:starting=Bennies]
+[h:left=BenniesLeft]
+[h:left=left-1]
+[h:condition=if(left<0,0,1)]
+[h:assert(condition,"You don't have any bennies left to spend")]
+[h:BenniesLeft=left]
+<b>burns a bennie
+[for(i,0,left,1,""), code:{
+<span style="color:green; font-weight:bold"> &#9830;</span>
+}]
+
+!!
+@@ @BurnBennieDialog
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Bennies ; tooltip= ; minWidth= ; 
+[h:tokenId=CheckTokenId()]
+[h:tName=getName()]
+
+[h:varsFromStrProp(macro.args)]
+
+<!-- take this out later -->
+[h:okMacro="argCheck@Lib:GM"]
+[h:okMacro="BurnBennieOK@Lib:GM"]
+[h:myEvents=MyEvents()]
+
+[h:traitsText=""]
+
+[h:class=FlipClass("oddrow")]
+
+<!--- #################################### --->
+[h,foreach(event,myEvents,""), code:{
+
+[h,if(json.contains(event,"Roll")), code:{
+      [h:traitsText=traitsText+"<tr class=' " + class + " '>"]
+      [h:trait=json.get(event,"Trait")]
+      [h:roll=json.get(event,"Roll")]
+      [h:traitsText=traitsText+"<input TYPE=RADIO NAME='BennieUse' VALUE=' " + trait + " '> Reroll " + trait + " roll " + roll]
+      [h:class=FlipClass(class)]
+      [h:traitsText=traitsText+"</tr>"]
+
+};{}]
+
+}]
+<!--- #################################### --->
+
+[dialog("BurnBennie", "width=400; height=400"): {
+  <html>
+    <head>
+      <title>Burn Bennie</title>
+      <meta name="input" content="true">
+      <link rel="stylesheet" type="text/css" href="CharSheet_css@Lib:GM">     
+    </head>
+    <body>
+      <form name="BurnBennie" action="[r:macroLinkText(okMacro,"all","",tokenId)]">
+      <table width="100%">
+      <tr><th>Bennie Use</td></tr>
+
+<!--- #################################### --->
+{traitsText}
+<!--- #################################### --->
+
+      <tr class="[r:class]">
+         <input TYPE=RADIO NAME="BennieUse" VALUE="Soak"> Soak
+      </tr>
+
+<!--- ##################################### --->
+      <tr class="[r:class]">
+         <input TYPE=RADIO NAME="BennieUse" VALUE="JustBurn"> Just Burn
+      </tr>
+<!--- #################################### --->
+
+[if(isPC()==0), code:{
+      <tr><th>Select Bennie Pool to Use</th></tr>
+  [h:class=FlipClass(class)]
+      <tr class="[r:class]">
+         <input TYPE=RADIO NAME="BenniePool" VALUE="Token"> Token Bennie
+  [count(BenniesLeft,""): "<span style='color:green; font-weight:bold'> &#9733;</span>"]
+  [h:class=FlipClass(class)]
+      </tr>
+      <tr class="[r:class]">
+         <input TYPE=RADIO NAME="BenniePool" VALUE="GM"> GM Bennie
+  [count(getLibProperty("GMBenniesLeft"),""): "<span style='color:red; font-weight:bold'> &#9733;</span>"]
+      </tr>
+};{
+  [h:class=FlipClass(class)]
+      <tr class="[r:class]"> Bennies Left: 
+  [count(BenniesLeft,""): "<span style='color:green; font-weight:bold'> &#9830;</span>"]
+      </tr>
+}]
+
+          </tr><tr><th><input type="submit" name="Submit" value="Submit"> </input></th></tr>
+      </form>
+    </body>
+  </html>
+}]
+[abort(0)]
+
+!!
+@@ @BurnBennieOK
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Bennies ; tooltip= ; minWidth= ; 
+[h:BenniePool="Player"]
+[h:tokenId=CheckTokenId()]
+[h:tName=getName()]
+[h:props=macro.args]
+[h:varsFromStrProp(macro.args)]
+
+[if(BenniePool=="GM"), code:{
+  [macro("BurnGMBennie@this"):""]
+};{
+  [macro("BurnBennie@this"):""]
+}]
+
+[if(BennieUse=="Soak"), code:{
+  [h:trait="Vigor"]
+  [h:setState("Shaken",0)]
+};{
+  [h:trait=BennieUse]
+}]
+
+<!--- ######################### --->
+[if(BennieUse!="JustBurn"), code:{
+  [macro("TraitTest@Lib:GM"):trait]
+};{
+}]
+
+<!--- ######################## --->
+
+!!
+@@ @BurnGMBennie
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Bennies ; tooltip= ; minWidth= ; 
+[h:starting=getLibProperty("GMBennies")]
+[h:left=getLibProperty("GMBenniesLeft")]
+[h:left=left-1]
+[h:condition=if(left<0,0,1)]
+[h:assert(condition,"You don't have any bennies left to spend")]
+[h:setLibProperty("GMBenniesLeft",left)]
+<b>GM burns a bennie
+[for(i,0,left,1,""), code:{
+  <span style="color:red; font-weight:bold"> &#9830;</span>
+}]
+
+!!
+@@ @GiveBennie2PCs
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Bennies ; tooltip= ; minWidth= ; 
+[macro("SelectPCDialog@Lib:GM"): "AddBennieToList@Lib:GM"]
+
+!!
+@@ @Soak
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Bennies ; tooltip= ; minWidth= ; 
+attempts to SOAK an attack<br>
+[h:starting=Bennies]
+[h:left=BenniesLeft]
+[h:left=left-1]
+[h:condition=if(left<0,0,1)]
+[h:assert(condition,"You don't have any bennies left to spend")]
+[h:BenniesLeft=left]
+<b>burns a bennie
+[for(i,0,left,1,""), code:{
+<span style="color:green; font-weight:bold"> &#9733;</span>
+}][macro("TraitTest@Lib:GM"): "Vigor"]
 
 !!
 @@ @CheckTokenId

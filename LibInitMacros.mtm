@@ -18,6 +18,8 @@
 [h:defineFunction("ShowEvents","ShowEvents@"+libName)]
 [h:defineFunction("FindLastEvent","FindLastEvent@"+libName)]
 
+[h:defineFunction("GetInitStates","GetInitStates@"+libName)]
+
 !!
 @@ @FindLastEvent
 @PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group= ; tooltip= ; minWidth= ; 
@@ -218,6 +220,12 @@
 [h:setLibProperty("Inits","[]")]
 [h:setLibProperty("HoldingPlayers","[]")]
 
+[h:initStates=GetInitStates()]
+[h,foreach(s,initStates), code:{
+  [h:ids=getWithState(s)]
+  [foreach(id,ids): setState(s,0,id)]
+}]
+
 !!
 @@ @ShowEvents
 @PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group= ; tooltip= ; minWidth= ; 
@@ -262,6 +270,13 @@
   </html>
 }]
 [abort(0)]
+
+!!
+@@ @StartNewCombat
+@PROPS@ fontColor=white ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=green ; playerEditable=false ; applyToSelected=false ; group= ; tooltip= ; minWidth= ; 
+[h:setLibProperty("Round",0)]
+[h:setLibProperty("Events","{}")]
+[macro("ResetInit@Lib:Init"):""]
 
 !!
 @@ @DrawInitCard
@@ -358,13 +373,16 @@ h:found=0]
 [h:setLibProperty("Inits",inits)]
 
 [h:junk = "get DefaultDeck from dtok and find high card, getting the State value. Use this to setState getTokenStates(",", "Init-Clubs")]on token"]
-[h:states = getTokenStates(",", "Init-Clubs")]
-[h:states=listAppend(states,getTokenStates(",", "Init-Diamonds"))]
-[h:states=listAppend(states,getTokenStates(",", "Init-Hearts"))]
-[h:states=listAppend(states,getTokenStates(",", "Init-Spades"))]
-[h:states=listAppend(states,getTokenStates(",", "Init-Jokers"))]
-[h,foreach(s,states,"<br>"), code:{
+[h:states = GetInitStates()]
+
+[h:name=getName()]
+[h:members=GetGroupMemberNames(name)]
+[h,foreach(s,states), code:{
   [h: setState(s, 0)]
+  [h,foreach(name,members), code:{
+    [h:m=findToken(name)]
+    [h,if(m!=""): setState(s, 0, m)]
+  }]
 }]
 
 [h:defaultDeck = getLibProperty("DefaultDeck",dtok)]
@@ -372,8 +390,16 @@ h:found=0]
 [h:cardInfo=json.get(defaultDeck,highCard)]
 
 [h:state=json.get(cardInfo,"State")]
-
 [h:setState(state,1)]
+[h:isLeader=isLeader(tokenId)]
+[h,if(isLeader(tokenId)), code:{
+  [h:name=getName()]
+  [h:members=GetGroupMemberNames(name)]
+  [h,foreach(name,members,""), code:{
+    [h:m=findToken(name)]
+    [h,if(m!=""): setState(state,1,m)]
+  }]
+};{}]
 
 !!
 @@ @DrawInitCardById
@@ -603,6 +629,16 @@ h:found=0]
 [h:t=getLibProperty("HoldingPlayers")]
 [h:t=if(json.type(t)!="ARRAY","[]",t)]
 [r:t]
+
+!!
+@@ @GetInitStates
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Gets ; tooltip= ; minWidth= ; 
+[h:states = getTokenStates(",", "Init-Clubs")]
+[h:states=listAppend(states,getTokenStates(",", "Init-Diamonds"))]
+[h:states=listAppend(states,getTokenStates(",", "Init-Hearts"))]
+[h:states=listAppend(states,getTokenStates(",", "Init-Spades"))]
+[h:states=listAppend(states,getTokenStates(",", "Init-Jokers"))]
+[r:states]
 
 !!
 @@ @GetInitStep
