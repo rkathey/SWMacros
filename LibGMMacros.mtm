@@ -21,11 +21,21 @@
 [defineFunction("GetSettingLists","GetSettingLists@Lib:GM")]
 [defineFunction("RollTokenTrait","RollTokenTrait@Lib:GM")]
 [defineFunction("GetTraits","GetTraits@Lib:GM")]
+[defineFunction("GetTrait","GetTraitFunc@Lib:GM")]
+[defineFunction("GetTraitById","GetTraitByIdFunc@Lib:GM")]
+
 [defineFunction("GetMovements","GetMovements@Lib:GM")]
 [defineFunction("GetWoundModifier","GetWoundModifier@Lib:GM")]
 [defineFunction("GetEdgeList","GetEdgeList@Lib:GM")]
 [defineFunction("GetRunRoll","GetRunRoll@Lib:GM")]
 [defineFunction("Run","Run@Lib:GM")]
+
+[defineFunction("CheckBoxList","CheckBoxList@Lib:GM")]
+[defineFunction("DropdownFromList","DropdownFromList@Lib:GM")]
+[defineFunction("TableHeader","TableHeader@Lib:GM")]
+[defineFunction("TableRow","TableRow@Lib:GM")]
+[defineFunction("TableHeaderFromJSONObject","TableHeaderFromJSONObject@Lib:GM")]
+[defineFunction("TableRowFromJSONObject","TableRowFromJSONObject@Lib:GM")]
 
 !!
 @@ @CharacterSheet
@@ -2270,6 +2280,63 @@ attempts to SOAK an attack<br>
 }][macro("TraitTest@Lib:GM"): "Vigor"]
 
 !!
+@@ @CheckBoxList
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Utility - HTML ; tooltip= ; minWidth= ; 
+[h:prefix=arg(0)]
+[h:list=arg(1)]
+[h:currentChecked=arg(2)]
+[h:delimeter=arg(3)]
+
+[r,foreach(l,list,delimeter), code:{
+  <input type='checkbox' [r:str=if(listContains(currentChecked,l)>0,"checked","")]  name='cb_[r:prefix]_[r:l]'  value='[r:l]'>[r:l]</input>
+}]
+
+!!
+@@ @DropdownFromList
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Utility - HTML ; tooltip= ; minWidth= ; 
+[h:current=arg(0)]
+[h:list=arg(1)]
+
+[r,foreach(l,list,""), code:{
+    [h:selected=if(l==current,"selected","")]
+    <option value="[r:l]" [r:selected]>[r:GL(l)]</option>
+}]
+
+!!
+@@ @TableHeader
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Utility - HTML ; tooltip= ; minWidth= ; 
+[h:columns=arg(0)]
+<tr>
+[r,foreach(col,columns,""): "<th>"+col+"</th>"]
+</tr>
+
+!!
+@@ @TableHeaderFromJSONObject
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Utility - HTML ; tooltip= ; minWidth= ; 
+[h:obj=arg(0)]
+[h:keys=json.fields(obj)]
+<tr>
+[r,foreach(col,keys,""): "<th>"+col+"</th>"]
+</tr>
+
+!!
+@@ @TableRow
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Utility - HTML ; tooltip= ; minWidth= ; 
+[h:columns=arg(0)]
+<tr>
+[r,foreach(col,columns,""): "<td>"+col+"</td>"]
+</tr>
+
+!!
+@@ @TableRowFromJSONObject
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Utility - HTML ; tooltip= ; minWidth= ; 
+[h:obj=arg(0)]
+[h:keys=json.fields(obj)]
+<tr>
+[r,foreach(col,keys,""): "<td>"+json.get(obj,col)+"</td>"]
+</tr>
+
+!!
 @@ @CheckTokenId
 @PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Utility ; tooltip= ; minWidth= ; 
 [h:tokenId=currentToken()]
@@ -2815,7 +2882,6 @@ Extra Token Updated <br>
 @@ @GetTrait
 @PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Traits ; tooltip= ; minWidth= ; 
 [h:property=macro.args]
-<!-- throw error if property doesn't exist on token -->
 [h: id = findToken(getName())]
 [h:switchToken(id)]
 [h:macro.return=eval(property)]
@@ -2828,6 +2894,21 @@ Extra Token Updated <br>
 <!-- throw error if property doesn't exist on token -->
 [h:switchToken(tokenId)]
 [h:macro.return=eval(property)]
+
+!!
+@@ @GetTraitByIdFunc
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Traits ; tooltip= ; minWidth= ; 
+[h:id=arg(0)]
+[h:property=arg(1)]
+[h,token(id): rtn=eval(property)]
+[r:rtn]
+
+!!
+@@ @GetTraitFunc
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Traits ; tooltip= ; minWidth= ; 
+[h:property=arg(0)]
+[h: id = findToken(getName())]
+[r:rtn=eval(property)]
 
 !!
 @@ @GetTraitNumber

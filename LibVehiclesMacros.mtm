@@ -6,6 +6,8 @@
 [defineFunction("GetVehicleGear","GetVehicleGear@Lib:Vehicles")]
 [defineFunction("GetVehicleCrew","GetVehicleCrew@Lib:Vehicles")]
 [defineFunction("GetField","GetField@Lib:Vehicles")]
+[defineFunction("GetVehicleAssignments","GetVehicleAssignments@Lib:Vehicles")]
+[defineFunction("BuildAssignmentObject","BuildAssignmentObject@Lib:Vehicles")]
 
 !!
 @@ @VehicleSheet
@@ -35,13 +37,6 @@
   [h:toggleHold=0]
 };{}]
 
-[h:crewList=GetVehicleCrew()]
-[h:crewLine=""]
-[foreach(name,crewList,""), code:{
-  [h: linkit=macroLinkText("CharacterSheet@Lib:GM", "gm","returnMacro=CharacterSheet@Lib:GM", findToken(name))]
-  [h:crewLine=crewLine + "<a href='"+linkit+"'>" +name+"</a>, "]
-}]
-
 [h:g=GetVehicleGear(refreshMacro)]
 [h:t=GetVehicleTraits()]
 [h:traitList=json.fields(t)]
@@ -53,6 +48,37 @@
     [h: linkit=macroLinkText("TraitTest@Lib:GM", "all",tl,tokenId)]
     [h:traitLine=traitLine + tl + + " (<a href='"+linkit+"'>"+ value + "</a>), "]
   }]
+}]
+
+[h:va=GetVehicleAssignments()]
+[h:assignedCrew=json.fields(va)]
+
+[h:vaLine=""]
+[h,foreach(ac,assignedCrew), code:{
+  [h:crewLine=""]
+  [h:vaCrewId=findToken(ac)]
+  [h:ca=json.get(va,ac)]
+  [h:va.traits=json.get(ca,"Traits")]
+  [h:va.gear=json.get(ca,"Gear")]
+  [h,if(va.traits!="" || va.gear!=""): crewLine=crewLine+"<b>"+ac+"</b>: "]
+  [h,foreach(vat,va.traits), code:{
+    [h:linkit=macroLinkText("TraitTest@Lib:GM", "all",vat,vaCrewId)]
+    [h:value=GetTraitById(vaCrewId,vat)]
+    [h:crewLine=crewLine+ vat+"(<a href='"+linkit+"'>"+ value + "</a>), "]
+  }]
+  [h,foreach(vag,va.gear), code:{
+    [h:args="Gear="+vag+"; Type=Weapons; FiringId="+vaCrewId]
+    [h:linkit=macroLinkText("UseVehicleWeapon@Lib:Gear", "all",args,tokenId)]
+    [h:crewLine=crewLine+"(<a href='"+linkit+"'>"+ decode(vag) + "</a>), "]
+  }] 
+  [h,if(crewLine!=""): vaLine=vaLine+crewLine+"<br>"]
+}]
+
+[h:crewList=GetVehicleCrew()]
+[h:crewLine=""]
+[foreach(name,crewList,""), code:{
+  [h: linkit=macroLinkText("CharacterSheet@Lib:GM", "gm","returnMacro=CharacterSheet@Lib:GM", findToken(name))]
+  [h:crewLine=crewLine + "<a href='"+linkit+"'>" +name+"</a>, "]
 }]
 
 [h:s=GetVehicleStats()]
@@ -191,6 +217,18 @@
                       </td>
                       <td>
                          [r:traitLine] 
+                      </td>
+                   </tr>
+                   [h: class = if(class=="oddRow", "evenRow", "oddRow")]
+
+                   [h: class = if(class=="oddRow", "evenRow", "oddRow")]
+                 <tr class="[r:class]">
+                      <td width="75">
+                         [h: linkit=macroLinkText("UpdateVehicleAssignments@Lib:Vehicles", "gm", "returnMacro=" + refreshMacro, tokenId)]
+                         <a style="font-weight:bold;color:maroon" href="[r:linkit]">Assignments:</a>
+                      </td>
+                      <td>
+                         [r:vaLine] 
                       </td>
                    </tr>
                    [h: class = if(class=="oddRow", "evenRow", "oddRow")]
@@ -445,6 +483,26 @@
 [if(macro.args=="Activate"): abort(0)]
 
 !!
+@@ @BuildAssignmentObject
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Utility ; tooltip= ; minWidth= ; 
+[h:crewAssignmentObject=arg(0)]
+[h:assignmentArray=arg(1)]
+[h:crewName=arg(2)]
+[h:crewTraitAssignments=""]
+[h:crewGearAssignments=""]
+[h,foreach(aa,assignmentArray), code:{
+  [aaCrew=json.get(aa,"crew")]
+  [aaType=json.get(aa,"type")]
+  [aaValue=json.get(aa,"value")]
+  [if(aaCrew==crewName && aaType=="Trait"): crewTraitAssignments=listAppend(crewTraitAssignments,aaValue)]
+  [if(aaCrew==crewName && aaType=="Gear"): crewGearAssignments=listAppend(crewGearAssignments,aaValue)]
+}]
+
+[h:tempObj=json.set("","Traits",crewTraitAssignments,"Gear",crewGearAssignments)]
+[h:crewAssignmentObject=json.set(crewAssignmentObject,crewName,tempObj)]
+[r:crewAssignmentObject]
+
+!!
 @@ @GetField
 @PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Gets ; tooltip= ; minWidth= ; 
 [h:fieldName=arg(0)]
@@ -476,6 +534,32 @@
   [h:checked=if(value==1,"CHECKED","")]
   <input type=CHECKBOX NAME="[r:equipName]_[r:equipName][r:index]" [r:checked] value="X">
 };{}]
+
+!!
+@@ @GetVehicleAssignments
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Gets ; tooltip= ; minWidth= ; 
+[h:junk="return an object with crew and what traits and gear they operate")]
+[h:junk="optionally find those tokens and add the gear to their character sheet")]
+
+[h:ca=getProperty("CrewAssignments")]
+[h:oldCrew=json.fields(ca,"json")]
+[h:vc=GetVehicleCrew()]
+[h,foreach(vcrew,vc), code:{
+  [there=json.contains(ca,vcrew)]
+  [if(there), code:{
+    [assignment=json.get(ca,vcrew)]
+  };{
+    [assignment=json.set("","Traits","","Gear","")]
+    [h:ca=json.set(ca,vcrew,assignment)]
+  }]
+}]
+[h:newCrew=json.fromList(vc)]
+
+[h,foreach(oc,oldCrew), code:{
+  [if(!json.contains(newCrew,oc)): ca=json.remove(ca,oc)]
+}]
+[h:setProperty("CrewAssignments",ca)]
+[r:ca]
 
 !!
 @@ @GetVehicleCrew
@@ -544,7 +628,7 @@ Setting Base Vehicle Status<br>
 [h:setLibProperty("Status","Speed, Altitude")]
 [getLibProperty("Status")]<br>
 Setting Base Vehicle Statistics<br>
-[h:setLibProperty("Stats","TopSpeed, Acc, Climb, Toughness, Armor, Handling, Cargo")]
+[h:setLibProperty("Stats","TopSpeed, Acc, Climb, Toughness, Armor, Passengers")]
 [getLibProperty("Stats")]<br>
 Setting Base Vehicle Traits<br>
 [h:setLibProperty("VehicleTraits","Boating,Piloting,Driving,Shooting,Fighting,Throwing,Repair,Notice")]
@@ -552,6 +636,104 @@ Setting Base Vehicle Traits<br>
 Setting Equipment Types<br>
 [h:setLibProperty("EquipmentTypes","Weapons,Armor,Ammo,Other")]
 [getLibProperty("EquipmentTypes")]
+
+!!
+@@ @UpdateVehicleAssignments
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Dialogs ; tooltip= ; minWidth= ; 
+[h:okMacro=getMacroName()+"OK@"+getMacroLocation()]
+[h:refreshMacro=getMacroName()+"@"+getMacroLocation()]
+[returnMacro=getStrProp(macro.args,"returnMacro")]
+[h:tokenId=currentToken()]
+
+[H:gva=GetVehicleAssignments()]
+[h:gva=if(json.type(gva)=="UNKNOWN","{}",gva)]
+
+[h:vTraits=getLibProperty("VehicleTraits")]
+[h:settingTraits=getLibProperty("SettingTraits")]
+[h,if(settingTraits!=""): vTraits=listAppend(vTraits,settingTraits)]
+
+[h:vGear=getProperty("Gear")]
+[h:vGear=json.fields(vGear)]
+
+[h:vCrew=getProperty("Crew")]
+
+[h: class = "oddRow"]
+[dialog("Crew Assignment", "width=450; height=300"): {
+  <html>
+    <head>
+      <title>Modify Vehicle Crew Assignments</title>
+      <meta name="input" content="true">
+      <link rel="stylesheet" type="text/css" href="CharSheet_css@Lib:GM">     
+    </head>
+    <body>
+      <form name="Vehicle Crew Assignments"  method='json' action="[r:macroLinkText(okMacro,"gm","",tokenId)]">
+        <table id="Attributes" bgcolor=#aaaaaa width="100%">
+          <tr>
+            <th>Crew</th>
+            <th>Ship's Trait</th>
+            <th>Ship's Gear</th>
+          </tr>
+[foreach(vc,vCrew,""), code: {
+          <tr class="[r:class]">
+            <td>[r:vc]</td>
+[h: class = if(class=="oddRow", "evenRow", "oddRow")]
+[h:cgva=json.get(gva,vc)]
+[h:traitAssignments=json.get(cgva,"Traits")]
+[h:gearAssignments=json.get(cgva,"Gear")]
+            <td>
+[r:CheckBoxList(encode(vc)+"_Trait",vTraits,traitAssignments,"<br>")]
+            </td> 
+            <td>
+[r:CheckBoxList(encode(vc)+"_Gear",vGear,gearAssignments,"<br>")]
+            </td> 
+          </tr>
+}]
+        <tr><th colspan=3>
+        <input type="submit" name="Submit" value="Submit"> </input>
+        <input type="hidden" name="returnMacro" value="[r:returnMacro]"> </input>
+        </th></tr>
+        </table>
+      </form>
+    </body>
+  </html>
+}]
+
+!!
+@@ @UpdateVehicleAssignmentsOK
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Dialogs ; tooltip= ; minWidth= ; 
+[macro.args]
+<br>
+[h:assignmentArray="[]"]
+[h:crewAssignmentObject=""]
+[h:crewArray=""]
+[h,foreach(ma,macro.args), code:{
+  [ja=Split(ma,"_")]
+  [if(json.get(ja,0)=="cb"), code:{
+    [crewMember=json.get(ja,1)]
+    [crewArray=json.append(crewArray,crewMember)]
+    [type=json.get(ja,2)]
+    [value=json.get(ja,3)]
+    [assignmentElement=json.set("","crew",crewMember,"type",type,"value",value)]
+    [assignmentArray=json.append(assignmentArray,assignmentElement)]
+  };{}]
+}]
+[h:crewArray=json.unique(crewArray)]
+[r:assignmentArray]
+
+<br>
+[h:crewAssignmentObject=""]
+[h:t=Debug("crewArray",crewArray)]
+
+[h,foreach(a,crewArray), code:{
+  [h:t=Debug("Calling BuildAssignmentObject for",a)]
+  [h:crewAssignmentObject=BuildAssignmentObject(crewAssignmentObject,assignmentArray,a)]
+  [h:t=Debug("After BuildAssignmentObject for",crewAssignmentObject)]
+}]
+[h:setProperty("CrewAssignments",crewAssignmentObject)]
+
+[h:rtnMacroName=json.get(macro.args,"returnMacro")]
+[h:rtnMacroName=if(rtnMacroName=="","argCheck@Lib:GM",rtnMacroName)]
+[h,macro(rtnMacroName):""]
 
 !!
 @@ @UpdateVehicleCrew
