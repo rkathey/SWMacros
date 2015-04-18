@@ -8,6 +8,8 @@
 [defineFunction("GetField","GetField@Lib:Vehicles")]
 [defineFunction("GetVehicleAssignments","GetVehicleAssignments@Lib:Vehicles")]
 [defineFunction("BuildAssignmentObject","BuildAssignmentObject@Lib:Vehicles")]
+[defineFunction("GetCharacterVehicle","GetCharacterVehicle@Lib:Vehicles")]
+[defineFunction("GetCharacterCrewAssignments","GetCharacterCrewAssignments@Lib:Vehicles")]
 
 !!
 @@ @VehicleSheet
@@ -27,6 +29,9 @@
 [h:abortit=if(tokenId=="",0,1)]
 [h:assert(abortit,"no token id available")]
 [h:switchToken(tokenId)]
+
+[h:propType=getPropertyType()]
+[h,if(propType!="Vehicle"): assert(0,getMacroName()+" can only be run Vehicle token types")]
 
 [if(newInit==1), code: {
   [macro("DrawInitCard@Lib:Init"): tokenId]
@@ -67,11 +72,12 @@
     [h:crewLine=crewLine+ vat+"(<a href='"+linkit+"'>"+ value + "</a>), "]
   }]
   [h,foreach(vag,va.gear), code:{
-    [h:args="Gear="+vag+"; Type=Weapons; FiringId="+vaCrewId]
+    [h:args="Gear="+vag+"; Type=Weapons; FiringId="+vaCrewId+"; returnMacro="+"VehicleSheet@Lib:Vehicle"]
     [h:linkit=macroLinkText("UseVehicleWeapon@Lib:Gear", "all",args,tokenId)]
     [h:crewLine=crewLine+"(<a href='"+linkit+"'>"+ decode(vag) + "</a>), "]
   }] 
-  [h,if(crewLine!=""): vaLine=vaLine+crewLine+"<br>"]
+  [h,if(crewLine!=""): vaLine=vaLine+crewLine+"<br>"]               [h: linkit=macroLinkText("UpdateGearDialog@Lib:Gear", "gm","returnMacro="+refreshMacro, tokenId)]
+
 }]
 
 [h:crewList=GetVehicleCrew()]
@@ -95,7 +101,8 @@
 
 [h:s=GetVehicleStatus()]
 
-[h:statusList=getLibProperty("Status")]
+[h:statusList=getLibProperty("Status")]               
+[h: linkit=macroLinkText("UpdateGearDialog@Lib:Gear", "gm","returnMacro="+refreshMacro, tokenId)]
 
 [h:statusList=json.fromList(statusList)]
 [h:statusLine=""]
@@ -105,8 +112,21 @@
 
 [h:states=GetStatesList()]
 
+[h:movementLine=""]
+[h:acceleration=getProperty("Acc")]
+[h,if(acceleration==""): acceleration=0]
+[h:deceleration=acceleration*2*-1]
+[h:movementLine=""]
+
+[h: linkit=macroLinkText("UpdateSpeed@Lib:Vehicles", "gm" ,"rateChange="+acceleration+"; returnMacro=VehicleSheet@Lib:Vehicles", tokenId)]
+  [h:movementLine=movementLine + "<a href='"+linkit+"'>Floor It!</a>, "]
+
+[h: linkit=macroLinkText("UpdateSpeed@Lib:Vehicles", "gm" ,"rateChange="+deceleration+"; returnMacro=VehicleSheet@Lib:Vehicles", tokenId)]
+  [h:movementLine=movementLine + "<a href='"+linkit+"'>Slam on the Breaks!</a>"]
+
 [h:lowerWindowFillMacro="DisplayNotes@Lib:GM"]
 [h:lowerWindowFillMacroArgs=""]
+               [h: linkit=macroLinkText("UpdateGearDialog@Lib:Gear", "gm","returnMacro="+refreshMacro, tokenId)]
 
 [if(lowerWindowFill=="gear"), code: {
   [h:lowerWindowFillMacro="GearUse@Lib:Gear"]
@@ -199,15 +219,24 @@
                    </tr>
                    [h: class = if(class=="oddRow", "evenRow", "oddRow")]
 
-             <tr class="[r:class]">
-             [h: linkit=macroLinkText("UpdateGearDialog@Lib:Gear", "gm","returnMacro="+refreshMacro, tokenId)]
-                <td valign="top">
-                   <a style="font-weight:bold;color:maroon" href="[r:linkit]">Gear</a>:
-                </td>
-                <td>
-                   [r:g]
-                </td>
-             </tr>
+               <tr class="[r:class]">
+                  <td valign="top">
+                     <div style="font-weight:bold;color:maroon" href="[r:linkit]">Movement:</div>
+                  </td>
+                  <td>
+                     [r:movementLine]
+                  </td>
+               </tr>
+
+               <tr class="[r:class]">
+               [h: linkit=macroLinkText("UpdateGearDialog@Lib:Gear", "gm","returnMacro="+refreshMacro, tokenId)]
+                  <td valign="top">
+                     <a style="font-weight:bold;color:maroon" href="[r:linkit]">Gear</a>:
+                  </td>
+                  <td>
+                     [r:g]
+                  </td>
+               </tr>
 
                    [h: class = if(class=="oddRow", "evenRow", "oddRow")]
                  <tr class="[r:class]">
@@ -221,18 +250,6 @@
                    </tr>
                    [h: class = if(class=="oddRow", "evenRow", "oddRow")]
 
-                   [h: class = if(class=="oddRow", "evenRow", "oddRow")]
-                 <tr class="[r:class]">
-                      <td width="75">
-                         [h: linkit=macroLinkText("UpdateVehicleAssignments@Lib:Vehicles", "gm", "returnMacro=" + refreshMacro, tokenId)]
-                         <a style="font-weight:bold;color:maroon" href="[r:linkit]">Assignments:</a>
-                      </td>
-                      <td>
-                         [r:vaLine] 
-                      </td>
-                   </tr>
-                   [h: class = if(class=="oddRow", "evenRow", "oddRow")]
-
                  <tr class="[r:class]">
                       <td width="75">
                          [h: linkit=macroLinkText("UpdateVehicleCrew@Lib:Vehicles", "gm", "returnMacro=" + refreshMacro, tokenId)]
@@ -240,6 +257,17 @@
                       </td>
                       <td>
                          [r:crewLine] 
+                      </td>
+                   </tr>
+                   [h: class = if(class=="oddRow", "evenRow", "oddRow")]
+
+                 <tr class="[r:class]">
+                      <td width="75">
+                         [h: linkit=macroLinkText("UpdateVehicleAssignments@Lib:Vehicles", "gm", "returnMacro=" + refreshMacro, tokenId)]
+                         <a style="font-weight:bold;color:maroon" href="[r:linkit]">Assignments:</a>
+                      </td>
+                      <td>
+                         [r:vaLine] 
                       </td>
                    </tr>
 
@@ -503,6 +531,53 @@
 [r:crewAssignmentObject]
 
 !!
+@@ @UpdateSpeed
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Utility ; tooltip= ; minWidth= ; 
+[h:args=json.fromStrProp(macro.args)]
+[h:diff=json.get(args,"rateChange")]
+[h:returnMacro=json.get(args,"returnMacro")]
+[h:currentSpeed=getProperty("Speed")]
+[h:maxSpeed=getProperty("TopSpeed")]
+[h,if(currentSpeed==""): currentSpeed=0]
+[h:msg="Changing Speed for "+getName()+" from "+currentSpeed]
+[h:currentSpeed=currentSpeed+diff]
+[h,if(currentSpeed<0): currentSpeed=0]
+[h,if(currentSpeed>maxSpeed): currentSpeed=maxSpeed]
+[h:msg=msg+" to "+currentSpeed]
+[r:msg]
+[h:msg=json.set("","Stat","Speed","Set",currentSpeed)]
+[h:LogEvent(msg)]
+[h:setProperty("Speed",currentSpeed)]
+[h,macro(returnMacro): ""]
+
+!!
+@@ @GetCharacterCrewAssignments
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Gets ; tooltip= ; minWidth= ; 
+[h:charVehicle=GetCharacterVehicle()]
+[h:vId=findToken(charVehicle)]
+[h:charName=getName()]
+[h,token(vId): vAssignments=GetVehicleAssignments()]
+[h:charAssignments=json.get(vAssignments,charName)]
+[h:vGear=json.get(charAssignments,"Gear")]
+[r:vGear]
+
+!!
+@@ @GetCharacterVehicle
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Gets ; tooltip= ; minWidth= ; 
+[h:tokens=getTokens()]
+[h:vehicles=""]
+[h,foreach(t,tokens), code:{
+  [if(getPropertyType(t)=="Vehicle"): vehicles=json.append(vehicles,t)]
+}]
+[h:characterVehicle=""]
+[h:characterName=getName()]
+[h,foreach(v,vehicles), code:{
+  [token(v): vCrew=GetVehicleCrew()]
+  [if(listContains(vCrew,characterName)): characterVehicle=getName(v)]
+}]
+[r:characterVehicle]
+
+!!
 @@ @GetField
 @PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Gets ; tooltip= ; minWidth= ; 
 [h:fieldName=arg(0)]
@@ -608,12 +683,12 @@ Calling Lib Vehicle Setup Macro
 @@ @GetVehicleTraits
 @PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Gets ; tooltip= ; minWidth= ; 
 [h:statList=getLibProperty("VehicleTraits")]
+
 [if(statList==""), code:{
 Setting Base Vehicle Info on Lib Token
   [macro("SetLibVehicleProperties@this"):""]
   [h:statList=getLibProperty("VehicleTraits")]
 };{}]
-
 [h:statList=listAppend(statList,getLibProperty("SettingTraits"))]
 
 [h:vStats="{}"]
@@ -628,7 +703,7 @@ Setting Base Vehicle Status<br>
 [h:setLibProperty("Status","Speed, Altitude")]
 [getLibProperty("Status")]<br>
 Setting Base Vehicle Statistics<br>
-[h:setLibProperty("Stats","TopSpeed, Acc, Climb, Toughness, Armor, Passengers")]
+[h:setLibProperty("Stats","TopSpeed, Acc, Climb, Toughness, Armor, Passengers,Size")]
 [getLibProperty("Stats")]<br>
 Setting Base Vehicle Traits<br>
 [h:setLibProperty("VehicleTraits","Boating,Piloting,Driving,Shooting,Fighting,Throwing,Repair,Notice")]
@@ -681,10 +756,10 @@ Setting Equipment Types<br>
 [h:traitAssignments=json.get(cgva,"Traits")]
 [h:gearAssignments=json.get(cgva,"Gear")]
             <td>
-[r:CheckBoxList(encode(vc)+"_Trait",vTraits,traitAssignments,"<br>")]
+[r:CheckBoxList(findToken(vc)+"_Trait",vTraits,traitAssignments,"<br>")]
             </td> 
             <td>
-[r:CheckBoxList(encode(vc)+"_Gear",vGear,gearAssignments,"<br>")]
+[r:CheckBoxList(findToken(vc)+"_Gear",vGear,gearAssignments,"<br>")]
             </td> 
           </tr>
 }]
@@ -709,7 +784,7 @@ Setting Equipment Types<br>
 [h,foreach(ma,macro.args), code:{
   [ja=Split(ma,"_")]
   [if(json.get(ja,0)=="cb"), code:{
-    [crewMember=json.get(ja,1)]
+    [crewMember=getName(json.get(ja,1))]
     [crewArray=json.append(crewArray,crewMember)]
     [type=json.get(ja,2)]
     [value=json.get(ja,3)]
@@ -717,7 +792,7 @@ Setting Equipment Types<br>
     [assignmentArray=json.append(assignmentArray,assignmentElement)]
   };{}]
 }]
-[h:crewArray=json.unique(crewArray)]
+[h:crewArray=json.sort(json.unique(crewArray))]
 [r:assignmentArray]
 
 <br>
@@ -725,9 +800,7 @@ Setting Equipment Types<br>
 [h:t=Debug("crewArray",crewArray)]
 
 [h,foreach(a,crewArray), code:{
-  [h:t=Debug("Calling BuildAssignmentObject for",a)]
   [h:crewAssignmentObject=BuildAssignmentObject(crewAssignmentObject,assignmentArray,a)]
-  [h:t=Debug("After BuildAssignmentObject for",crewAssignmentObject)]
 }]
 [h:setProperty("CrewAssignments",crewAssignmentObject)]
 
@@ -745,18 +818,17 @@ Setting Equipment Types<br>
 
 [H:crewList=GetVehicleCrew()]
 [h:crewList=json.fromList(crewList)]
-[h:tokens=getExposedTokens("json")]
+[h:tokens=getTokenNames("json", json.set("{}", "layer", json.append("[]","TOKEN")))]
 [h:tokenList="[]"]
-[foreach(t,tokens,""), code:{
+[h,foreach(name,tokens,""), code:{
   [h:add=0]
-<br>
+  [h:t=findToken(name)]
   [basic=if(getPropertyType(t)!="Basic",0,1)]
-  [name=getName(t)]
   [notInCurrent=json.contains(crewList,name)]
-<br>
   [h:add=if(basic&&notInCurrent==0,1,0)]
-  [h:tokenList=if(add==1,json.append(tokenList,getName(t)),tokenList)]
+  [h,if(add==1): tokenList=json.append(tokenList,name)]
 }]
+[h:tokenList=json.sort(tokenList)]
 
 [h: class = "oddRow"]
 [dialog("CrewUpdate", "width=250; height=300"): {
@@ -805,12 +877,12 @@ Setting Equipment Types<br>
 !!
 @@ @UpdateVehicleCrewOK
 @PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=Dialogs ; tooltip= ; minWidth= ; 
-[h:tokens=getExposedTokens("json")]
+[h:tokens=getTokenNames("json", json.set("{}", "layer", json.append("[]","TOKEN")))]
+[h:tokens=json.sort(tokens)]
 [h:crewList=""]
-[foreach(t,tokens,"<br>"), code:{
-  [h:name=getName(t)]
+[foreach(name,tokens,"<br>"), code:{
   [h:there=json.contains(macro.args,"crew_"+name)]
-  [h:crewList=if(there,listAppend(crewList,name),crewList)]
+  [h,if(there): crewList=listAppend(crewList,encode(name))]
 }]
 New Crew for [r:getName()] is [r:crewList]
 [setProperty("Crew",crewList)]

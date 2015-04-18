@@ -339,7 +339,7 @@ Generic stuff
 
 [h:junk="remove macros"]
 
-[h:macros=json.append("","Activate Macro","Remove","Set Type","Pick Partner","Go To Partner")]
+[h:macros=json.append("","Activate Macro","Remove","Set Type","Pick Partner","Go To Partner","Edit Marker","Got To Partner")]
 [foreach(m,macros,""), code:{
   [h:idx=getMacroIndexes(m)]
   [if(idx!=""):removeMacro(idx)]
@@ -851,7 +851,15 @@ default: {
 [h:junk="This macro recieves a json array of token id's and teleports them to coordinates on another map")]
 [h:triggerName=arg(0)]
 [h:id=arg(1)]
+[h:name=getName()]
 [h:ids=json.append("",id)]
+[h,if(isLeader(id)), code:{
+  [h:members=GetGroupMemberNames(name)]
+  [h,foreach(name,members,""), code:{
+    [h:m=findToken(name)]
+    [h,if(m!=""): ids=json.append(ids,m)]
+  }]
+}]
 [h:TeleportList(triggerName,ids)]
 
 !!

@@ -515,7 +515,8 @@ tokentypes (default is basic) json array
     [h: NewY = CurrentY - deltay]
     [h: moveToken(NewX, NewY,1,m)]
   }]
-};{
+};{}]
+
   [h:triggerHitInfo=CheckHitTrigger(lastPath)]
   [h:stepOrder=json.get(triggerHitInfo,"stepOrder")]
   [h:triggersHit=json.get(triggerHitInfo,"triggersHit")]
@@ -523,7 +524,7 @@ tokentypes (default is basic) json array
 
   [h,if(stepLength!=0): msg=RunTriggerMacro(id,stepOrder,triggersHit,lastPath)]
   [h,if(msg==0): msg=""]
-}]
+
 [r,if(msg!=''): msg+"<br>"]
 
 !!

@@ -50,10 +50,13 @@
 [h:thisMacro=getMacroName()+"@"+getMacroLocation()]
 [h:varsFromStrProp(macro.args)]
 
-[h:tokenId=if(tokenId=="",currentToken(),"")]
+[h:tokenId=if(tokenId=="",currentToken(),tokenId)]
 [h:abortit=if(tokenId=="",0,1)]
 [h:assert(abortit,"no token id available")]
 [h:switchToken(tokenId)]
+
+[h:propType=getPropertyType()]
+[h,if(propType!="Basic"): assert(0,getMacroName()+" can only be run Basic token types")]
 
 [if(newInit==1), code: {
   [macro("DrawInitCard@Lib:Init"): tokenId]
@@ -144,17 +147,36 @@
   [h:powerCount=json.length(pwrs)]
   [c(powerCount,""), code:{
     [h:name=json.get(pwrs,roll.count)]
-    [h:activePwrs=json.fields(PowersActive)]
+    [h:activePwrs=json.fields(PowersActive)]["Ateraxian","Baktar","Blorb1"]
 
     [h:active=listContains(activePwrs,name)]
     [h:activeText=if(active==0,"","<span title='Active Power' style='color:maroon;vertical-align:super;font-weight:bold'>A</span>")]
     [h: linkit=macroLinkText("CharacterSheet@Lib:GM","gm","lowerWindowFill=power;powerName="+name+";powerSkill="+skill+ ";activePowerFlag="+ active,tokenId)]
-    [h: name =  "<span title='Click to use power'><a href='"+linkit+"'> " + name +"</a></span>" + activeText +" "]
+    [h: name =  "<span title='Click to use power'><a href='"+linkit+"'> " + name +"</a>["Ateraxian","Baktar","Blorb1"]</span>" + activeText +" "]
     [h:rtnStr=listAppend(rtnStr,""+name)]
   }]
 }]
 
 [h:powerLinkList = rtnStr]
+
+[h:vehicleAssigned=GetCharacterVehicle()]
+[h,if(vehicleAssigned!=""), code:{
+  [vId=findToken(vehicleAssigned)]
+  [h: linkit=macroLinkText("VehicleSheet@Lib:Vehicles", "all","",findToken(vehicleAssigned))]
+  [vehicleLine="<a href='"+linkit+"'>"+vehicleAssigned+"</a>"]
+  [h:assignedVehicleGear=GetCharacterCrewAssignments()]
+  [h:firstTime=1]
+  [h,foreach(avg,assignedVehicleGear), code:{
+    [if(firstTime): vehicleLine=vehicleLine+": "]
+    [h:args="Gear="+avg+"; Type=Weapons; FiringId="+tokenId+"; returnMacro="+"argCheck@Lib:GM"]
+    [h:linkit=macroLinkText("UseVehicleWeapon@Lib:Gear", "all",args,vId)]
+    [h,if(!firstTime): vehicleLine=vehicleLine+", "]
+    [h:vehicleLine=vehicleLine+"<a href='"+linkit+"'>"+ decode(avg) + "</a>"]
+    [firstTime=0]
+  }]
+};{
+  [h:vehicleLine=""]
+}]
 
 [h:lowerWindowFillMacro="SimpleActions@Lib:GM"]
 [h:lowerWindowFillMacroArgs=whisperers]
@@ -303,7 +325,7 @@
                 <tr class="[r:class]">
                    [h: linkit=macroLinkText("UpdateDerivedDialog@Lib:GM", "gm","returnMacro=CharacterSheet@Lib:GM",tokenId)]
                    <td valign="top">
-                      <a style="font-weight:bold;color:maroon" href="[r:linkit]">Movements</a>:
+                      <a style="font-weight:bold;color:maroon" href="[r:linkit]">Movement</a>:
                    </td>
                    <td>
                       [r:mvs]
@@ -348,6 +370,19 @@
                    </td>
                    <td>
                       [r: powerLinkList]
+                   </td>
+                </tr>
+                };{}
+             ]
+             [if(vehicleLine!=""), code:{
+                [h: class = if(class=="oddRow", "evenRow", "oddRow")]
+                <tr class="[r:class]">
+                   [h: linkit=macroLinkText("UpdatePowersDialog@Lib:GM", "gm","returnMacro=CharacterSheet@Lib:GM",tokenId)]
+                   <td valign="top">
+                      <div style="font-weight:bold;color:maroon">Vehicles</div>
+                   </td>
+                   <td>
+                      [r: vehicleLIne]
                    </td>
                 </tr>
                 };{}

@@ -31,3 +31,5 @@
 	Clean up of init state indicators on map with reset or start encounter.
 	Removed init states from character sheet state dialog
 
+20150418
+	Added blast markers that come into being when you fire a weapon that has a burst template. You'll need the image tokens in the campaign.

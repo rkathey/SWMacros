@@ -12,6 +12,51 @@
 
 [defineFunction("UseWeapon","UseWeapon@"+libName)]
 [defineFunction("UseVehicleWeapon","UseVehicleWeapon@"+libName)]
+[defineFunction("CreateBlastMarker","CreateBlastMarker@"+libName)]
+[defineFunction("CopyBlastToken","CopyBlastToken@"+libName)]
+
+[defineFunction("ModifyBlastToken","ModifyBlastToken@"+libName)]
+[defineFunction("GetTemplateType","GetTemplateType@"+libName)]
+
+[h:gat=getLibProperty("GearAttrTypes","Lib:Gear")]
+[h:gva=getLibProperty("GearVarAttrs","Lib:Gear")]
+[h:gva=json.set(gva,"Weapons",json.append("","Skill","SkillBonus","Tag","Damage","Range","RoF","Shots","NumHands","AP","AmmoType","Ammo2Fill","ParryBonus","RndToReload","ShotsUsed","Template","Notes"))]
+[h:temp=json.set("","Size","6","Type","Dropdown","Values","None,Cone,Small,Medium,Large")]
+[h:gat=json.set(gat,"Template",temp)]
+[h:setLibProperty("GearAttrTypes",gat,"Lib:Gear")]
+[h:setLibProperty("GearVarAttrs",gva,"Lib:Gear")]
+
+!!
+@@ @(new)
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group= ; tooltip= ; minWidth= ; 
+[h:templateType="Cone"]
+[h,switch(templateType), code:
+  case "Cone": { 
+  [markerSize="native"]
+  [offset=0]
+  [tokenShape="Top Down"]
+};
+  case "Small": {
+  [markerSize="Large"]
+  [offset=1]
+  [tokenShape="Circle"]
+};
+  case "Medium": {
+  [markerSize="Gargantuan"]
+  [offset=2]
+  [tokenShape="Circle"]
+};
+  case "Large": {
+  [markerSize="Colossal"]
+  [offset=3]
+  [tokenShape="Circle"]
+};
+  default: {
+  [markerSize="Medium"]
+  [offset=0]
+  [tokenShape="Circle"]
+}]
+[r:markerSize]
 
 !!
 @@ @EditGear
@@ -347,6 +392,52 @@ Autofire Attack 1 does damage of [r:dam] or [r:dam+raiseDamage] if you hit with 
 }]
 
 !!
+@@ @CopyBlastToken
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=CharacterSheet ; tooltip= ; minWidth= ; 
+[h:id=arg(0)]
+[h:markerName=arg(1)]
+[h:templateType=arg(2)]
+[h:coneSizes=json.append("",50,64,72,100,150)]
+[h,if(templateType=="Cone"): initialSize="Medium"; initialSize="Fine")]
+
+[h:inputString="junk|Cone template will not be of the proper size. valid sizes are " + coneSizes + "|-|LABEL|SPAN=TRUE"]
+[h,if(templateType=="Cone"), code:{
+  [h:gridSize=json.get(json.get(getInfo("Map"),"grid"),"size")]
+  [h:valid=json.contains(coneSizes,gridSize)]
+  [h,if(valid): imageName="Image:Cone"+gridSize; imageName="Image:Cone50"]
+  [h,if(!valid): input(inputString)]
+};{
+  [imageName="Image:BurstTemplate"]
+}]
+
+[h:updates=json.set("","name",markerName,"tokenImage",imageName,"size",initialSize)]
+[h:blastId=copyToken(id,1,"",updates)]
+[r:blastId]
+
+!!
+@@ @CreateBlastMarker
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=CharacterSheet ; tooltip= ; minWidth= ; 
+[h:junk="make token, add effect button, suspend macro"]
+[h:junk="assumes this is part of the character sheet stuff. Called with token id"]
+[h:props=arg(0)]
+[h:id=currentToken()]
+
+[h:propsJSON=json.fromStrProp(props)]
+[h:gearName=json.get(propsJSON,"gearName")]
+[h:gearType=json.get(propsJSON,"gearType")]
+[h:tag=json.get(propsJSON,"Action")]
+[h:templateType=json.get(propsJSON,"Template")]
+
+[h:markerName=getName()+" "+templateType+" "+json.get(getInfo("server"),"timeDate")]
+[h:continue=input("junk|<html><b>Instructions for blast markers</b><br>A blast marker will be created on top of your token. If this is a small, medium, or large burst template, <b>turn off snap to grid</b> and move it to your desired aim point. <br>If it is a Cone Template, use the MapTool facing function to spin it in the direction you want the cone to point.<br>Once you have the Cone pointed or the circular burst template placed, find the <b>Activate Macro</b> button on the <b>Selection</b> Macro Panel. <br>The attack roll and damage will then be rolled as if you fired the weapon at the blast marker<br>You can then delete the blast token|-|LABEL|SPAN=TRUE")]
+
+[h:assert(continue,"aborting weapons fire")]
+[h:blastId=CopyBlastToken(id,markerName,templateType)]
+[h: link = macroLinkText("ModifyBlastToken@Lib:Gear", "gm", json.append("",blastId,templateType,props,id), blastId)]
+[h: execLink(link,1)]
+[h:abort(0)]
+
+!!
 @@ @GearUse
 @PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=CharacterSheet ; tooltip= ; minWidth= ; 
 [h:tokenId=""]
@@ -422,9 +513,10 @@ Autofire Attack 1 does damage of [r:dam] or [r:dam+raiseDamage] if you hit with 
 [foreach(weapon,wd,""), code:{
         <tr class="[r:class]">
           <td align="center">
-  [h:checked=if(firstTime==1,"checked=1","")]
-            <input TYPE=RADIO NAME="Action" VALUE="[r:encode(json.get(weapon,"Tag"))]" [r:checked]> [r:json.get(weapon,"Skill")]
-  [h:firstTime=0]
+[h:tag=json.get(weapon,"Tag")]
+[h:checked=if(firstTime==1,"checked=1","")]
+            <input TYPE=RADIO NAME="Action" VALUE="[r:encode(tag)]" [r:checked]> [r:json.get(weapon,"Skill")]
+[h:firstTime=0]
 
           </td>
           <td align="center">
@@ -506,22 +598,33 @@ Autofire Attack 1 does damage of [r:dam] or [r:dam+raiseDamage] if you hit with 
 
 [h:props=macro.args]
 
+[h:Template=""]
 [h:firingId=""]
+
 [h:varsFromStrProp(props)]
 [h:tokenId=if(tokenId=="",currentToken(),tokenId)]
 [h:abortit=if(tokenId=="",0,1)]
+[h:assert(abortit,"no token id available")]
+[h:switchToken(tokenId)]
+
 [h:junk="also passing firingId from vehicle sheet so another can fire the vehicles weapon"]
 [h,if(firingId==""),code:{
   [h:firingId=tokenId]
 };{
 }]
 
-[h:assert(abortit,"no token id available")]
-[h:switchToken(tokenId)]
-
 [if(gearType=="Weapons"), code:{
   [h:wd=json.get(getLibProperty("GearVar"),gearType)]
   [h:damages=json.get(wd,gearName)]
+  [h,if(Template==""): Template=GetTemplateType(gearName,gearType,decode(Action))]
+};{}]
+
+[h,if(Template==""): Template="None"]
+
+[h:junk="calling CreateBlastMarker will create a marker for the player to position. They will then activate the macro on the marker recalling this macro with the same parameters but with the marker as the target and a template type of None"]
+[h,if(Template!="None"), code:{
+ [h:props=setStrProp(props,"Template",Template)]
+ [h:CreateBlastMarker(props)]
 };{}]
 
 [h:firstTime=1]
@@ -538,10 +641,10 @@ Autofire Attack 1 does damage of [r:dam] or [r:dam+raiseDamage] if you hit with 
   [h:targetParry=getProperty("Parry",targetId)]
   [h:targetTuff=getProperty("Toughness",targetId)]
   [h:targetArmor=getProperty("Armor",targetId)]
+  [h,if(targetArmor==""): targetArmor=0]
   [h:targetDistance=getDistance(targetId)-1]
 
 [h:junk = "get weapon info"]
-
   [h:shots=json.get(damageJSON,"Shots")]
   [h:shots=if(isNumber(shots),shots,0)]
   [h:ammoType=json.get(damageJSON,"AmmoType")]
@@ -596,7 +699,6 @@ Autofire Attack 1 does damage of [r:dam] or [r:dam+raiseDamage] if you hit with 
   [h:empty=if(ammoType == "None",0,empty)]
 
 [h:junk = "RELOAD"]
-
   [if(Action=="Reload"), code:{
     <b>Reloading [decode(gearName)] </b><br>
     [h:g=Reload(gearName,ammoType,totalShots,ammo2Fill,ReloadRnd)]
@@ -621,12 +723,12 @@ Autofire Attack 1 does damage of [r:dam] or [r:dam+raiseDamage] if you hit with 
     [h:fireWeapon="0"]  
   };{}]
 
- [h:skill=json.get(damageJSON,"Skill")]
-        [if(skill=="Fighting" || targetDistance <= 0), code:{
-             [h:thisText="(Parry " + targetParry + ")"]
-        };{
-             [h:thisText="(distance " +targetDistance + " = " +rangeString + " Range)"]
-        }]
+  [h:skill=json.get(damageJSON,"Skill")]
+  [if(skill=="Fighting" || targetDistance <= 0), code:{
+    [h:thisText="(Parry " + targetParry + ")"]
+  };{
+    [h:thisText="(distance " +targetDistance + " = " +rangeString + " Range)"]
+  }]
 
   [if(fireWeapon=="1"), code:{
   
@@ -635,7 +737,6 @@ Autofire Attack 1 does damage of [r:dam] or [r:dam+raiseDamage] if you hit with 
        [h:setProperty("Gear",g)]
        [h:thisG=json.get(g,gearName)]
 
-      
        [h:damage=json.get(damageJSON,"Damage")]
        <b>
        [r,if(firingId!=tokenId): getName(firingId)+" "]
@@ -645,10 +746,10 @@ Autofire Attack 1 does damage of [r:dam] or [r:dam+raiseDamage] if you hit with 
 
        </b>
        <br>
-	[h,if(rangeString=="Long"): skillBonus=skillBonus-4]
-	[h,if(rangeString=="Long"): skillBonusStr=skillBonusStr+ " Long Range=-4"]
-	[h,if(rangeString=="Medium"): skillBonus=skillBonus-2]
-	[h,if(rangeString=="Medium"): skillBonusStr=skillBonusStr+ " Medium Range=-2"]
+        [h,if(rangeString=="Long"): skillBonus=skillBonus-4]
+        [h,if(rangeString=="Long"): skillBonusStr=skillBonusStr+ " Long Range=-4"]
+        [h,if(rangeString=="Medium"): skillBonus=skillBonus-2]
+        [h,if(rangeString=="Medium"): skillBonusStr=skillBonusStr+ " Medium Range=-2"]
         [r,token(firingId): tempis=TraitTestWithMod(skill,skillBonus,skillBonusStr)]
         [h:effectiveArmor=targetArmor-aP]
         [h:effectiveArmor=if(effectiveArmor<0,0,effectiveArmor)]
@@ -666,7 +767,7 @@ Autofire Attack 1 does damage of [r:dam] or [r:dam+raiseDamage] if you hit with 
           Uses a [gearName] [decode(Action)]
 }]
 
-[macro(returnMacro): ""]
+[h,macro(returnMacro): "tokenId="+tokenId]
 
 !!
 @@ @Get Gear
@@ -732,6 +833,94 @@ Autofire Attack 1 does damage of [r:dam] or [r:dam+raiseDamage] if you hit with 
   [h:rtnStr=rtnStr+"<BR>"]
 }]
 [h:macro.return=rtnStr]
+
+!!
+@@ @ModifyBlastToken
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=CharacterSheet ; tooltip= ; minWidth= ; 
+[h:id=arg(0)]
+[h:name=getName(id)]
+[h:templateType=arg(1)]
+[h:props=arg(2)]
+[h:parentId=arg(3)]
+[h:props=setStrProp(props,"Template","None")]
+[h:props=setStrProp(props,"Target",name)]
+
+[h:gridSize=json.get(json.get(getInfo("Map"),"grid"),"size")]
+
+[h,switch(templateType), code:
+  case "Cone": { 
+    [markerSize="native"]
+    [offset=0]
+    [tokenShape="Top Down"]
+  };
+  case "Small": {
+    [markerSize="Large"]
+    [offset=1]
+    [tokenShape="Circle"]
+  };
+  case "Medium": {
+    [markerSize="Gargantuan"]
+    [offset=2]
+    [tokenShape="Circle"]
+  };
+  case "Large": {
+    [markerSize="Colossal"]
+    [offset=3]
+    [tokenShape="Circle"]
+  };
+  default: {
+    [markerSize="Medium"]
+    [offset=0]
+    [tokenShape="Circle"]
+}]
+[h:offset=offset*gridSize]
+[h:setTokenShape(tokenShape)]
+
+[h:tokenType="Marker"]
+[h:setPropertyType(tokenType, id)]
+[h:SaveMarker(getCurrentMapName(),name,"Blast")]
+[h:setState("Marker", 1,id)]
+[h:macros=json.append("","Activate Macro","Remove","Set Type","Pick Partner","Go To Partner","Remove","Edit Marker")]
+[foreach(m,macros,""), code:{
+  [h:idx=getMacroIndexes(m)]
+  [if(idx!=""):removeMacro(idx)]
+}]
+
+[if(getPropertyType()==tokenType), code:{
+[h:macroName="Remove"]
+[h:command=encode("[h:name=getName()]")]
+[h:command = command + encode("[h:map=getCurrentMapName()]")]
+[h:command = command + encode("[r:t=RemoveMarker(map,name)]")]
+[h:macroProps="autoexec=true;"]
+[h:macroProps="applyToSelected=true;"]
+[if(hasMacro(macroName)), code: {
+  [getName()] already has [macroName] on token
+};{
+  [h:createMacro(macroName, decode(command), macroProps)]
+  [macroName] Button added.
+}]
+};{}]
+
+[if(getPropertyType()==tokenType), code:{
+[h:macroName="Activate Macro"]
+[h:command=encode("[h:tokenId='"+parentId+"']")]
+[h:command=command + encode("[h:args='"+props+"']")]
+[h:command=command + encode("[h:linkit=macroLinkText('GearUseOK@Lib:Gear','all',args,tokenId)]")]
+[h:command=command + encode("[h:execLink(linkit)]")]
+[h:command=command + encode("[h:setSize('"+markerSize+"')]")]
+[h:command=command + encode("[h:RemoveMarker(getCurrentMapName(),getName())]")]
+[h, if(offset): command=command + encode("[h: CurrentX = getTokenX()] [h: CurrentY = getTokenY()] [h: NewX = CurrentX - "+offset+"] [h: NewY = CurrentY - "+offset+"] [h: moveToken(NewX, NewY)]")]
+
+[h:macroProps="autoexec=true;"]
+[if(hasMacro(macroName)), code: {
+  [getName()] already has [macroName] on token
+};{
+  [h:rtn=createMacro(macroName, decode(command), macroProps)]
+  [macroName] Button added.
+}]
+};{}]
+
+[h:bringToFront()]
 
 !!
 @@ @ReloadWeapon
@@ -815,7 +1004,8 @@ Autofire Attack 1 does damage of [r:dam] or [r:dam+raiseDamage] if you hit with 
     <input type="checkbox" name="gear_[r:gType]_[r:name]" value="1" [r:checked]></input>
   </td>
   <td class="[r:class]">
-  [r:decode(name)]
+  [h:gJSONElement=json.get(gJSON,name)]
+  [r:decode(name)], $[r:json.get(gJSONElement,"Cost")], [r:json.get(gJSONElement,"Weight")]lbs
   </td>
   <td class="[r:class]">
     <input type="text" name="gearNum_[r:gType]_[r:name]" size=2 value="[r:value]">
@@ -1199,7 +1389,7 @@ Autofire Attack 1 does damage of [r:dam] or [r:dam+raiseDamage] if you hit with 
 [h:weaponCapacity=arg(3)]
 
 [h:tType=getPropertyType()]
-[h,if(tType!="Basic"&&tType!="Vehicle"): assert(0,"You must have a non-Lib token selected in order to use ammo")]
+[h,if(tType!="Basic"&&tType!="Vehicle"&&tType!="Marker"): assert(0,"You must have a non-Lib token selected in order to use ammo")]
 [h:g=getProperty("Gear")]
 [h:thisG=json.get(g,weaponName)]
 [h:thisGNum=json.get(thisG,"Num")]
@@ -1246,6 +1436,7 @@ Autofire Attack 1 does damage of [r:dam] or [r:dam+raiseDamage] if you hit with 
 [h:name=json.get(vars,"Gear")]
 [h:type=json.get(vars,"Type")]
 [h:firingId=json.get(vars,"FiringId")]
+[h:returnMacro=json.get(vars,"returnMacro")]
 
 [dialog("UseVehicleWeapn_"+getName(firingId)): {
   <html>
@@ -1255,7 +1446,7 @@ Autofire Attack 1 does damage of [r:dam] or [r:dam+raiseDamage] if you hit with 
       <link rel="stylesheet" type="text/css" href="CharSheet_css@Lib:GM">     
     </head>
     <body>
-      [macro("GearUse@Lib:Gear"): "name="+name+"; type="+type+";returnMacro=argCheck@Lib:GM; firingId="+firingId]
+      [macro("GearUse@Lib:Gear"): "name="+name+"; type="+type+";returnMacro="+returnMacro+"; firingId="+firingId]
     </body>
   </html>
 }]
@@ -2588,6 +2779,25 @@ h:newGear=if(there==0,1,newGear)
   [h:rtnType=if(ammoType==1,gearType,rtnType)]
 
 [h:macro.return=rtnType]
+
+!!
+@@ @GetTemplateType
+@PROPS@ fontColor=black ; autoExecute=true ; fontSize=1.00em ; sortBy= ; color=default ; playerEditable=false ; applyToSelected=false ; group=X ; tooltip= ; minWidth= ; 
+[h:gname=arg(0)]
+[h:gtype=arg(1)]
+[h:gtag=arg(2)]
+[h:template=""]
+
+[h:allGear=getLibProperty("GearVar")]
+[h:allGearOfType=json.get(allGear,gtype)]
+[h:thisGear=json.get(allGearOfType,gname)]
+
+[h,foreach(g,thisGear), code:{
+  [thisTag=json.get(g,"Tag")]
+  [if(thisTag==gTag): template=json.get(g,"Template")]
+}]
+[h,if(template==""): template="None"]
+[r:template]
 
 !!
 @@ @aaaCSS
